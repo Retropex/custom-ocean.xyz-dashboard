@@ -1,8 +1,10 @@
 # Ocean.xyz Bitcoin Mining Dashboard
 
-A real-time dashboard application for monitoring Bitcoin mining operations using the Ocean.xyz mining pool.
+A real-time dashboard application for monitoring Bitcoin mining operations using the Ocean.xyz Mining Pool.
 
-![image](https://github.com/user-attachments/assets/e1fa9ebc-51ab-4488-a493-264683a3f8b1)
+![Boot Sequence](https://github.com/user-attachments/assets/5b1b4d92-2569-42b4-b8a9-1e95dd831545)
+
+![Dashboard](https://github.com/user-attachments/assets/50c73906-3aba-4d67-a84f-9ecf30a55c1b)
 
 ## Overview
 
@@ -143,10 +145,22 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- [Ocean.xyz](https://ocean.xyz) mining pool for the mining API
-- [Flask](https://flask.palletsprojects.com/) web framework
-- [Chart.js](https://www.chartjs.org/) for data visualization
+- [Ocean.xyz](https://ocean.xyz) mining pool for the mining API and data services
+- [Flask](https://flask.palletsprojects.com/) web framework for the backend
+- [Chart.js](https://www.chartjs.org/) for interactive data visualization
 - [Bootstrap](https://getbootstrap.com/) for responsive UI components
+- [Redis](https://redis.io/) for data persistence and caching
+- [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) for HTML parsing
+- [Gunicorn](https://gunicorn.org/) for WSGI HTTP server
+- [APScheduler](https://apscheduler.readthedocs.io/) for background task scheduling
+- [jQuery](https://jquery.com/) for DOM manipulation and AJAX requests
+- [Font Awesome](https://fontawesome.com/) for icons
+- [chartjs-plugin-annotation](https://github.com/chartjs/chartjs-plugin-annotation) for chart annotations
+- [Orbitron Font](https://fonts.google.com/specimen/Orbitron) for dashboard typography
+- [Server-Sent Events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) for real-time updates
+- [Docker](https://www.docker.com/) for containerization and deployment
+- The Bitcoin open source community for inspiration and resources
+- [Satoshi Nakamoto](https://en.wikipedia.org/wiki/Satoshi_Nakamoto) for creating Bitcoin
 
 ## Contributing
 

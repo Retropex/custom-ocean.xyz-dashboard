@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error - Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #121212;
+      --primary-color: #f7931a;
+      --text-color: white;
+    }
+    
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding-top: 20px;
+      font-family: 'Orbitron', sans-serif;
+    }
+    
+    a.btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      color: black;
+      margin-top: 20px;
+    }
+    
+    .error-container {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 2rem;
+      border: 1px solid var(--primary-color);
+      border-radius: 5px;
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="error-container">
+      <h1>Error</h1>
+      <p>{{ message }}</p>
+      <a href="/" class="btn btn-primary">Return to Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>

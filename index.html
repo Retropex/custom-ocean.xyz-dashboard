@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Custom Orbitron Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Custom Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=VT323&display=swap" rel="stylesheet">
   <!-- Meta viewport for responsive scaling -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ocean.xyz Pool Mining Dashboard v 0.2</title>
@@ -12,13 +12,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #0d0d0d;
-      --bg-gradient: linear-gradient(135deg, #0d0d0d, #1a1a1a);
+      --bg-color: #0a0a0a;
+      --bg-gradient: linear-gradient(135deg, #0a0a0a, #1a1a1a);
       --primary-color: #f7931a;
       --accent-color: #00ffff;
       --text-color: #ffffff;
       --card-padding: 0.5rem;
       --text-size-base: 14px;
+      --terminal-font: 'VT323', monospace;
+      --header-font: 'Orbitron', sans-serif;
     }
 
     @media (min-width: 768px) {
@@ -28,18 +30,50 @@
       }
     }
     
+    /* CRT Screen Effect */
+    body::before {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+      background-size: 100% 2px, 3px 100%;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.15;
+    }
+    
+    /* Flicker Animation */
+    @keyframes flicker {
+      0% { opacity: 0.97; }
+      5% { opacity: 0.95; }
+      10% { opacity: 0.97; }
+      15% { opacity: 0.94; }
+      20% { opacity: 0.98; }
+      50% { opacity: 0.95; }
+      80% { opacity: 0.96; }
+      90% { opacity: 0.94; }
+      100% { opacity: 0.98; }
+    }
+    
     body {
       background: var(--bg-gradient);
       color: var(--text-color);
       padding-top: 0.5rem;
       font-size: var(--text-size-base);
-      font-family: 'Orbitron', sans-serif;
+      font-family: var(--terminal-font);
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
     }
     
     h1 {
-      font-size: calc(var(--text-size-base) * 1.4);
+      font-size: calc(var(--text-size-base) * 1.5);
       font-weight: bold;
       color: var(--primary-color);
+      font-family: var(--header-font);
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px var(--primary-color);
+      animation: flicker 4s infinite;
     }
     
     .card,
@@ -49,12 +83,35 @@
       border-radius: 0 !important;
     }
     
+    /* Enhanced card with scanlines */
     .card {
       background-color: var(--bg-color);
       border: 1px solid var(--primary-color);
       margin-bottom: 0.5rem;
       padding: var(--card-padding);
       flex: 1;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 5px rgba(247, 147, 26, 0.3);
+    }
+    
+    /* Scanline effect for cards */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.05),
+        rgba(0, 0, 0, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1;
     }
     
     /* Override for Payout & Misc card */
@@ -68,6 +125,10 @@
       font-weight: bold;
       padding: 0.25rem;
       font-size: 1rem;
+      border-bottom: 1px solid var(--primary-color);
+      text-shadow: 0 0 5px var(--primary-color);
+      animation: flicker 4s infinite;
+      font-family: var(--header-font);
     }
     
     .card-body hr {
@@ -115,6 +176,7 @@
       top: 3px;
     }
     
+    /* Enhanced Online dot with more glow */
     .online-dot {
       display: inline-block;
       width: 8px;
@@ -125,13 +187,15 @@
       position: relative;
       top: -2px;
       animation: glow 1s infinite;
+      box-shadow: 0 0 10px #32CD32, 0 0 20px #32CD32;
     }
     
     @keyframes glow {
-      0%, 100% { box-shadow: 0 0 5px #32CD32, 0 0 10px #32CD32; }
-      50% { box-shadow: 0 0 10px #32CD32, 0 0 20px #32CD32; }
+      0%, 100% { box-shadow: 0 0 10px #32CD32, 0 0 15px #32CD32; }
+      50% { box-shadow: 0 0 15px #32CD32, 0 0 25px #32CD32; }
     }
     
+    /* Enhanced Offline dot with more glow */
     .offline-dot {
       display: inline-block;
       width: 8px;
@@ -140,11 +204,12 @@
       border-radius: 50%;
       margin-left: 0.5em;
       animation: glowRed 1s infinite;
+      box-shadow: 0 0 10px red, 0 0 20px red;
     }
     
     @keyframes glowRed {
-      0%, 100% { box-shadow: 0 0 5px red, 0 0 10px red; }
-      50% { box-shadow: 0 0 10px red, 0 0 20px red; }
+      0%, 100% { box-shadow: 0 0 10px red, 0 0 15px red; }
+      50% { box-shadow: 0 0 15px red, 0 0 25px red; }
     }
     
     @keyframes glowPulse {
@@ -157,6 +222,28 @@
       padding: 0.5rem;
       margin-bottom: 1rem;
       height: 230px;
+      border: 1px solid var(--primary-color);
+      box-shadow: 0 0 10px rgba(247, 147, 26, 0.2);
+      position: relative;
+    }
+    
+    /* Add scanline effect to graph */
+    #graphContainer::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.1),
+        rgba(0, 0, 0, 0.1) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1;
     }
     
     /* Refresh timer container */
@@ -173,23 +260,50 @@
       width: 100%;
     }
     
+    /* Enhance metric value styling */
     .metric-value {
       color: var(--text-color);
       font-weight: bold;
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
     }
     
-    #btc_price { color: #ffd700; }
-    #unpaid_earnings { color: #32CD32; }
-    #miner_status.online { color: #32CD32; }
-    #daily_power_cost { color: red !important; }
+    /* Enhanced neon colors for different metrics */
+    #btc_price { 
+      color: #ffd700; 
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    }
+    
+    #unpaid_earnings { 
+      color: #32CD32; 
+      text-shadow: 0 0 8px rgba(50, 205, 50, 0.6);
+    }
+    
+    #miner_status.online { 
+      color: #32CD32; 
+      text-shadow: 0 0 8px rgba(50, 205, 50, 0.6);
+    }
+    
+    #daily_power_cost { 
+      color: #ff5555 !important; 
+      text-shadow: 0 0 8px rgba(255, 85, 85, 0.6);
+    }
+    
     #daily_revenue,
     #daily_profit_usd,
-    #monthly_profit_usd { color: #32CD32; }
-    #est_time_to_payout { color: #ffd700; }
+    #monthly_profit_usd { 
+      color: #32CD32; 
+      text-shadow: 0 0 8px rgba(50, 205, 50, 0.6);
+    }
+    
+    #est_time_to_payout { 
+      color: #ffd700; 
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    }
     
     .card-body strong {
       color: var(--primary-color);
       margin-right: 0.25rem;
+      text-shadow: 0 0 3px var(--primary-color);
     }
     
     .card-body p {
@@ -234,6 +348,7 @@
       color: grey;
       text-decoration: none;
       font-size: 0.9rem;
+      text-shadow: 0 0 5px grey;
     }
     
     #uptimeTimer strong {
@@ -256,6 +371,8 @@
       border-radius: 5px;
       z-index: 9999;
       font-size: 0.9rem;
+      text-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
     }
     
     /* Bitcoin Progress Bar Styles */
@@ -263,13 +380,13 @@
       width: 100%;
       max-width: 300px;
       height: 20px;
-      background-color: #222;
+      background-color: #111;
       border: 1px solid var(--primary-color);
       border-radius: 0;
       margin: 0.5rem auto;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 0 8px rgba(247, 147, 26, 0.3);
+      box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
       align-self: center;
     }
     
@@ -315,7 +432,7 @@
     }
     
     .glow-effect {
-      box-shadow: 0 0 10px #f7931a, 0 0 20px #f7931a;
+      box-shadow: 0 0 15px #f7931a, 0 0 25px #f7931a;
       animation: pulse 1s infinite;
     }
     
@@ -325,8 +442,8 @@
     }
     
     @keyframes waitingPulse {
-      0%, 100% { box-shadow: 0 0 5px #f7931a, 0 0 10px #f7931a; opacity: 0.8; }
-      50% { box-shadow: 0 0 15px #f7931a, 0 0 30px #f7931a; opacity: 1; }
+      0%, 100% { box-shadow: 0 0 10px #f7931a, 0 0 15px #f7931a; opacity: 0.8; }
+      50% { box-shadow: 0 0 20px #f7931a, 0 0 35px #f7931a; opacity: 1; }
     }
     
     @keyframes pulse {
@@ -335,12 +452,66 @@
     }
     
     #progress-text {
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       color: var(--primary-color);
       margin-top: 0.3rem;
-      font-family: 'Orbitron', sans-serif;
+      text-shadow: 0 0 5px var(--primary-color);
       text-align: center;
       width: 100%;
+    }
+    
+    /* Last Updated text with subtle animation */
+    #lastUpdated {
+      animation: flicker 5s infinite;
+      text-align: center;
+    }
+    
+    /* Define color classes from boot page */
+    .green {
+      color: #39ff14 !important;
+      text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
+    }
+    
+    .blue {
+      color: #00dfff !important;
+      text-shadow: 0 0 10px #00dfff, 0 0 20px #00dfff;
+    }
+    
+    .yellow {
+      color: #ffd700 !important;
+      text-shadow: 0 0 8px #ffd700, 0 0 16px #ffd700;
+    }
+    
+    .white {
+      color: #ffffff !important;
+      text-shadow: 0 0 8px #ffffff, 0 0 16px #ffffff;
+    }
+    
+    .red {
+      color: #ff2d2d !important;
+      text-shadow: 0 0 10px #ff2d2d, 0 0 20px #ff2d2d;
+    }
+    
+    .magenta {
+      color: #ff2d95 !important;
+      text-shadow: 0 0 10px #ff2d95, 0 0 20px #ff2d95;
+    }
+    
+    /* Cursor blink for terminal feel */
+    #terminal-cursor {
+      display: inline-block;
+      width: 10px;
+      height: 16px;
+      background-color: #f7931a;
+      margin-left: 2px;
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+      box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+    }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
     
     /* Mobile responsiveness improvements */
@@ -380,11 +551,11 @@
     <a href="https://x.com/DJObleezy" id="topRightLink" target="_blank" rel="noopener noreferrer">Made by @DJO₿leezy</a>
     
     <h1 class="text-center"><a href="/" style="text-decoration:none; color:inherit;">Ocean.xyz Pool Mining Dashboard v 0.2</a></h1>
-    <p class="text-center" id="lastUpdated"><strong>Last Updated:</strong> {{ current_time }}</p>
+    <p class="text-center" id="lastUpdated"><strong>Last Updated:</strong> {{ current_time }}<span id="terminal-cursor"></span></p>
     
     <!-- Graph Container -->
     <div id="graphContainer" class="mb-2">
-      <canvas id="trendGraph" style="width: 100%; height: 100%;"></canvas>
+      <canvas id="trendGraph" style="width: 100%; height: 100%; position: relative; z-index: 2;"></canvas>
     </div>
     
     <!-- Miner Status -->
@@ -397,9 +568,9 @@
               <strong>Status:</strong>
               <span id="miner_status" class="metric-value">
                 {% if metrics.workers_hashing and metrics.workers_hashing > 0 %}
-                  ONLINE <span class="online-dot"></span>
+                  <span class="green">ONLINE</span> <span class="online-dot"></span>
                 {% else %}
-                  OFFLINE <span class="offline-dot"></span>
+                  <span class="red">OFFLINE</span> <span class="offline-dot"></span>
                 {% endif %}
               </span>
             </p>
@@ -425,7 +596,7 @@
           <div class="card-body">
             <p>
               <strong>Pool Total Hashrate:</strong>
-              <span id="pool_total_hashrate" class="metric-value">
+              <span id="pool_total_hashrate" class="metric-value white">
                 {% if metrics.pool_total_hashrate %}
                   {{ metrics.pool_total_hashrate }} {{ metrics.pool_total_hashrate_unit[:-2]|upper ~ metrics.pool_total_hashrate_unit[-2:] }}
                 {% else %}
@@ -437,28 +608,28 @@
             <hr>
             <p>
               <strong>24hr Avg Hashrate:</strong>
-              <span id="hashrate_24hr" class="metric-value">
+              <span id="hashrate_24hr" class="metric-value white">
                 {{ metrics.hashrate_24hr }} {{ metrics.hashrate_24hr_unit[:-2]|upper ~ metrics.hashrate_24hr_unit[-2:] }}
               </span>
               <span id="indicator_hashrate_24hr"></span>
             </p>
             <p>
               <strong>3hr Avg Hashrate:</strong>
-              <span id="hashrate_3hr" class="metric-value">
+              <span id="hashrate_3hr" class="metric-value white">
                 {{ metrics.hashrate_3hr }} {{ metrics.hashrate_3hr_unit[:-2]|upper ~ metrics.hashrate_3hr_unit[-2:] }}
               </span>
               <span id="indicator_hashrate_3hr"></span>
             </p>
             <p>
               <strong>10min Avg Hashrate:</strong>
-              <span id="hashrate_10min" class="metric-value">
+              <span id="hashrate_10min" class="metric-value white">
                 {{ metrics.hashrate_10min }} {{ metrics.hashrate_10min_unit[:-2]|upper ~ metrics.hashrate_10min_unit[-2:] }}
               </span>
               <span id="indicator_hashrate_10min"></span>
             </p>
             <p>
               <strong>60sec Avg Hashrate:</strong>
-              <span id="hashrate_60sec" class="metric-value">
+              <span id="hashrate_60sec" class="metric-value green">
                 {{ metrics.hashrate_60sec }} {{ metrics.hashrate_60sec_unit[:-2]|upper ~ metrics.hashrate_60sec_unit[-2:] }}
               </span>
               <span id="indicator_hashrate_60sec"></span>
@@ -473,22 +644,22 @@
           <div class="card-body">
             <p>
               <strong>Block Number:</strong>
-              <span id="block_number" class="metric-value">{{ metrics.block_number|commafy }}</span>
+              <span id="block_number" class="metric-value white">{{ metrics.block_number|commafy }}</span>
               <span id="indicator_block_number"></span>
             </p>
             <p>
               <strong>BTC Price:</strong>
-              <span id="btc_price" class="metric-value">${{ "%.2f"|format(metrics.btc_price) }}</span>
+              <span id="btc_price" class="metric-value yellow">${{ "%.2f"|format(metrics.btc_price) }}</span>
               <span id="indicator_btc_price"></span>
             </p>
             <p>
               <strong>Network Hashrate:</strong>
-              <span id="network_hashrate" class="metric-value">{{ metrics.network_hashrate|round|commafy }} EH/s</span>
+              <span id="network_hashrate" class="metric-value white">{{ metrics.network_hashrate|round|commafy }} EH/s</span>
               <span id="indicator_network_hashrate"></span>
             </p>
             <p>
               <strong>Difficulty:</strong>
-              <span id="difficulty" class="metric-value">{{ metrics.difficulty|round|commafy }}</span>
+              <span id="difficulty" class="metric-value white">{{ metrics.difficulty|round|commafy }}</span>
               <span id="indicator_difficulty"></span>
             </p>
           </div>
@@ -504,27 +675,27 @@
           <div class="card-body">
             <p>
               <strong>Daily Mined (Net):</strong>
-              <span id="daily_mined_sats" class="metric-value">{{ metrics.daily_mined_sats|commafy }} sats</span>
+              <span id="daily_mined_sats" class="metric-value yellow">{{ metrics.daily_mined_sats|commafy }} sats</span>
               <span id="indicator_daily_mined_sats"></span>
             </p>
             <p>
               <strong>Monthly Mined (Net):</strong>
-              <span id="monthly_mined_sats" class="metric-value">{{ metrics.monthly_mined_sats|commafy }} sats</span>
+              <span id="monthly_mined_sats" class="metric-value yellow">{{ metrics.monthly_mined_sats|commafy }} sats</span>
               <span id="indicator_monthly_mined_sats"></span>
             </p>
             <p>
               <strong>Est. Earnings/Day:</strong>
-              <span id="estimated_earnings_per_day_sats" class="metric-value">{{ metrics.estimated_earnings_per_day_sats|commafy }} sats</span>
+              <span id="estimated_earnings_per_day_sats" class="metric-value yellow">{{ metrics.estimated_earnings_per_day_sats|commafy }} sats</span>
               <span id="indicator_estimated_earnings_per_day_sats"></span>
             </p>
             <p>
               <strong>Est. Earnings/Block:</strong>
-              <span id="estimated_earnings_next_block_sats" class="metric-value">{{ metrics.estimated_earnings_next_block_sats|commafy }} sats</span>
+              <span id="estimated_earnings_next_block_sats" class="metric-value yellow">{{ metrics.estimated_earnings_next_block_sats|commafy }} sats</span>
               <span id="indicator_estimated_earnings_next_block_sats"></span>
             </p>
             <p>
               <strong>Est. Rewards in Window:</strong>
-              <span id="estimated_rewards_in_window_sats" class="metric-value">{{ metrics.estimated_rewards_in_window_sats|commafy }} sats</span>
+              <span id="estimated_rewards_in_window_sats" class="metric-value yellow">{{ metrics.estimated_rewards_in_window_sats|commafy }} sats</span>
               <span id="indicator_estimated_rewards_in_window_sats"></span>
             </p>
           </div>
@@ -537,22 +708,22 @@
           <div class="card-body">
             <p>
               <strong>Daily Revenue:</strong>
-              <span id="daily_revenue" class="metric-value">${{ "%.2f"|format(metrics.daily_revenue) }}</span>
+              <span id="daily_revenue" class="metric-value green">${{ "%.2f"|format(metrics.daily_revenue) }}</span>
               <span id="indicator_daily_revenue"></span>
             </p>
             <p>
               <strong>Daily Power Cost:</strong>
-              <span id="daily_power_cost" class="metric-value">${{ "%.2f"|format(metrics.daily_power_cost) }}</span>
+              <span id="daily_power_cost" class="metric-value red">${{ "%.2f"|format(metrics.daily_power_cost) }}</span>
               <span id="indicator_daily_power_cost"></span>
             </p>
             <p>
               <strong>Daily Profit (USD):</strong>
-              <span id="daily_profit_usd" class="metric-value">${{ "%.2f"|format(metrics.daily_profit_usd) }}</span>
+              <span id="daily_profit_usd" class="metric-value green">${{ "%.2f"|format(metrics.daily_profit_usd) }}</span>
               <span id="indicator_daily_profit_usd"></span>
             </p>
             <p>
               <strong>Monthly Profit (USD):</strong>
-              <span id="monthly_profit_usd" class="metric-value">${{ "%.2f"|format(metrics.monthly_profit_usd) }}</span>
+              <span id="monthly_profit_usd" class="metric-value green">${{ "%.2f"|format(metrics.monthly_profit_usd) }}</span>
               <span id="indicator_monthly_profit_usd"></span>
             </p>
           </div>
@@ -568,24 +739,24 @@
           <div class="card-body">
             <p>
               <strong>Unpaid Earnings:</strong>
-              <span id="unpaid_earnings" class="metric-value">{{ metrics.unpaid_earnings }} BTC</span>
+              <span id="unpaid_earnings" class="metric-value green">{{ metrics.unpaid_earnings }} BTC</span>
               <span id="indicator_unpaid_earnings"></span>
             </p>
             <p>
               <strong>Last Block:</strong>
-              <span id="last_block_height" class="metric-value">{{ metrics.last_block_height }}</span>
-              —<span id="last_block_time" class="metric-value" style="color: cyan;">{{ metrics.last_block_time }}</span>—
-              <span style="color: green;">+{{ metrics.last_block_earnings | int | commafy }} sats</span>
+              <span id="last_block_height" class="metric-value white">{{ metrics.last_block_height }}</span>
+              —<span id="last_block_time" class="metric-value blue">{{ metrics.last_block_time }}</span>—
+              <span class="green">+{{ metrics.last_block_earnings | int | commafy }} sats</span>
               <span id="indicator_last_block"></span>
             </p> 
             <p>
               <strong>Est. Time to Payout:</strong>
-              <span id="est_time_to_payout" class="metric-value">{{ metrics.est_time_to_payout }}</span>
+              <span id="est_time_to_payout" class="metric-value yellow">{{ metrics.est_time_to_payout }}</span>
               <span id="indicator_est_time_to_payout"></span>
             </p>
             <p>
               <strong>Blocks Found:</strong>
-              <span id="blocks_found" class="metric-value">{{ metrics.blocks_found }}</span>
+              <span id="blocks_found" class="metric-value white">{{ metrics.blocks_found }}</span>
               <span id="indicator_blocks_found"></span>
             </p>
           </div>
@@ -607,13 +778,13 @@
             </div>
           </div>
         </div>
-        <!-- <div id="progress-text">60s to next update</div> -->
+        <div id="progress-text">60s to next update</div>
       </div>
       <div id="uptimeTimer"><strong>Uptime:</strong> 0h 0m 0s</div>
     </div>
     
     <!-- Hidden Congrats Message -->
-    <div id="congratsMessage" style="display:none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #f7931a; color: #000; padding: 10px; border-radius: 5px;"></div>
+    <div id="congratsMessage" style="display:none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #f7931a; color: #000; padding: 10px; border-radius: 5px; box-shadow: 0 0 15px rgba(247, 147, 26, 0.7);"></div>
     
   </div>
   
@@ -623,5 +794,55 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
   <!-- External JavaScript file with our application logic -->
   <script src="/static/js/main.js"></script>
+  
+  <script>
+    // Additional script for retro terminal effects
+    $(document).ready(function() {
+      // Update color classes when data refreshes
+      $(document).on('dataRefreshed', function() {
+        // Add enhanced glow effects for certain elements
+        $(".online-dot").parent().addClass("green");
+        $(".offline-dot").parent().addClass("red");
+        
+        // Keep cursor blinking
+        if ($("#terminal-cursor").length === 0) {
+          $("#lastUpdated").append('<span id="terminal-cursor"></span>');
+        }
+      });
+      
+      // Modify chart options for retro look
+      if (window.trendChart) {
+        // Try to update chart styling once it's initialized
+        const checkChart = setInterval(function() {
+          if (window.trendChart) {
+            try {
+              // Make line thicker and more visible
+              window.trendChart.data.datasets[0].borderWidth = 2;
+              window.trendChart.data.datasets[0].borderColor = '#39ff14';
+              window.trendChart.data.datasets[0].backgroundColor = 'rgba(57, 255, 20, 0.1)';
+              
+              // Update average line to be more visible
+              if (window.trendChart.options.plugins && 
+                  window.trendChart.options.plugins.annotation && 
+                  window.trendChart.options.plugins.annotation.annotations) {
+                const avgLine = window.trendChart.options.plugins.annotation.annotations.averageLine;
+                if (avgLine) {
+                  avgLine.borderColor = '#f7931a';
+                  avgLine.borderWidth = 2;
+                  avgLine.label.backgroundColor = 'rgba(0,0,0,0.7)';
+                  avgLine.label.color = '#f7931a';
+                }
+              }
+              
+              window.trendChart.update('none');
+              clearInterval(checkChart);
+            } catch (e) {
+              console.log("Chart not fully initialized yet");
+            }
+          }
+        }, 500);
+      }
+    });
+  </script>
 </body>
 </html>

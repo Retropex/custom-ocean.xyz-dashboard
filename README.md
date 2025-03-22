@@ -4,7 +4,8 @@ A real-time dashboard application for monitoring Bitcoin mining operations using
 
 ![Boot Sequence](https://github.com/user-attachments/assets/5b1b4d92-2569-42b4-b8a9-1e95dd831545)
 
-![Dashboard](https://github.com/user-attachments/assets/50c73906-3aba-4d67-a84f-9ecf30a55c1b)
+![Dashboard](https://github.com/user-attachments/assets/72c8b03e-9a2a-4025-be2a-9819ac151fc9)
+
 
 ## Overview
 

@@ -145,7 +145,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- [Ocean.xyz](https://ocean.xyz) mining pool for the mining API and data services
+- [Ocean.xyz](https://ocean.xyz) mining pool website
 - [Flask](https://flask.palletsprojects.com/) web framework for the backend
 - [Chart.js](https://www.chartjs.org/) for interactive data visualization
 - [Bootstrap](https://getbootstrap.com/) for responsive UI components

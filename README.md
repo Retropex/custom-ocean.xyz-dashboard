@@ -15,6 +15,7 @@ This application provides miners with a comprehensive view of their mining opera
 - Profitability metrics
 - Payout status
 - Network statistics
+- Worker fleet management
 - Historical data visualization
 
 Built with Flask and modern web technologies, the dashboard features a responsive design that works on both desktop and mobile devices, real-time data updates via Server-Sent Events (SSE), and persistent storage with Redis.
@@ -26,6 +27,8 @@ Built with Flask and modern web technologies, the dashboard features a responsiv
 - **Profitability Calculations**: Daily and monthly profit estimates in USD and BTC
 - **Network Stats**: Current Bitcoin difficulty, network hashrate, and block count
 - **Payout Tracking**: Monitor unpaid earnings and estimated time to next payout
+- **Workers Dashboard**: View and manage your mining fleet with status, hashrate, and earnings for each device
+- **Worker Filtering**: Filter and search your miners by status (online/offline) or type (ASIC/FPGA)
 - **High Performance**: Optimized for low-resource environments with data compression
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 - **Retro Boot Screen**: Bitcoin-themed boot sequence with system initialization display
@@ -40,11 +43,13 @@ ocean-mining-dashboard/
 ├── requirements.txt        # Python dependencies
 ├── static/
 │   └── js/
-│       └── main.js         # Frontend JavaScript for dashboard functionality
+│       ├── main.js         # Frontend JavaScript for main dashboard functionality
+│       └── workers.js      # Frontend JavaScript for workers dashboard
 ├── templates/
 │   ├── boot.html           # Bitcoin-themed boot sequence page
 │   ├── error.html          # Error page template
-│   └── index.html          # Main dashboard template
+│   ├── index.html          # Main dashboard template
+│   └── workers.html        # Workers dashboard template
 └── config.json             # Configuration file (created on first run)
 ```
 
@@ -110,6 +115,25 @@ ocean-mining-dashboard/
    ```
 
 5. Access the dashboard at http://localhost:5000
+
+## Workers Dashboard
+
+The Workers Dashboard provides detailed information about each mining device in your fleet:
+
+- **Fleet Summary**: Quick view of total hashrate, worker count, and online/offline status
+- **Worker Cards**: Individual cards for each mining device showing:
+  - Current status (online/offline)
+  - Device type (ASIC/FPGA)
+  - Current hashrate with visual bar indicator
+  - Last share time
+  - Earnings
+  - Acceptance rate
+  - Temperature (for online devices)
+- **Filtering Options**: Filter workers by status or device type
+- **Search Functionality**: Quickly find specific workers by name
+- **Real-time Updates**: Synchronized with the main dashboard for consistent data
+
+Access the Workers Dashboard through the navigation links at the top of the main dashboard or directly at `/workers`.
 
 ## Configuration
 

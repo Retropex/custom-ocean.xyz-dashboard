@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Custom Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+  <!-- Meta viewport for responsive scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workers Overview - Ocean.xyz Pool Mining Dashboard v 0.2</title>
+  <!-- Font Awesome CDN for icon support -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0a0a0a;
+      --bg-gradient: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+      --primary-color: #f7931a;
+      --accent-color: #00ffff;
+      --text-color: #ffffff;
+      --card-padding: 0.5rem;
+      --text-size-base: 16px;
+      --terminal-font: 'VT323', monospace;
+      --header-font: 'Orbitron', sans-serif;
+    }
+
+    @media (min-width: 768px) {
+      :root {
+        --card-padding: 0.75rem;
+        --text-size-base: 18px;
+      }
+    }
+    
+    /* CRT Screen Effect */
+    body::before {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+      background-size: 100% 2px, 3px 100%;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.15;
+    }
+    
+    /* Flicker Animation */
+    @keyframes flicker {
+      0% { opacity: 0.97; }
+      5% { opacity: 0.95; }
+      10% { opacity: 0.97; }
+      15% { opacity: 0.94; }
+      20% { opacity: 0.98; }
+      50% { opacity: 0.95; }
+      80% { opacity: 0.96; }
+      90% { opacity: 0.94; }
+      100% { opacity: 0.98; }
+    }
+    
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      padding-top: 0.5rem;
+      font-size: var(--text-size-base);
+      font-family: var(--terminal-font);
+      text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--primary-color);
+      font-family: var(--header-font);
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px var(--primary-color);
+      animation: flicker 4s infinite;
+    }
+    
+    @media (min-width: 768px) {
+      h1 {
+        font-size: 26px;
+      }
+    }
+    
+    .card,
+    .card-header,
+    .card-body,
+    .card-footer {
+      border-radius: 0 !important;
+    }
+    
+    /* Enhanced card with scanlines */
+    .card {
+      background-color: var(--bg-color);
+      border: 1px solid var(--primary-color);
+      margin-bottom: 0.5rem;
+      padding: var(--card-padding);
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 5px rgba(247, 147, 26, 0.3);
+    }
+    
+    /* Scanline effect for cards */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.05),
+        rgba(0, 0, 0, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .card-header {
+      background-color: #000;
+      color: var(--primary-color);
+      font-weight: bold;
+      padding: 0.3rem 0.5rem;
+      font-size: 1.1rem;
+      border-bottom: 1px solid var(--primary-color);
+      text-shadow: 0 0 5px var(--primary-color);
+      animation: flicker 4s infinite;
+      font-family: var(--header-font);
+    }
+    
+    .card-body hr {
+      border-top: 1px solid var(--primary-color);
+      margin: 0.25rem 0;
+    }
+    
+    .arrow {
+      display: inline-block;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+    
+    /* Bounce Up Animation for Up Chevron */
+    @keyframes bounceUp {
+      0%   { transform: translateY(0); }
+      25%  { transform: translateY(-2px); }
+      50%  { transform: translateY(0); }
+      75%  { transform: translateY(-2px); }
+      100% { transform: translateY(0); }
+    }
+    
+    /* Bounce Down Animation for Down Chevron */
+    @keyframes bounceDown {
+      0%   { transform: translateY(0); }
+      25%  { transform: translateY(2px); }
+      50%  { transform: translateY(0); }
+      75%  { transform: translateY(2px); }
+      100% { transform: translateY(0); }
+    }
+    
+    /* Apply bounce animations */
+    .bounce-up {
+      animation: bounceUp 1s infinite;
+    }
+    
+    .bounce-down {
+      animation: bounceDown 1s infinite;
+    }
+    
+    /* Make chevrons slightly smaller */
+    .chevron {
+      font-size: 0.8rem;
+      position: relative;
+      top: 3px;
+    }
+    
+    /* Enhanced Online dot with more glow */
+    .online-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #32CD32;
+      border-radius: 50%;
+      margin-left: 0.5em;
+      position: relative;
+      top: -2px;
+      animation: glow 1s infinite;
+      box-shadow: 0 0 10px #32CD32, 0 0 20px #32CD32;
+    }
+    
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 10px #32CD32, 0 0 15px #32CD32; }
+      50% { box-shadow: 0 0 15px #32CD32, 0 0 25px #32CD32; }
+    }
+    
+    /* Enhanced Offline dot with more glow */
+    .offline-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: red;
+      border-radius: 50%;
+      margin-left: 0.5em;
+      animation: glowRed 1s infinite;
+      box-shadow: 0 0 10px red, 0 0 20px red;
+    }
+    
+    @keyframes glowRed {
+      0%, 100% { box-shadow: 0 0 10px red, 0 0 15px red; }
+      50% { box-shadow: 0 0 15px red, 0 0 25px red; }
+    }
+    
+    /* Refresh timer container */
+    #refreshUptime {
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+    
+    #refreshContainer {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+    
+    /* Enhance metric value styling with consistent glow */
+    .metric-value {
+      color: var(--text-color);
+      font-weight: bold;
+      text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+    }
+    
+    /* Standardized glow effects for all metrics */
+    /* Yellow color family (BTC price, sats metrics, time to payout) */
+    .metric-value.yellow,
+    .yellow-glow { 
+      color: #ffd700; 
+      text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+    }
+    
+    /* Green color family (profits, earnings) */
+    .metric-value.green,
+    .green-glow { 
+      color: #32CD32; 
+      text-shadow: 0 0 6px rgba(50, 205, 50, 0.6);
+    }
+    
+    /* Red color family (costs) */
+    .metric-value.red,
+    .red-glow { 
+      color: #ff5555 !important; 
+      text-shadow: 0 0 6px rgba(255, 85, 85, 0.6);
+    }
+    
+    /* White metrics (general stats) */
+    .metric-value.white,
+    .white-glow {
+      color: #ffffff;
+      text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+    }
+    
+    /* Blue metrics (time data) */
+    .metric-value.blue,
+    .blue-glow {
+      color: #00dfff;
+      text-shadow: 0 0 6px rgba(0, 223, 255, 0.6);
+    }
+    
+    /* Special stronger glow only for online/offline indicators */
+    .status-green {
+      color: #39ff14 !important;
+      text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
+    }
+    
+    .status-red {
+      color: #ff2d2d !important;
+      text-shadow: 0 0 10px #ff2d2d, 0 0 20px #ff2d2d;
+    }
+    
+    /* Card body elements */
+    .card-body strong {
+      color: var(--primary-color);
+      margin-right: 0.25rem;
+      text-shadow: 0 0 2px var(--primary-color);
+    }
+    
+    .card-body p {
+      margin: 0.25rem 0;
+      line-height: 1.2;
+    }
+    
+    .container-fluid {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      position: relative;
+    }
+    
+    #topRightLink {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: grey;
+      text-decoration: none;
+      font-size: 0.9rem;
+      text-shadow: 0 0 5px grey;
+    }
+    
+    #uptimeTimer strong {
+      font-weight: bold;
+    }
+    
+    #uptimeTimer {
+      margin-top: 0;
+    }
+    
+    /* Connection status indicator */
+    #connectionStatus {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,0,0,0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 9999;
+      font-size: 0.9rem;
+      text-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    }
+    
+    /* Worker grid for worker cards */
+    .worker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    /* Worker card styles */
+    .worker-card {
+      background-color: var(--bg-color);
+      border: 1px solid var(--primary-color);
+      box-shadow: 0 0 5px rgba(247, 147, 26, 0.3);
+      position: relative;
+      overflow: hidden;
+      padding: 10px;
+      height: 100%;
+    }
+    
+    .worker-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.05),
+        rgba(0, 0, 0, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .worker-card-online {
+      border-color: #32CD32;
+      box-shadow: 0 0 8px rgba(50, 205, 50, 0.4);
+    }
+    
+    .worker-card-offline {
+      border-color: #ff5555;
+      box-shadow: 0 0 8px rgba(255, 85, 85, 0.4);
+    }
+    
+    .worker-name {
+      color: var(--primary-color);
+      font-weight: bold;
+      font-size: 1.2rem;
+      text-shadow: 0 0 5px var(--primary-color);
+      margin-bottom: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 2;
+      position: relative;
+    }
+    
+    .worker-stats {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      z-index: 2;
+      position: relative;
+    }
+    
+    .worker-stats-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    
+    .worker-stats-label {
+      color: #aaa;
+    }
+    
+    .hashrate-bar {
+      height: 4px;
+      background: linear-gradient(90deg, #1137F5, #39ff14);
+      margin-top: 4px;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* Worker badge */
+    .worker-type {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.7rem;
+      background-color: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      padding: 1px 5px;
+      z-index: 2;
+    }
+    
+    /* Status badges */
+    .status-badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 3px;
+      z-index: 2;
+      position: relative;
+    }
+    
+    .status-badge-online {
+      background-color: rgba(50, 205, 50, 0.2);
+      border: 1px solid #32CD32;
+      color: #32CD32;
+      text-shadow: 0 0 5px rgba(50, 205, 50, 0.8);
+    }
+    
+    .status-badge-offline {
+      background-color: rgba(255, 85, 85, 0.2);
+      border: 1px solid #ff5555;
+      color: #ff5555;
+      text-shadow: 0 0 5px rgba(255, 85, 85, 0.8);
+    }
+    
+    /* Stats bars */
+    .stats-bar-container {
+      width: 100%;
+      height: 4px;
+      background-color: rgba(255, 255, 255, 0.1);
+      margin-top: 2px;
+      margin-bottom: 5px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .stats-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #1137F5, #39ff14);
+    }
+    
+    /* Search and filter controls */
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .search-box {
+      background-color: var(--bg-color);
+      border: 1px solid var(--primary-color);
+      color: var(--text-color);
+      padding: 5px 10px;
+      font-family: var(--terminal-font);
+      min-width: 200px;
+    }
+    
+    .search-box:focus {
+      outline: none;
+      box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
+    }
+    
+    .filter-button {
+      background-color: var(--bg-color);
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      padding: 5px 10px;
+      font-family: var(--terminal-font);
+      cursor: pointer;
+    }
+    
+    .filter-button.active {
+      background-color: var(--primary-color);
+      color: var(--bg-color);
+    }
+    
+    /* Bitcoin Progress Bar Styles */
+    .bitcoin-progress-container {
+      width: 100%;
+      max-width: 300px;
+      height: 20px;
+      background-color: #111;
+      border: 1px solid var(--primary-color);
+      border-radius: 0;
+      margin: 0.5rem auto;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
+      align-self: center;
+    }
+    
+    .bitcoin-progress-inner {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #f7931a, #ffa500);
+      border-radius: 0;
+      transition: width 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .bitcoin-progress-inner::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, 
+                rgba(255, 255, 255, 0.1) 0%, 
+                rgba(255, 255, 255, 0.2) 20%, 
+                rgba(255, 255, 255, 0.1) 40%);
+      animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .bitcoin-icons {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      transform: translateY(-50%);
+      display: flex;
+      justify-content: space-around;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.7);
+    }
+    
+    .glow-effect {
+      box-shadow: 0 0 15px #f7931a, 0 0 25px #f7931a;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    
+    #progress-text {
+      font-size: 0.9rem;
+      color: var(--primary-color);
+      margin-top: 0.3rem;
+      text-shadow: 0 0 5px var(--primary-color);
+      text-align: center;
+      width: 100%;
+    }
+    
+    /* Last Updated text with subtle animation */
+    #lastUpdated {
+      animation: flicker 5s infinite;
+      text-align: center;
+    }
+    
+    /* Cursor blink for terminal feel */
+    #terminal-cursor {
+      display: inline-block;
+      width: 10px;
+      height: 16px;
+      background-color: #f7931a;
+      margin-left: 2px;
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+      box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+    }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    
+    /* Summary stats in the header */
+    .summary-stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 15px;
+      margin: 15px 0;
+    }
+    
+    .summary-stat {
+      text-align: center;
+      min-width: 120px;
+    }
+    
+    .summary-stat-value {
+      font-size: 1.6rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .summary-stat-label {
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+    
+    /* Worker count ring */
+    .worker-ring {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      position: relative;
+      margin: 0 auto;
+      background: conic-gradient(
+        #32CD32 0% calc(var(--online-percent) * 100%),
+        #ff5555 calc(var(--online-percent) * 100%) 100%
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(247, 147, 26, 0.3);
+    }
+    
+    .worker-ring-inner {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background-color: var(--bg-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--text-color);
+    }
+    
+    /* Mini hashrate chart */
+    .mini-chart {
+      height: 40px;
+      width: 100%;
+      margin-top: 5px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 576px) {
+      .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .search-box {
+        width: 100%;
+      }
+      
+      .filter-buttons {
+        display: flex;
+        justify-content: space-between;
+      }
+      
+      .worker-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .summary-stats {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .summary-stat {
+        width: 100%;
+      }
+    }
+
+    /* Navigation links */
+    .navigation-links {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .nav-link {
+      padding: 5px 15px;
+      margin: 0 10px;
+      background-color: var(--bg-color);
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      text-decoration: none;
+      font-family: var(--terminal-font);
+      transition: all 0.3s ease;
+    }
+    
+    .nav-link:hover {
+      background-color: var(--primary-color);
+      color: var(--bg-color);
+      box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+    }
+    
+    .nav-link.active {
+      background-color: var(--primary-color);
+      color: var(--bg-color);
+      box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+    }
+    .loading-fade {
+      opacity: 0.6;
+      transition: opacity 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .worker-card {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+    /* Fix for "Made by" link collision with title */
+    #topRightLink {
+        position: static !important;
+        display: block !important;
+        text-align: right !important;
+        margin-bottom: 0.5rem !important;
+        margin-top: 0 !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Adjust heading for better mobile display */
+    h1 {
+        font-size: 20px !important;
+        line-height: 1.2 !important;
+        margin-top: 0.5rem !important;
+        padding-top: 0 !important;
+    }
+
+    /* Improve container padding for mobile */
+    .container-fluid {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    /* Ensure top section has appropriate spacing */
+    .row.mb-3 {
+        margin-top: 0.5rem !important;
+    }
+    }
+
+    /* Add a more aggressive breakpoint for very small screens */
+    @media (max-width: 380px) {
+    #topRightLink {
+        margin-bottom: 0.75rem !important;
+        font-size: 0.7rem !important;
+    }
+
+    h1 {
+        font-size: 18px !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* Further reduce container padding */
+    .container-fluid {
+        padding-left: 0.3rem !important;
+        padding-right: 0.3rem !important;
+    }
+    }
+  </style>
+</head>
+<body>
+<div class="container-fluid">
+    <!-- Connection status indicator -->
+    <div id="connectionStatus"></div>
+    
+    <!-- Updated section to fix mobile layout issues -->
+    <div class="top-section">
+        <!-- Top right link - moved to top for better mobile flow -->
+        <a href="https://x.com/DJObleezy" id="topRightLink" target="_blank" rel="noopener noreferrer">Made by @DJO₿leezy</a>
+        
+        <!-- Title with margin to avoid collision -->
+        <h1 class="text-center">Workers Overview</h1>
+        <p class="text-center" id="lastUpdated"><strong>Last Updated:</strong> {{ current_time }}<span id="terminal-cursor"></span></p>
+    </div>
+    
+    <!-- Navigation links -->
+    <div class="navigation-links">
+      <a href="/dashboard" class="nav-link">Main Dashboard</a>
+      <a href="/workers" class="nav-link active">Workers Overview</a>
+    </div>
+    
+    <!-- Summary statistics -->
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">Fleet Summary</div>
+          <div class="card-body">
+            <div class="summary-stats">
+              <div class="summary-stat">
+                <div class="worker-ring" style="--online-percent: {{ workers_online / workers_total if workers_total > 0 else 0 }}">
+                  <div class="worker-ring-inner">
+                    <span id="workers-count">{{ workers_total }}</span>
+                  </div>
+                </div>
+                <div class="summary-stat-label">Workers</div>
+                <div>
+                  <span class="green-glow" id="workers-online">{{ workers_online }}</span> / 
+                  <span class="red-glow" id="workers-offline">{{ workers_offline }}</span>
+                </div>
+              </div>
+              
+              <div class="summary-stat">
+                <div class="summary-stat-value white-glow" id="total-hashrate">
+                  {% if total_hashrate is defined %}
+                    {{ "%.1f"|format(total_hashrate) }} {{ hashrate_unit }}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+                <div class="summary-stat-label">Total Hashrate</div>
+                <div class="mini-chart">
+                  <canvas id="total-hashrate-chart"></canvas>
+                </div>
+              </div>
+              
+              <div class="summary-stat">
+                <div class="summary-stat-value green-glow" id="total-earnings">
+                  {% if total_earnings is defined %}
+                    {{ "%.8f"|format(total_earnings) }} BTC
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+                <div class="summary-stat-label">Lifetime Earnings</div>
+              </div>
+              
+              <div class="summary-stat">
+                <div class="summary-stat-value yellow-glow" id="daily-sats">
+                  {% if daily_sats is defined %}
+                    {{ daily_sats|commafy }} sats
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+                <div class="summary-stat-label">Daily Sats</div>
+              </div>
+              
+              <div class="summary-stat">
+                <div class="summary-stat-value white-glow" id="avg-acceptance-rate">
+                  {% if avg_acceptance_rate is defined %}
+                    {{ "%.2f"|format(avg_acceptance_rate) }}%
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+                <div class="summary-stat-label">Acceptance Rate</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Controls bar -->
+    <div class="controls-bar">
+      <input type="text" class="search-box" id="worker-search" placeholder="Search workers...">
+      <div class="filter-buttons">
+        <button class="filter-button active" data-filter="all">All Workers</button>
+        <button class="filter-button" data-filter="online">Online</button>
+        <button class="filter-button" data-filter="offline">Offline</button>
+        <button class="filter-button" data-filter="asic">ASIC</button>
+        <button class="filter-button" data-filter="fpga">FPGA</button>
+      </div>
+    </div>
+    
+    <!-- Workers grid -->
+    <div class="worker-grid" id="worker-grid">
+      <!-- Worker cards will be generated here via JavaScript -->
+    </div>
+    
+    <!-- Bitcoin-themed Progress Bar and Uptime -->
+    <div id="refreshUptime" class="text-center mt-4">
+      <div id="refreshContainer">
+        <!-- Bitcoin-themed progress bar -->
+        <div class="bitcoin-progress-container">
+          <div id="bitcoin-progress-inner" class="bitcoin-progress-inner" style="width: 0%">
+            <!-- Small Bitcoin icons inside the bar -->
+            <div class="bitcoin-icons">
+              <i class="fab fa-bitcoin"></i>
+              <i class="fab fa-bitcoin"></i>
+              <i class="fab fa-bitcoin"></i>
+            </div>
+          </div>
+        </div>
+        <div id="progress-text">60s to next update</div>
+      </div>
+      <div id="uptimeTimer"><strong>Uptime:</strong> 0h 0m 0s</div>
+    </div>
+  </div>
+  
+  <!-- External JavaScript libraries -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/js/workers.js"></script>
+</body>
+</html>

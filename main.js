@@ -493,6 +493,20 @@ function updateElementHTML(elementId, html) {
     }
 }
 
+// Update workers_hashing value from metrics, but don't try to access worker details
+function updateWorkersCount() {
+    if (latestMetrics && latestMetrics.workers_hashing !== undefined) {
+        $("#workers_hashing").text(latestMetrics.workers_hashing || 0);
+        
+        // Update miner status with online/offline indicator based on worker count
+        if (latestMetrics.workers_hashing > 0) {
+            updateElementHTML("miner_status", "<span class='status-green'>ONLINE</span> <span class='online-dot'></span>");
+        } else {
+            updateElementHTML("miner_status", "<span class='status-red'>OFFLINE</span> <span class='offline-dot'></span>");
+        }
+    }
+}
+
 // Check for block updates and show congratulatory messages
 function checkForBlockUpdates(data) {
     if (previousMetrics.last_block_height !== undefined && 
@@ -571,16 +585,9 @@ function updateUI() {
         updateElementText("monthly_profit_usd", "$" + numberWithCommas(data.monthly_profit_usd.toFixed(2)));
         updateElementText("daily_mined_sats", numberWithCommas(data.daily_mined_sats) + " sats");
         updateElementText("monthly_mined_sats", numberWithCommas(data.monthly_mined_sats) + " sats");
-        updateElementText("workers_hashing", data.workers_hashing || 0);
         
-        // Update miner status with online/offline indicator
-        if (data.workers_hashing > 0) {
-            updateElementHTML("miner_status", "ONLINE <span class='online-dot'></span>");
-            $("#miner_status").css("color", "#32CD32");
-        } else {
-            updateElementHTML("miner_status", "OFFLINE <span class='offline-dot'></span>");
-            $("#miner_status").css("color", "red");
-        }
+        // Update worker count from metrics (just the number, not full worker data)
+        updateWorkersCount();
         
         updateElementText("unpaid_earnings", data.unpaid_earnings + " BTC");
         
@@ -620,7 +627,7 @@ function updateUI() {
         
         // Update last updated timestamp
         const now = new Date(Date.now() + serverTimeOffset);
-        updateElementHTML("lastUpdated", "<strong>Last Updated:</strong> " + now.toLocaleString());
+        updateElementHTML("lastUpdated", "<strong>Last Updated:</strong> " + now.toLocaleString() + "<span id='terminal-cursor'></span>");
         
         // Update chart if it exists
         if (trendChart) {
@@ -678,6 +685,25 @@ function updateUI() {
     }
 }
 
+// Set up refresh synchronization
+function setupRefreshSync() {
+    // Listen for the dataRefreshed event
+    $(document).on('dataRefreshed', function() {
+        // Broadcast to any other open tabs/pages that the data has been refreshed
+        try {
+            // Store the current timestamp to localStorage
+            localStorage.setItem('dashboardRefreshTime', Date.now().toString());
+            
+            // Create a custom event that can be detected across tabs/pages
+            localStorage.setItem('dashboardRefreshEvent', 'refresh-' + Date.now());
+            
+            console.log("Dashboard refresh synchronized");
+        } catch (e) {
+            console.error("Error synchronizing refresh:", e);
+        }
+    });
+}
+
 // Document ready initialization
 $(document).ready(function() {
     // Initialize the chart
@@ -720,6 +746,9 @@ $(document).ready(function() {
     setInterval(updateUptime, 1000);
     updateUptime();
     
+    // Set up refresh synchronization with workers page
+    setupRefreshSync();
+    
     // Add a manual refresh button for fallback
     $("body").append('<button id="refreshButton" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #f7931a; color: black; border: none; padding: 8px 16px; display: none; border-radius: 4px; cursor: pointer;">Refresh Data</button>');
     
@@ -736,37 +765,37 @@ $(document).ready(function() {
     // Force a data refresh when the page loads
     manualRefresh();
 
-// Add emergency refresh button functionality
-$("#forceRefreshBtn").show().on("click", function() {
-    $(this).text("Refreshing...");
-    $(this).prop("disabled", true);
-    
-    $.ajax({
-        url: '/api/force-refresh',
-        method: 'POST',
-        timeout: 15000,
-        success: function(data) {
-            console.log("Force refresh successful:", data);
-            manualRefresh(); // Immediately get the new data
-            $("#forceRefreshBtn").text("Force Refresh").prop("disabled", false);
-        },
-        error: function(xhr, status, error) {
-            console.error("Force refresh failed:", error);
-            $("#forceRefreshBtn").text("Force Refresh").prop("disabled", false);
-            alert("Refresh failed: " + error);
-        }
+    // Add emergency refresh button functionality
+    $("#forceRefreshBtn").show().on("click", function() {
+        $(this).text("Refreshing...");
+        $(this).prop("disabled", true);
+        
+        $.ajax({
+            url: '/api/force-refresh',
+            method: 'POST',
+            timeout: 15000,
+            success: function(data) {
+                console.log("Force refresh successful:", data);
+                manualRefresh(); // Immediately get the new data
+                $("#forceRefreshBtn").text("Force Refresh").prop("disabled", false);
+            },
+            error: function(xhr, status, error) {
+                console.error("Force refresh failed:", error);
+                $("#forceRefreshBtn").text("Force Refresh").prop("disabled", false);
+                alert("Refresh failed: " + error);
+            }
+        });
     });
-});
 
-// Add stale data detection
-setInterval(function() {
-    if (latestMetrics && latestMetrics.server_timestamp) {
-        const lastUpdate = new Date(latestMetrics.server_timestamp);
-        const timeSinceUpdate = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
-        if (timeSinceUpdate > 120) { // More than 2 minutes
-            showConnectionIssue(`Data stale (${timeSinceUpdate}s old). Use Force Refresh.`);
-            $("#forceRefreshBtn").show();
+    // Add stale data detection
+    setInterval(function() {
+        if (latestMetrics && latestMetrics.server_timestamp) {
+            const lastUpdate = new Date(latestMetrics.server_timestamp);
+            const timeSinceUpdate = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
+            if (timeSinceUpdate > 120) { // More than 2 minutes
+                showConnectionIssue(`Data stale (${timeSinceUpdate}s old). Use Force Refresh.`);
+                $("#forceRefreshBtn").show();
+            }
         }
-    }
-}, 30000); // Check every 30 seconds
+    }, 30000); // Check every 30 seconds
 });

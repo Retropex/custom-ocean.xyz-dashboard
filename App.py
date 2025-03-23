@@ -873,21 +873,38 @@ def get_workers_data(force_refresh=False):
         if workers_count <= 0:
             return generate_default_workers_data()
             
-        # Calculate total hashrate from cached metrics
-        hashrate_3hr = float(cached_metrics.get("hashrate_3hr", 0) or 0)
+        # Get hashrate from cached metrics - using EXACT value
+        # Store this ORIGINAL value to ensure it's never changed in calculations
+        original_hashrate_3hr = float(cached_metrics.get("hashrate_3hr", 0) or 0)
         hashrate_unit = cached_metrics.get("hashrate_3hr_unit", "TH/s")
         
         # Generate worker data based on the number of active workers
-        workers_data = generate_workers_data(workers_count, hashrate_3hr, hashrate_unit)
+        workers_data = generate_workers_data(workers_count, original_hashrate_3hr, hashrate_unit)
         
-        # Calculate total statistics
+        # Calculate basic statistics
         workers_online = len([w for w in workers_data if w['status'] == 'online'])
         workers_offline = len(workers_data) - workers_online
-        total_hashrate = sum([float(w.get('hashrate_3hr', 0) or 0) for w in workers_data])
-        total_earnings = sum([float(w.get('earnings', 0) or 0) for w in workers_data])
+        
+        # MODIFIED: Use unpaid_earnings from main dashboard instead of calculating from workers
+        unpaid_earnings = cached_metrics.get("unpaid_earnings", 0)
+        # Handle case where unpaid_earnings might be a string
+        if isinstance(unpaid_earnings, str):
+            try:
+                # Handle case where it might include "BTC" or other text
+                unpaid_earnings = float(unpaid_earnings.split()[0].replace(',', ''))
+            except (ValueError, IndexError):
+                unpaid_earnings = 0
+        
+        # Use unpaid_earnings as total_earnings
+        total_earnings = unpaid_earnings
+        
         avg_acceptance_rate = sum([float(w.get('acceptance_rate', 0) or 0) for w in workers_data]) / len(workers_data) if workers_data else 0
         
-        # Calculate daily sats using the same formula as in the main dashboard
+        # IMPORTANT: Use the EXACT original value for total_hashrate
+        # Do NOT recalculate it from worker data
+        total_hashrate = original_hashrate_3hr
+        
+        # Daily sats from main dashboard
         daily_sats = cached_metrics.get("daily_mined_sats", 0)
         
         # Create hashrate history based on arrow_history if available
@@ -900,9 +917,9 @@ def get_workers_data(force_refresh=False):
             "workers_total": len(workers_data),
             "workers_online": workers_online,
             "workers_offline": workers_offline,
-            "total_hashrate": total_hashrate,
+            "total_hashrate": total_hashrate,  # EXACT value from main dashboard
             "hashrate_unit": hashrate_unit,
-            "total_earnings": total_earnings,
+            "total_earnings": total_earnings,  # Now using unpaid_earnings
             "daily_sats": daily_sats,
             "avg_acceptance_rate": avg_acceptance_rate,
             "hashrate_history": hashrate_history,

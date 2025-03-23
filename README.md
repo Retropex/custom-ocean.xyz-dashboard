@@ -2,10 +2,13 @@
 
 A real-time dashboard application for monitoring Bitcoin mining operations using the Ocean.xyz Mining Pool.
 
+Boot Sequence:
 ![Boot Sequence](https://github.com/user-attachments/assets/8205e8c0-79ad-4780-bc50-237131373cf8)
 
+Main Dashboard:
 ![Main Dashboard](https://github.com/user-attachments/assets/33dafb93-38ef-4fee-aba1-3a7d38eca3c9)
 
+Workers Overview:
 ![Workers Overview](https://github.com/user-attachments/assets/ae78c34c-fbdf-4186-9706-760a67eac44c)
 
 ## Overview

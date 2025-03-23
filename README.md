@@ -1,134 +1,126 @@
 # Ocean.xyz Bitcoin Mining Dashboard
 
-## 🚀 Stack Sats Smarter with Real-Time Mining Insights
+## A Practical Monitoring Solution for Bitcoin Miners
 
-A complete monitoring solution for Ocean.xyz pool miners that helps you track profits, hashrates, and mining performance in real-time. Keep your mining operation running at peak efficiency with minimal effort.
+This open-source dashboard provides comprehensive monitoring for Ocean.xyz pool miners, offering real-time data on hashrate, profitability, and worker status. Designed to be resource-efficient and user-friendly, it helps miners maintain oversight of their operations.
 
-![Main Dashboard](https://github.com/user-attachments/assets/33dafb93-38ef-4fee-aba1-3a7d38eca3c9)
+## Practical Mining Intelligence
 
-## 💰 Built By Miners, For Miners
+The dashboard aggregates essential metrics in one accessible interface:
 
-Whether you're running a single ASIC in your garage or managing a fleet of mining rigs, this dashboard gives you the critical information you need:
+- **Profitability Analysis**: Monitor daily and monthly earnings in BTC and USD
+- **Worker Status**: Track online/offline status of mining equipment
+- **Payout Monitoring**: View unpaid balance and estimated time to next payout
+- **Network Metrics**: Stay informed of difficulty adjustments and network hashrate
+- **Cost Analysis**: Calculate profit margins based on power consumption
 
-- **See Your Profits**: Track daily and monthly earnings in both BTC and USD
-- **Watch Your Workers**: Know immediately when a miner goes offline
-- **Track Your Payouts**: See exactly when your next payout is coming
-- **Monitor Network Changes**: Stay ahead of difficulty adjustments
-- **Make Better Decisions**: Power cost analysis helps you maximize profitability
+## Key Features
 
-## ⚡ Main Features
+### Mining Performance Metrics
+- **Hashrate Visualization**: Clear graphical representation of hashrate trends
+- **Financial Calculations**: Automatic conversion between BTC and USD values
+- **Payout Estimation**: Projected time until minimum payout threshold is reached
+- **Network Intelligence**: Current Bitcoin price, difficulty, and total network hashrate
 
-### 24/7 Mining Insights
-- **Live Hashrate Monitoring**: See your hashrate updated in real-time
-- **Profit Tracking**: USD and sats calculations updated every minute
-- **Payout Countdown**: Know exactly when your next Ocean.xyz payment is coming
-- **Bitcoin Network Stats**: Current price, difficulty, and network hashrate
+### Worker Management
+- **Equipment Overview**: Consolidated view of all mining devices
+- **Status Monitoring**: Clear indicators for active and inactive devices
+- **Performance Data**: Individual hashrate, temperature, and acceptance rate metrics
+- **Filtering Options**: Sort and search by device type or operational status
 
-### Complete Worker Management
-- **Full Fleet Overview**: See all your machines in one place
-- **Quick Status Checks**: Instantly see which miners are online/offline
-- **Worker Details**: Hashrate, temperature, earnings, and accept rate for each machine
-- **Easy Filtering**: Find specific workers by name, status, or type
-
-### Old-School Cool Design
-- **Retro Terminal Monitor**: Track your stats with a floating terminal that looks like it's straight out of the 90s
-- **Bitcoin Boot Sequence**: Enjoy the nostalgic boot screen when you start the dashboard
-- **Mobile Friendly**: Works on your phone when you're away from your mining operation
+### Thoughtful Design Elements
+- **Retro Terminal Monitor**: A floating system monitor with classic design aesthetics
+- **Boot Sequence**: An engaging initialization sequence on startup
+- **Responsive Interface**: Adapts seamlessly to desktop and mobile devices
 
 ![Boot Sequence](https://github.com/user-attachments/assets/8205e8c0-79ad-4780-bc50-237131373cf8)
 
-## 🔧 Easy Setup
+## Installation Options
 
-### Option 1: Quick Start (For Most Miners)
+### Standard Installation
 
-1. Download the release package from GitHub
-2. Extract the files
-3. Edit the `config.json` file with:
-   - Your Ocean.xyz wallet address
-   - Your power cost ($/kWh)
-   - Your miners' total power usage (watts)
-4. Run the included `start.bat` file (Windows) or `start.sh` (Mac/Linux)
-5. Open your browser to `http://localhost:5000`
+1. Download the latest release package
+2. Configure your mining parameters in `config.json`:
+   - Pool wallet address
+   - Electricity cost ($/kWh)
+   - System power consumption (watts)
+3. Launch the application using the included startup script
+4. Access the dashboard at `http://localhost:5000`
 
-### Option 2: Docker Setup (For Tech-Savvy Miners)
+### Docker Installation
 
-If you're familiar with Docker, this option gives you a cleaner installation:
+For those preferring containerized deployment:
 
 ```bash
-# Pull and run with one command
 docker run -d -p 5000:5000 -e WALLET=your-wallet-address -e POWER_COST=0.12 -e POWER_USAGE=3450 yourusername/ocean-mining-dashboard
 ```
 
-Then access at `http://localhost:5000` in your browser.
+Then navigate to `http://localhost:5000` in your web browser.
 
-## 📱 Dashboard Tour
+## Dashboard Components
 
 ### Main Dashboard
 ![Main Dashboard](https://github.com/user-attachments/assets/33dafb93-38ef-4fee-aba1-3a7d38eca3c9)
 
-- Real-time hashrate graph
-- Daily and monthly profit calculations
-- Network difficulty and hashrate stats
-- BTC price tracking
-- Unpaid earnings monitor
-- Estimated time to payout
+- Interactive hashrate visualization
+- Detailed profitability metrics
+- Network statistics
+- Current Bitcoin price
+- Balance and payment information
 
-### Workers Overview
+### Workers Dashboard
 ![Workers Overview](https://github.com/user-attachments/assets/ae78c34c-fbdf-4186-9706-760a67eac44c)
 
-- Fleet summary with total hashrate
-- Online/offline status for all workers
-- Individual stats for each miner
-- Filter workers by type or status
-- Search function to find specific miners
+- Fleet summary with aggregate statistics
+- Individual worker performance metrics
+- Status indicators for each device
+- Flexible filtering and search functionality
 
-### NEW: Retro Terminal Monitor
+### Retro Terminal Monitor
 
-- Floating system monitor with old-school terminal look
-- Real-time refresh countdown with progress bar
-- System uptime tracking
-- Minimizable interface that stays out of your way
-- Classic CRT effects for nostalgia
+- Floating interface providing system statistics
+- Progress indicator for data refresh cycles
+- System uptime display
+- Minimizable design for unobtrusive monitoring
+- Thoughtful visual styling reminiscent of classic computer terminals
 
-## 📊 Hardware Requirements
+## System Requirements
 
-The dashboard is designed to run on almost anything:
-- Works on old laptops and basic PCs
-- Uses minimal resources (CPU, RAM, disk space)
-- Can run 24/7 without performance issues
-- Compatible with Windows, Mac, and Linux
+The application is designed for efficient resource utilization:
+- Compatible with standard desktop and laptop computers
+- Modest CPU and memory requirements
+- Suitable for continuous operation
+- Cross-platform support for Windows, macOS, and Linux
 
-## 🛠️ Quick Fixes
+## Troubleshooting
 
-If something's not working right:
+For optimal performance:
 
-1. Click the "Force Refresh" button if data seems stale
-2. Check your internet connection if updates stop
-3. Restart the dashboard if you make config changes
-4. Visit `/api/health` to check system status
+1. Use the refresh function if data appears outdated
+2. Verify network connectivity for consistent updates
+3. Restart the application after configuration changes
+4. Access the health endpoint at `/api/health` for system status information
 
-## 🚀 Getting Started
+## Getting Started
 
-1. Download from the Releases page
-2. Set up with your wallet and power info
-3. Start stacking sats with better insights!
+1. Download the latest release
+2. Configure with your mining information
+3. Launch the application to begin monitoring
 
-*All you need is your Ocean.xyz pool mining address to get started. The dashboard does the rest!*
+The dashboard requires only your Ocean.xyz mining wallet address for basic functionality.
 
 ---
 
-## Technical Details (For the Curious)
+## Technical Foundation
 
-This open-source dashboard uses Flask, Chart.js, and Server-Sent Events for real-time updates. It scrapes data from the Ocean.xyz pool website and calculates profitability based on your power costs.
+Built on Flask with Chart.js for visualization and Server-Sent Events for real-time updates, this dashboard retrieves data from Ocean.xyz and performs calculations based on current network metrics and your specified parameters.
 
-The system is optimized for continuous running with minimal resource usage. Full source code is available for those who want to customize or contribute.
+The application prioritizes stability and efficiency for reliable long-term operation. Source code is available for review and customization.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- The amazing Ocean.xyz pool team
-- Bitcoin miners worldwide
-- Satoshi Nakamoto for creating Bitcoin
+- Ocean.xyz mining pool for their service
+- The open-source community for their contributions
+- Bitcoin protocol developers
 
-Licensed under MIT - Free to use and modify. Not affiliated with Ocean.xyz.
-
-*"Stack sats and watch the terminal glow."* 🔶
+Available under the MIT License. This is an independent project not affiliated with Ocean.xyz.

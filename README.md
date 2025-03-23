@@ -73,6 +73,7 @@ Then navigate to `http://localhost:5000` in your web browser.
 - Balance and payment information
 
 ### Workers Dashboard
+![Fleet Summary](https://github.com/user-attachments/assets/3af7f79b-5679-41ae-94c7-b238934cb0b2)
 
 - Fleet summary with aggregate statistics
 - Individual worker performance metrics

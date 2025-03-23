@@ -277,6 +277,7 @@ function fetchWorkerData(forceRefresh = false) {
 }
 
 // Update the worker grid with data
+// UPDATED FUNCTION
 function updateWorkerGrid() {
     if (!workerData || !workerData.workers) {
         console.error("No worker data available");
@@ -299,8 +300,35 @@ function updateWorkerGrid() {
         return;
     }
     
+    // Calculate total unpaid earnings (from the dashboard)
+    const totalUnpaidEarnings = workerData.total_earnings || 0;
+    
+    // Sum up hashrates of online workers to calculate share percentages
+    const totalHashrate = workerData.workers
+        .filter(w => w.status === 'online')
+        .reduce((sum, w) => sum + parseFloat(w.hashrate_3hr || 0), 0);
+    
+    // Calculate share percentage for each worker
+    const onlineWorkers = workerData.workers.filter(w => w.status === 'online');
+    const offlineWorkers = workerData.workers.filter(w => w.status === 'offline');
+    
+    // Allocate 95% to online workers, 5% to offline workers
+    const onlinePool = totalUnpaidEarnings * 0.95;
+    const offlinePool = totalUnpaidEarnings * 0.05;
+    
     // Generate worker cards
     filteredWorkers.forEach(worker => {
+        // Calculate earnings share based on hashrate proportion
+        let earningsDisplay = worker.earnings;
+        
+        // Explicitly recalculate earnings share for display consistency
+        if (worker.status === 'online' && totalHashrate > 0) {
+            const hashrateShare = parseFloat(worker.hashrate_3hr || 0) / totalHashrate;
+            earningsDisplay = (onlinePool * hashrateShare).toFixed(8);
+        } else if (worker.status === 'offline' && offlineWorkers.length > 0) {
+            earningsDisplay = (offlinePool / offlineWorkers.length).toFixed(8);
+        }
+        
         // Create worker card
         const card = $('<div class="worker-card"></div>');
         
@@ -337,7 +365,7 @@ function updateWorkerGrid() {
             </div>
         `);
         
-        // Add additional stats
+        // Add additional stats - NOTE: Using recalculated earnings
         card.append(`
             <div class="worker-stats">
                 <div class="worker-stats-row">
@@ -346,7 +374,7 @@ function updateWorkerGrid() {
                 </div>
                 <div class="worker-stats-row">
                     <div class="worker-stats-label">Earnings:</div>
-                    <div class="green-glow">${worker.earnings.toFixed(8)}</div>
+                    <div class="green-glow">${earningsDisplay}</div>
                 </div>
                 <div class="worker-stats-row">
                     <div class="worker-stats-label">Accept Rate:</div>
@@ -362,6 +390,20 @@ function updateWorkerGrid() {
         // Add card to grid
         workerGrid.append(card);
     });
+    
+    // Verify the sum of displayed earnings equals the total
+    console.log(`Total unpaid earnings: ${totalUnpaidEarnings} BTC`);
+    console.log(`Sum of worker displayed earnings: ${
+        filteredWorkers.reduce((sum, w) => {
+            if (w.status === 'online' && totalHashrate > 0) {
+                const hashrateShare = parseFloat(w.hashrate_3hr || 0) / totalHashrate;
+                return sum + parseFloat((onlinePool * hashrateShare).toFixed(8));
+            } else if (w.status === 'offline' && offlineWorkers.length > 0) {
+                return sum + parseFloat((offlinePool / offlineWorkers.length).toFixed(8));
+            }
+            return sum;
+        }, 0)
+    } BTC`);
 }
 
 // Filter worker data based on current filter state

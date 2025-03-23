@@ -80,6 +80,7 @@ Then navigate to `http://localhost:5000` in your web browser.
 - Flexible filtering and search functionality
 
 ### Retro Terminal Monitor
+![System Monitor](https://github.com/user-attachments/assets/d5462b72-c4b2-4cef-bbc6-7f21c455e22e)
 
 - Floating interface providing system statistics
 - Progress indicator for data refresh cycles

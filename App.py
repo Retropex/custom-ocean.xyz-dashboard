@@ -937,8 +937,9 @@ def get_workers_data(force_refresh=False):
 
 # Modified generate_workers_data function for App.py
 
-def generate_workers_data(num_workers, total_hashrate, hashrate_unit):
-    """Generate simulated worker data based on total hashrate, ensuring total matches exactly."""
+def generate_workers_data(num_workers, total_hashrate, hashrate_unit, total_unpaid_earnings=None):
+    """Generate simulated worker data based on total hashrate, ensuring total matches exactly.
+       Now also distributes unpaid earnings proportionally when provided."""
     # Worker model types for simulation
     models = [
         {"type": "ASIC", "model": "Bitmain Antminer S19 Pro", "max_hashrate": 110, "power": 3250},
@@ -959,6 +960,10 @@ def generate_workers_data(num_workers, total_hashrate, hashrate_unit):
     
     workers = []
     current_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+    
+    # Default total unpaid earnings if not provided
+    if total_unpaid_earnings is None or total_unpaid_earnings <= 0:
+        total_unpaid_earnings = 0.001  # Default small amount
     
     # Generate online workers
     for i in range(online_count):
@@ -981,10 +986,6 @@ def generate_workers_data(num_workers, total_hashrate, hashrate_unit):
         # Generate last share time (within last 5 minutes)
         minutes_ago = random.randint(0, 5)
         last_share = (current_time - timedelta(minutes=minutes_ago)).strftime("%Y-%m-%d %H:%M")
-        
-        # Generate earnings proportional to hashrate
-        hashrate_proportion = hashrate_3hr / total_hashrate if total_hashrate > 0 else 0
-        earnings = round(0.001 * hashrate_proportion, 8)  # Example: 0.001 BTC total distributed by hashrate
         
         # Generate acceptance rate (95-100%)
         acceptance_rate = round(random.uniform(95, 100), 1)
@@ -1009,7 +1010,7 @@ def generate_workers_data(num_workers, total_hashrate, hashrate_unit):
             "hashrate_3hr_unit": hashrate_unit,
             "efficiency": round(random.uniform(65, 95), 1),
             "last_share": last_share,
-            "earnings": earnings,
+            "earnings": 0,  # Will be set after all workers are generated
             "acceptance_rate": acceptance_rate,
             "power_consumption": model_info["power"],
             "temperature": temperature
@@ -1050,7 +1051,7 @@ def generate_workers_data(num_workers, total_hashrate, hashrate_unit):
             "hashrate_3hr_unit": hashrate_unit,
             "efficiency": 0,
             "last_share": last_share,
-            "earnings": round(0.0001 * random.random(), 8),
+            "earnings": 0,  # Minimal earnings for offline workers
             "acceptance_rate": round(random.uniform(95, 99), 1),
             "power_consumption": 0,
             "temperature": 0
@@ -1073,17 +1074,45 @@ def generate_workers_data(num_workers, total_hashrate, hashrate_unit):
                 # Scale the 60sec hashrate proportionally
                 if worker["hashrate_60sec"] > 0:
                     worker["hashrate_60sec"] = round(worker["hashrate_60sec"] * scaling_factor, 2)
-        
-        # Verify the total now matches
-        new_total = sum(w["hashrate_3hr"] for w in workers if w["status"] == "online")
-        logging.info(f"Adjusted worker hashrates: {current_total} → {new_total} (target: {total_hashrate})")
+    
+    # --- NEW CODE TO DISTRIBUTE UNPAID EARNINGS PROPORTIONALLY ---
+    # First calculate the total effective hashrate (only from online workers)
+    total_effective_hashrate = sum(w["hashrate_3hr"] for w in workers if w["status"] == "online")
+    
+    # Reserve a small portion (5%) of earnings for offline workers
+    online_earnings_pool = total_unpaid_earnings * 0.95
+    offline_earnings_pool = total_unpaid_earnings * 0.05
+    
+    # Distribute earnings based on hashrate proportion for online workers
+    if total_effective_hashrate > 0:
+        for worker in workers:
+            if worker["status"] == "online":
+                hashrate_proportion = worker["hashrate_3hr"] / total_effective_hashrate
+                worker["earnings"] = round(online_earnings_pool * hashrate_proportion, 8)
+    
+    # Distribute minimal earnings to offline workers
+    if offline_count > 0:
+        offline_per_worker = offline_earnings_pool / offline_count
+        for worker in workers:
+            if worker["status"] == "offline":
+                worker["earnings"] = round(offline_per_worker, 8)
+    
+    # Final verification - ensure total earnings match
+    current_total_earnings = sum(w["earnings"] for w in workers)
+    if abs(current_total_earnings - total_unpaid_earnings) > 0.00000001:
+        # Adjust the first worker to account for any rounding errors
+        adjustment = total_unpaid_earnings - current_total_earnings
+        for worker in workers:
+            if worker["status"] == "online":
+                worker["earnings"] = round(worker["earnings"] + adjustment, 8)
+                break
     
     return workers
 
 # Modified get_workers_data function with exact hashrate handling
 
 def get_workers_data(force_refresh=False):
-    """Get worker data with guaranteed exact hashrate match."""
+    """Get worker data from Ocean.xyz with caching for better performance."""
     global worker_data_cache, last_worker_data_update
     
     current_time = time.time()
@@ -1115,7 +1144,23 @@ def get_workers_data(force_refresh=False):
         # Calculate basic statistics
         workers_online = len([w for w in workers_data if w['status'] == 'online'])
         workers_offline = len(workers_data) - workers_online
-        total_earnings = sum([float(w.get('earnings', 0) or 0) for w in workers_data])
+        
+        # MODIFIED: Use unpaid_earnings from main dashboard instead of calculating from workers
+        unpaid_earnings = cached_metrics.get("unpaid_earnings", 0)
+        # Handle case where unpaid_earnings might be a string
+        if isinstance(unpaid_earnings, str):
+            try:
+                # Handle case where it might include "BTC" or other text
+                unpaid_earnings = float(unpaid_earnings.split()[0].replace(',', ''))
+            except (ValueError, IndexError):
+                unpaid_earnings = 0
+        
+        # Use unpaid_earnings as total_earnings
+        total_earnings = unpaid_earnings
+        
+        # Debug log
+        logging.info(f"Using unpaid_earnings as total_earnings: {unpaid_earnings} BTC")
+        
         avg_acceptance_rate = sum([float(w.get('acceptance_rate', 0) or 0) for w in workers_data]) / len(workers_data) if workers_data else 0
         
         # IMPORTANT: Use the EXACT original value for total_hashrate
@@ -1137,7 +1182,7 @@ def get_workers_data(force_refresh=False):
             "workers_offline": workers_offline,
             "total_hashrate": total_hashrate,  # EXACT value from main dashboard
             "hashrate_unit": hashrate_unit,
-            "total_earnings": total_earnings,
+            "total_earnings": total_earnings,  # Now using unpaid_earnings
             "daily_sats": daily_sats,
             "avg_acceptance_rate": avg_acceptance_rate,
             "hashrate_history": hashrate_history,

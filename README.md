@@ -4,6 +4,13 @@
 
 This open-source dashboard provides comprehensive monitoring for Ocean.xyz pool miners, offering real-time data on hashrate, profitability, and worker status. Designed to be resource-efficient and user-friendly, it helps miners maintain oversight of their operations.
 
+---
+## Gallery:
+![Boot Sequence](https://github.com/user-attachments/assets/8205e8c0-79ad-4780-bc50-237131373cf8)
+![Main Dashboard](https://github.com/user-attachments/assets/33dafb93-38ef-4fee-aba1-3a7d38eca3c9)
+![Workers Overview](https://github.com/user-attachments/assets/ae78c34c-fbdf-4186-9706-760a67eac44c)
+---
+
 ## Practical Mining Intelligence
 
 The dashboard aggregates essential metrics in one accessible interface:
@@ -33,8 +40,6 @@ The dashboard aggregates essential metrics in one accessible interface:
 - **Boot Sequence**: An engaging initialization sequence on startup
 - **Responsive Interface**: Adapts seamlessly to desktop and mobile devices
 
-![Boot Sequence](https://github.com/user-attachments/assets/8205e8c0-79ad-4780-bc50-237131373cf8)
-
 ## Installation Options
 
 ### Standard Installation
@@ -60,7 +65,6 @@ Then navigate to `http://localhost:5000` in your web browser.
 ## Dashboard Components
 
 ### Main Dashboard
-![Main Dashboard](https://github.com/user-attachments/assets/33dafb93-38ef-4fee-aba1-3a7d38eca3c9)
 
 - Interactive hashrate visualization
 - Detailed profitability metrics
@@ -69,7 +73,6 @@ Then navigate to `http://localhost:5000` in your web browser.
 - Balance and payment information
 
 ### Workers Dashboard
-![Workers Overview](https://github.com/user-attachments/assets/ae78c34c-fbdf-4186-9706-760a67eac44c)
 
 - Fleet summary with aggregate statistics
 - Individual worker performance metrics

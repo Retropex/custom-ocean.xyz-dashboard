@@ -83,21 +83,12 @@ Then access at `http://localhost:5000` in your browser.
 - Search function to find specific miners
 
 ### NEW: Retro Terminal Monitor
-![Retro Terminal Monitor](https://github.com/user-attachments/assets/screenshot-placeholder.png)
 
 - Floating system monitor with old-school terminal look
 - Real-time refresh countdown with progress bar
 - System uptime tracking
 - Minimizable interface that stays out of your way
 - Classic CRT effects for nostalgia
-
-## 🔥 Why Miners Love This Dashboard
-
-> "Finally I can see exactly when my miners go offline without constantly checking the pool website." - ASIC Miner
-
-> "The profit calculations help me know exactly how changes in BTC price affect my bottom line." - Home Miner
-
-> "I love the retro terminal - brings me back to my early computing days while stacking sats." - Bitcoin OG
 
 ## 📊 Hardware Requirements
 

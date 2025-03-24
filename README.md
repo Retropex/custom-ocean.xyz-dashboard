@@ -58,7 +58,7 @@ The dashboard aggregates essential metrics in one accessible interface:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ocean-mining-dashboard.git
+   git clone https://github.com/djobleezy/ocean-mining-dashboard.git
    cd ocean-mining-dashboard
    ```
 

@@ -1,0 +1,215 @@
+/* Base Styles with a subtle radial background for extra depth */
+body {
+  background: linear-gradient(135deg, #121212, #000000);
+  color: #f7931a;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 10px;
+  overflow-x: hidden;
+  text-shadow: 0 0 5px rgba(247, 147, 26, 0.4);
+  height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* CRT Screen Effect */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.15;
+}
+
+/* Flicker Animation */
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.97; }
+  15% { opacity: 0.94; }
+  20% { opacity: 0.98; }
+  50% { opacity: 0.95; }
+  80% { opacity: 0.96; }
+  90% { opacity: 0.94; }
+  100% { opacity: 0.98; }
+}
+
+/* Terminal Window with scrolling enabled */
+#terminal {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  animation: flicker 4s infinite;
+  height: 400px;
+  overflow-y: auto;
+  position: relative;
+  flex: 1;
+}
+
+#terminal-content {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+.cursor {
+  display: inline-block;
+  width: 10px;
+  height: 16px;
+  background-color: #f7931a;
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Neon-inspired color classes */
+.green {
+  color: #39ff14 !important;
+  text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
+}
+
+.blue {
+  color: #00dfff !important;
+  text-shadow: 0 0 10px #00dfff, 0 0 20px #00dfff;
+}
+
+.yellow {
+  color: #ffd700 !important;
+  text-shadow: 0 0 8px #ffd700, 0 0 16px #ffd700;
+}
+
+.white {
+  color: #ffffff !important;
+  text-shadow: 0 0 8px #ffffff, 0 0 16px #ffffff;
+}
+
+.red {
+  color: #ff2d2d !important;
+  text-shadow: 0 0 10px #ff2d2d, 0 0 20px #ff2d2d;
+}
+
+.magenta {
+  color: #ff2d95 !important;
+  text-shadow: 0 0 10px #ff2d95, 0 0 20px #ff2d95;
+}
+
+/* Bitcoin Logo styling with extra neon border */
+#bitcoin-logo {
+  display: block;
+  visibility: hidden;
+  text-align: center;
+  margin: 10px auto;
+  font-size: 10px;
+  line-height: 1;
+  color: #f7931a;
+  text-shadow: 0 0 10px rgba(247, 147, 26, 0.8);
+  white-space: pre;
+  width: 260px;
+  padding: 10px;
+  border: 2px solid #f7931a;
+  background-color: #0a0a0a;
+  box-shadow: 0 0 15px rgba(247, 147, 26, 0.5);
+  font-family: monospace;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+/* Skip Button */
+#skip-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #f7931a;
+  color: #000;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
+  transition: all 0.2s ease;
+}
+
+#skip-button:hover {
+  background-color: #ffa32e;
+  box-shadow: 0 0 12px rgba(247, 147, 26, 0.7);
+}
+
+/* Prompt Styling */
+#prompt-container {
+  display: none;
+  white-space: nowrap;
+}
+
+#prompt-text {
+  color: #f7931a;
+  margin-right: 5px;
+  text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+  display: inline;
+}
+
+#user-input {
+  background: transparent;
+  border: none;
+  color: #f7931a;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  caret-color: transparent;
+  outline: none;
+  width: 20px;
+  padding: 0;
+  margin: 0;
+  text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+  display: inline-block;
+  vertical-align: top;
+}
+
+.prompt-cursor {
+  display: inline-block;
+  width: 10px;
+  height: 16px;
+  background-color: #f7931a;
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+  position: relative;
+  top: 1px;
+  margin-left: -2px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  body { font-size: 14px; padding: 10px; }
+  #terminal { margin: 0; }
+}
+
+/* Loading and Debug Info */
+#loading-message {
+  text-align: center;
+  margin-bottom: 10px;
+  text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+}
+
+#debug-info {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  color: #666;
+  font-size: 12px;
+  z-index: 100;
+}

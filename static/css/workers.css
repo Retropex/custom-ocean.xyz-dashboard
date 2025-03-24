@@ -1,0 +1,333 @@
+/* Styles specific to the workers page */
+
+/* Search and filter controls */
+.controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-box {
+  background-color: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  color: var(--text-color);
+  padding: 5px 10px;
+  font-family: var(--terminal-font);
+  min-width: 200px;
+}
+
+.search-box:focus {
+  outline: none;
+  box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
+}
+
+.filter-button {
+  background-color: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 5px 10px;
+  font-family: var(--terminal-font);
+  cursor: pointer;
+}
+
+.filter-button.active {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+}
+
+/* Worker grid for worker cards */
+.worker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Worker card styles */
+.worker-card {
+  background-color: var(--bg-color);
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 5px rgba(247, 147, 26, 0.3);
+  position: relative;
+  overflow: hidden;
+  padding: 10px;
+  height: 100%;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.worker-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.05),
+    rgba(0, 0, 0, 0.05) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.worker-card-online {
+  border-color: #32CD32;
+  box-shadow: 0 0 8px rgba(50, 205, 50, 0.4);
+}
+
+.worker-card-offline {
+  border-color: #ff5555;
+  box-shadow: 0 0 8px rgba(255, 85, 85, 0.4);
+}
+
+.worker-name {
+  color: var(--primary-color);
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-shadow: 0 0 5px var(--primary-color);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 2;
+  position: relative;
+}
+
+.worker-stats {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  z-index: 2;
+  position: relative;
+}
+
+.worker-stats-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.worker-stats-label {
+  color: #aaa;
+}
+
+.hashrate-bar {
+  height: 4px;
+  background: linear-gradient(90deg, #1137F5, #39ff14);
+  margin-top: 4px;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Worker badge */
+.worker-type {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 0.7rem;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 1px 5px;
+  z-index: 2;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 3px;
+  z-index: 2;
+  position: relative;
+}
+
+.status-badge-online {
+  background-color: rgba(50, 205, 50, 0.2);
+  border: 1px solid #32CD32;
+  color: #32CD32;
+  text-shadow: 0 0 5px rgba(50, 205, 50, 0.8);
+}
+
+.status-badge-offline {
+  background-color: rgba(255, 85, 85, 0.2);
+  border: 1px solid #ff5555;
+  color: #ff5555;
+  text-shadow: 0 0 5px rgba(255, 85, 85, 0.8);
+}
+
+/* Stats bars */
+.stats-bar-container {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin-top: 2px;
+  margin-bottom: 5px;
+  position: relative;
+  z-index: 2;
+}
+
+.stats-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #1137F5, #39ff14);
+}
+
+/* Summary stats in the header */
+.summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 15px;
+  margin: 15px 0;
+}
+
+.summary-stat {
+  text-align: center;
+  min-width: 120px;
+}
+
+.summary-stat-value {
+  font-size: 1.6rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.summary-stat-label {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+/* Worker count ring */
+.worker-ring {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  position: relative;
+  margin: 0 auto;
+  background: conic-gradient(
+    #32CD32 0% calc(var(--online-percent) * 100%),
+    #ff5555 calc(var(--online-percent) * 100%) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(247, 147, 26, 0.3);
+}
+
+.worker-ring-inner {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+/* Mini hashrate chart */
+.mini-chart {
+  height: 40px;
+  width: 100%;
+  margin-top: 5px;
+  position: relative;
+  z-index: 2;
+}
+
+.loading-fade {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 576px) {
+  .controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-box {
+    width: 100%;
+  }
+  
+  .filter-buttons {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .worker-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-stats {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .summary-stat {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Fix for "Made by" link collision with title */
+  #topRightLink {
+      position: static !important;
+      display: block !important;
+      text-align: right !important;
+      margin-bottom: 0.5rem !important;
+      margin-top: 0 !important;
+      font-size: 0.8rem !important;
+  }
+
+  /* Adjust heading for better mobile display */
+  h1 {
+      font-size: 20px !important;
+      line-height: 1.2 !important;
+      margin-top: 0.5rem !important;
+      padding-top: 0 !important;
+  }
+
+  /* Improve container padding for mobile */
+  .container-fluid {
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+  }
+
+  /* Ensure top section has appropriate spacing */
+  .row.mb-3 {
+      margin-top: 0.5rem !important;
+  }
+}
+
+/* Add a more aggressive breakpoint for very small screens */
+@media (max-width: 380px) {
+  #topRightLink {
+      margin-bottom: 0.75rem !important;
+      font-size: 0.7rem !important;
+  }
+
+  h1 {
+      font-size: 18px !important;
+      margin-bottom: 0.5rem !important;
+  }
+
+  /* Further reduce container padding */
+  .container-fluid {
+      padding-left: 0.3rem !important;
+      padding-right: 0.3rem !important;
+  }
+}

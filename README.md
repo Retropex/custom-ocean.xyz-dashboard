@@ -40,48 +40,44 @@ The dashboard aggregates essential metrics in one accessible interface:
 - **Boot Sequence**: An engaging initialization sequence on startup
 - **Responsive Interface**: Adapts seamlessly to desktop and mobile devices
 
-## Installation Options
+## Quick Start
 
-### Standard Installation
+### Installation
 
-1. Download the latest release package
-2. Configure your mining parameters in `config.json`:
-   - Pool wallet address
-   - Electricity cost ($/kWh)
-   - System power consumption (watts)
-3. Launch the application using the included startup script
-4. Access the dashboard at `http://localhost:5000`
-
-### Docker Installation
-
-### Build and Run Manually
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/djobleezy/ocean-mining-dashboard.git
-   cd ocean-mining-dashboard
+1. Clone the repository
+2. Install dependencies:
    ```
-
-2. Build the Docker image:
-   ```bash
-   docker build -t mining-dashboard .
+   pip install -r requirements.txt
    ```
-
-3. Run the container:
-   ```bash
-   docker run -d -p 5000:5000 --name mining-dashboard mining-dashboard
+3. Run the setup script:
    ```
-
-4. Optional: Run with Redis for data persistence:
-   ```bash
-   # First start a Redis container
-   docker run -d --name redis redis
-   
-   # Then start the dashboard with Redis connection
-   docker run -d -p 5000:5000 --link redis --env REDIS_URL=redis://redis:6379 mining-dashboard
+   python setup.py
    ```
+4. Configure your wallet:
+   ```json
+   {
+     "power_cost": 0.12,
+     "power_usage": 3450,
+     "wallet": "your-wallet-address"
+   }
+   ```
+5. Start the application:
+   ```
+   python App.py
+   ```
+6. Open your browser at `http://localhost:5000`
 
-Then navigate to `http://localhost:5000` in your web browser.
+### Docker Deployment
+
+```bash
+docker run -d -p 5000:5000 \
+  -e WALLET=your-wallet-address \
+  -e POWER_COST=0.12 \
+  -e POWER_USAGE=3450 \
+  yourusername/bitcoin-mining-dashboard
+```
+
+For full deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Dashboard Components
 
@@ -94,7 +90,6 @@ Then navigate to `http://localhost:5000` in your web browser.
 - Balance and payment information
 
 ### Workers Dashboard
-![Fleet Summary](https://github.com/user-attachments/assets/3af7f79b-5679-41ae-94c7-b238934cb0b2)
 
 - Fleet summary with aggregate statistics
 - Individual worker performance metrics
@@ -102,7 +97,6 @@ Then navigate to `http://localhost:5000` in your web browser.
 - Flexible filtering and search functionality
 
 ### Retro Terminal Monitor
-![System Monitor](https://github.com/user-attachments/assets/d5462b72-c4b2-4cef-bbc6-7f21c455e22e)
 
 - Floating interface providing system statistics
 - Progress indicator for data refresh cycles
@@ -117,6 +111,10 @@ The application is designed for efficient resource utilization:
 - Modest CPU and memory requirements
 - Suitable for continuous operation
 - Cross-platform support for Windows, macOS, and Linux
+
+## Project Structure
+
+For details on the project's architecture and organization, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
 
 ## Troubleshooting
 

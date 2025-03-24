@@ -56,9 +56,38 @@ The dashboard aggregates essential metrics in one accessible interface:
 
 For those preferring containerized deployment:
 
+### Option 1: Simple Docker Run
+
 ```bash
 docker run -d -p 5000:5000 -e WALLET=your-wallet-address -e POWER_COST=0.12 -e POWER_USAGE=3450 yourusername/ocean-mining-dashboard
 ```
+
+### Option 2: Build and Run Manually
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/ocean-mining-dashboard.git
+   cd ocean-mining-dashboard
+   ```
+
+2. Build the Docker image:
+   ```bash
+   docker build -t mining-dashboard .
+   ```
+
+3. Run the container:
+   ```bash
+   docker run -d -p 5000:5000 --name mining-dashboard mining-dashboard
+   ```
+
+4. Optional: Run with Redis for data persistence:
+   ```bash
+   # First start a Redis container
+   docker run -d --name redis redis
+   
+   # Then start the dashboard with Redis connection
+   docker run -d -p 5000:5000 --link redis --env REDIS_URL=redis://redis:6379 mining-dashboard
+   ```
 
 Then navigate to `http://localhost:5000` in your web browser.
 

@@ -77,7 +77,7 @@ docker run -d -p 5000:5000 \
   yourusername/bitcoin-mining-dashboard
 ```
 
-For full deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+For full deployment instructions, see [DEPLOYMENT.md]
 
 ## Dashboard Components
 
@@ -114,7 +114,7 @@ The application is designed for efficient resource utilization:
 
 ## Project Structure
 
-For details on the project's architecture and organization, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+For details on the project's architecture and organization, see [PROJECT_STRUCTURE.md]
 
 ## Troubleshooting
 

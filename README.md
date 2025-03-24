@@ -54,15 +54,7 @@ The dashboard aggregates essential metrics in one accessible interface:
 
 ### Docker Installation
 
-For those preferring containerized deployment:
-
-### Option 1: Simple Docker Run
-
-```bash
-docker run -d -p 5000:5000 -e WALLET=your-wallet-address -e POWER_COST=0.12 -e POWER_USAGE=3450 yourusername/ocean-mining-dashboard
-```
-
-### Option 2: Build and Run Manually
+### Build and Run Manually
 
 1. Clone the repository:
    ```bash

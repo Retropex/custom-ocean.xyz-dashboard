@@ -240,6 +240,13 @@ function updateLatestBlockStats(block) {
     } else {
         $("#latest-pool").text("Unknown");
     }
+
+    // Average Fee Rate
+    if (block.extras && block.extras.avgFeeRate) {
+        $("#latest-fee-rate").text(block.extras.avgFeeRate + " sat/vB");
+    } else {
+        $("#latest-fee-rate").text("N/A");
+    }
 }
 
 // Function to display the blocks in the grid

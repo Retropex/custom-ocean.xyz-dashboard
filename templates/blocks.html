@@ -1,0 +1,286 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Bitcoin Blocks - Ocean.xyz Mining Dashboard{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="/static/css/blocks.css">
+{% endblock %}
+
+{% block header %}Bitcoin Blocks Monitor{% endblock %}
+
+{% block blocks_active %}active{% endblock %}
+
+{% block content %}
+<!-- Block Mining Animation Card -->
+<!-- <div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">Block Mining Visualization</div>
+            <div class="card-body mining-animation-container">
+                <!-- SVG Animation directly embedded 
+                <div id="svg-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="100%" height="300" id="block-mining-animation" preserveAspectRatio="xMidYMid meet">
+                        <!-- Background with scanlines 
+                        <defs>
+                            <pattern id="scanlines" patternUnits="userSpaceOnUse" width="4" height="4">
+                                <rect width="4" height="2" fill="#000" fill-opacity="0.1" />
+                                <rect y="2" width="4" height="2" fill="none" />
+                            </pattern>
+
+                            <radialGradient id="glowEffect" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                <stop offset="0%" stop-color="#f7931a" stop-opacity="0.6" />
+                                <stop offset="100%" stop-color="#f7931a" stop-opacity="0" />
+                            </radialGradient>
+
+                            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="2" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+
+                            <linearGradient id="bitcoinGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#f7931a" />
+                                <stop offset="100%" stop-color="#ffc04a" />
+                            </linearGradient>
+
+                            <linearGradient id="transactionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#39ff14" />
+                                <stop offset="100%" stop-color="#00ffaa" />
+                            </linearGradient>
+
+                            <filter id="pixelate" x="0%" y="0%" width="100%" height="100%">
+                                <feFlood x="4" y="4" height="2" width="2" />
+                                <feComposite width="10" height="10" />
+                            </filter>
+                        </defs>
+
+                        <!-- Main background 
+                        <rect width="500" height="300" fill="#0a0a0a" />
+
+                        <!-- Scanline effect 
+                        <rect width="500" height="300" fill="url(#scanlines)" opacity="0.15" />
+
+                        <!-- Blockchain (rows of connected blocks) 
+                        <g id="blockchain" transform="translate(20, 270)">
+                            <!-- Previous blocks (part of the chain) 
+                            <g id="previous-blocks">
+                                <rect x="0" y="-40" width="25" height="40" rx="3" fill="#232323" stroke="#f7931a" stroke-width="2" />
+                                <rect x="35" y="-30" width="25" height="25" rx="3" fill="#232323" stroke="#f7931a" stroke-width="2" />
+                                <rect x="70" y="-30" width="25" height="25" rx="3" fill="#232323" stroke="#f7931a" stroke-width="2" />
+                                <rect x="105" y="-30" width="25" height="25" rx="3" fill="#232323" stroke="#f7931a" stroke-width="2" />
+
+                                <!-- Connecting lines 
+                                <line x1="25" y1="-17.5" x2="35" y2="-17.5" stroke="#f7931a" stroke-width="2" />
+                                <line x1="60" y1="-17.5" x2="70" y2="-17.5" stroke="#f7931a" stroke-width="2" />
+                                <line x1="95" y1="-17.5" x2="105" y2="-17.5" stroke="#f7931a" stroke-width="2" />
+                                <line x1="130" y1="-17.5" x2="140" y2="-17.5" stroke="#f7931a" stroke-width="2" stroke-dasharray="2,2">
+                                    <animate attributeName="stroke-dashoffset" from="0" to="4" dur="1s" repeatCount="indefinite" />
+                                </line>
+                            </g>
+
+                            <!-- Bitcoin logo 
+                            <g id="bitcoin-logo" transform="translate(250, -60)">
+                                <circle cx="170" cy="15" r="20" fill="#0a0a0a" stroke="url(#bitcoinGradient)" stroke-width="2" filter="url(#neonGlow)" />
+                                <text id="bitcoin-symbol" x="170" y="15" font-family="sans-serif" font-size="22" font-weight="bold" fill="url(#bitcoinGradient)" text-anchor="middle" dy=".35em" filter="url(#neonGlow)">₿</text>
+
+                                <!-- Rotating glow effect 
+                                <circle cx="170" cy="15" r="28" fill="none" stroke="url(#bitcoinGradient)" stroke-width="1" opacity="0.5">
+                                    <animate attributeName="opacity" values="0.5;0.8;0.5" dur="3s" repeatCount="indefinite" />
+                                    <animate attributeName="r" values="28;30;28" dur="3s" repeatCount="indefinite" />
+                                </circle>
+                            </g>
+                        </g>
+
+                        <!-- Current block being mined 
+                        <g id="current-block" transform="translate(140, 240)">
+                            <!-- Block outline -->
+                            <rect id="block-outline" x="20" y="-30" width="70" height="60" rx="3" fill="#131313" stroke="#f7931a" stroke-width="2">
+                                <animate attributeName="stroke-opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+                            </rect>
+
+                            <!-- Block header data 
+                            <text x="55" y="-20" font-family="monospace" font-size="7" fill="#00dfff" text-anchor="middle" filter="url(#neonGlow)">Block #<tspan id="block-height">000000</tspan></text>
+
+                            <!-- Block transactions 
+                            <g id="transactions">
+                                <rect class="transaction" x="25" y="-15" width="60" height="5" rx="1" fill="url(#transactionGradient)" opacity="0.7">
+                                    <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite" begin="0s" />
+                                </rect>
+
+                                <rect class="transaction" x="25" y="-8" width="60" height="5" rx="1" fill="url(#transactionGradient)" opacity="0.7">
+                                    <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite" begin="0.5s" />
+                                </rect>
+
+                                <rect class="transaction" x="25" y="-1" width="60" height="5" rx="1" fill="url(#transactionGradient)" opacity="0.7">
+                                    <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite" begin="1s" />
+                                </rect>
+
+                                <rect class="transaction" x="25" y="6" width="60" height="5" rx="1" fill="url(#transactionGradient)" opacity="0.7">
+                                    <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite" begin="1.5s" />
+                                </rect>
+
+                                <rect class="transaction" x="25" y="13" width="60" height="5" rx="1" fill="url(#transactionGradient)" opacity="0.7">
+                                    <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite" begin="2s" />
+                                </rect>
+
+                                <text id="tx-count" x="55" y="25" font-family="monospace" font-size="7" fill="#ffffff" text-anchor="middle">Txs: <tspan id="transaction-count">0000</tspan></text>
+                            </g>
+                        </g>
+
+                        <!-- Mining animation 
+                        <g id="mining-animation" transform="translate(250, 180)">
+                            <!-- Mining text 
+                            <text x="0" y="0" font-family="monospace" font-size="12" fill="#f7931a" filter="url(#neonGlow)">Mining hash:</text>
+                            <text id="mining-hash" x="0" y="15" font-family="monospace" font-size="10" fill="#ffffff">0000...0000</text>
+
+                            <!-- Nonce counter 
+                            <text x="0" y="35" font-family="monospace" font-size="10" fill="#00dfff" filter="url(#neonGlow)">Nonce: <tspan id="nonce-value">0000000000</tspan></text>
+
+                            <!-- Difficulty target 
+                            <text x="0" y="50" font-family="monospace" font-size="10" fill="#ffd700" filter="url(#neonGlow)">Difficulty: <tspan id="difficulty-value">0000000</tspan></text>
+
+                            <!-- Mining status 
+                            <text id="mining-status" x="0" y="70" font-family="monospace" font-size="12" fill="#39ff14" filter="url(#neonGlow)">Mining in progress...</text>
+
+                            <!-- Hash calculation animation (tiny dots moving) 
+                            <g id="hash-calculation">
+                                <circle cx="10" cy="85" r="2" fill="#f7931a">
+                                    <animate attributeName="cx" values="10;180;10" dur="3s" repeatCount="indefinite" />
+                                    <animate attributeName="opacity" values="1;0.5;1" dur="3s" repeatCount="indefinite" />
+                                </circle>
+
+                                <circle cx="30" cy="85" r="2" fill="#f7931a">
+                                    <animate attributeName="cx" values="30;200;30" dur="3s" repeatCount="indefinite" begin="0.5s" />
+                                    <animate attributeName="opacity" values="1;0.5;1" dur="3s" repeatCount="indefinite" begin="0.5s" />
+                                </circle>
+
+                                <circle cx="50" cy="85" r="2" fill="#f7931a">
+                                    <animate attributeName="cx" values="50;220;50" dur="3s" repeatCount="indefinite" begin="1s" />
+                                    <animate attributeName="opacity" values="1;0.5;1" dur="3s" repeatCount="indefinite" begin="1s" />
+                                </circle>
+                            </g>
+                        </g>
+
+                        <!-- Status display 
+                        <g id="status-display" transform="translate(20, 20)">
+                            <rect width="460" height="20" fill="#0a0a0a" stroke="#f7931a" stroke-width="1" />
+                            <text id="status-text" x="10" y="14" font-family="monospace" font-size="12" fill="#ffffff">MINING BLOCK #<tspan id="status-height">000000</tspan> | POOL: <tspan id="mining-pool">Unknown</tspan></text>
+
+                            <!-- Indicator lights 
+                            <circle cx="440" cy="10" r="5" fill="#39ff14" filter="url(#neonGlow)">
+                                <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+                            </circle>
+                        </g>
+
+                        <!-- Timestamp display 
+                        <g id="timestamp-display" transform="translate(20, 50)">
+                            <text id="time-text" x="0" y="0" font-family="monospace" font-size="10" fill="#00dfff">Time: <tspan id="block-time">0000-00-00 00:00:00</tspan></text>
+                        </g>
+
+                        <!-- CRT flicker animation for the entire SVG 
+                        <rect width="500" height="300" fill="none" opacity="0.03">
+                            <animate attributeName="opacity" values="0.03;0.05;0.03" dur="0.5s" repeatCount="indefinite" />
+                        </rect>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<!-- Block Controls 
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">Block Controls</div>
+            <div class="card-body">
+                <div class="block-controls">
+                    <!-- <div class="block-control-item">
+                        <label for="block-height-input">Start Block:</label>
+                        <input type="number" id="block-height-input" name="block-height">
+                    </div> 
+                    <div class="block-control-item">
+                        <button id="load-blocks" class="block-button">Load Blocks</button>
+                        <button id="latest-blocks" class="block-button">Latest Blocks</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<!-- Latest block stats -->
+<div class="row mb-2 equal-height">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">Latest Block Stats</div>
+            <div class="card-body">
+                <div class="latest-block-stats">
+                    <div class="stat-item">
+                        <strong>Block Height:</strong>
+                        <span id="latest-height" class="metric-value white">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Time:</strong>
+                        <span id="latest-time" class="metric-value blue">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Transactions:</strong>
+                        <span id="latest-tx-count" class="metric-value white">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Size:</strong>
+                        <span id="latest-size" class="metric-value white">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Difficulty:</strong>
+                        <span id="latest-difficulty" class="metric-value yellow">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Mining Pool:</strong>
+                        <span id="latest-pool" class="metric-value green">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blocks grid -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">Recent Bitcoin Blocks</div>
+            <div class="card-body">
+                <div class="blocks-container">
+                    <div id="blocks-grid" class="blocks-grid">
+                        <!-- Blocks will be generated here via JavaScript -->
+                        <div class="loader">
+                            <span class="loader-text">Connecting to mempool.space API<span class="terminal-cursor"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Block details modal -->
+<div id="block-modal" class="block-modal">
+    <div class="block-modal-content">
+        <div class="block-modal-header">
+            <span class="block-modal-title">Block Details</span>
+            <span class="block-modal-close">&times;</span>
+        </div>
+        <div class="block-modal-body">
+            <div id="block-details">
+                <!-- Block details will be displayed here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script src="/static/js/blocks.js"></script>
+<script src="/static/js/block-animation.js"></script>
+{% endblock %}

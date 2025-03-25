@@ -28,6 +28,9 @@ COPY templates/*.html templates/
 # Run the setup script to ensure proper organization
 RUN python setup.py
 
+# Run the minifier to process HTML templates
+# RUN python minify.py
+
 # Create a non-root user for better security
 RUN adduser --disabled-password --gecos '' appuser
 

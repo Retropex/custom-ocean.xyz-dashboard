@@ -899,3 +899,38 @@ $(document).ready(function () {
         }
     }, 30000); // Check every 30 seconds
 });
+
+// Update unread notifications badge in navigation
+function updateNotificationBadge() {
+    $.ajax({
+        url: "/api/notifications/unread_count",
+        method: "GET",
+        success: function (data) {
+            const unreadCount = data.unread_count;
+            const badge = $("#nav-unread-badge");
+
+            if (unreadCount > 0) {
+                badge.text(unreadCount).show();
+            } else {
+                badge.hide();
+            }
+        }
+    });
+}
+
+// Initialize notification badge checking
+function initNotificationBadge() {
+    // Update immediately
+    updateNotificationBadge();
+
+    // Update every 30 seconds
+    setInterval(updateNotificationBadge, 30000);
+}
+
+// Add to document ready
+$(document).ready(function () {
+    // Existing code...
+
+    // Initialize notification badge
+    initNotificationBadge();
+});

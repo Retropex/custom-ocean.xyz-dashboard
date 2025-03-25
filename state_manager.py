@@ -334,13 +334,32 @@ class StateManager:
                 if metrics.get(key) is not None:
                     current_val = metrics[key]
                     arrow = ""
+                    
+                    # Get the corresponding unit key if available
+                    unit_key = f"{key}_unit"
+                    current_unit = metrics.get(unit_key, "")
+                    
                     if key in arrow_history and arrow_history[key]:
                         try:
                             previous_val = arrow_history[key][-1]["value"]
-                            if current_val > previous_val:
-                                arrow = "↑"
-                            elif current_val < previous_val:
-                                arrow = "↓"
+                            previous_unit = arrow_history[key][-1].get("unit", "")
+                            
+                            # Use the convert_to_ths function to normalize both values before comparison
+                            if key.startswith("hashrate") and current_unit:
+                                from models import convert_to_ths
+                                norm_curr_val = convert_to_ths(float(current_val), current_unit)
+                                norm_prev_val = convert_to_ths(float(previous_val), previous_unit if previous_unit else "th/s")
+                                
+                                if norm_curr_val > norm_prev_val * 1.01:  # 1% threshold to avoid minor fluctuations
+                                    arrow = "↑"
+                                elif norm_curr_val < norm_prev_val * 0.99:  # 1% threshold
+                                    arrow = "↓"
+                            else:
+                                # For non-hashrate values or when units are missing
+                                if float(current_val) > float(previous_val) * 1.01:
+                                    arrow = "↑"
+                                elif float(current_val) < float(previous_val) * 0.99:
+                                    arrow = "↓"
                         except Exception as e:
                             logging.error(f"Error calculating arrow for {key}: {e}")
                             
@@ -348,15 +367,23 @@ class StateManager:
                         arrow_history[key] = []
                         
                     if not arrow_history[key] or arrow_history[key][-1]["time"] != current_second:
-                        arrow_history[key].append({
+                        entry = {
                             "time": current_second,
                             "value": current_val,
-                            "arrow": arrow
-                        })
+                            "arrow": arrow,
+                        }
+                        # Add unit information if available
+                        if current_unit:
+                            entry["unit"] = current_unit
+                            
+                        arrow_history[key].append(entry)
                     else:
                         arrow_history[key][-1]["value"] = current_val
                         arrow_history[key][-1]["arrow"] = arrow
-                        
+                        # Update unit if available
+                        if current_unit:
+                            arrow_history[key][-1]["unit"] = current_unit
+                            
                     # Cap history to three hours worth (180 entries)
                     if len(arrow_history[key]) > MAX_HISTORY_ENTRIES:
                         arrow_history[key] = arrow_history[key][-MAX_HISTORY_ENTRIES:]
@@ -368,7 +395,11 @@ class StateManager:
                 for entry in entries:
                     minute = entry["time"][:5]  # extract HH:MM
                     minute_groups[minute] = entry  # take last entry for that minute
-                aggregated_history[key] = list(minute_groups.values())
+                
+                # Sort by time to ensure chronological order
+                aggregated_history[key] = sorted(list(minute_groups.values()), 
+                                                key=lambda x: x["time"])
+            
             metrics["arrow_history"] = aggregated_history
             metrics["history"] = hashrate_history
 

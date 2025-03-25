@@ -2,6 +2,7 @@
 Data models for the Bitcoin Mining Dashboard.
 """
 from dataclasses import dataclass
+import logging
 
 @dataclass
 class OceanData:
@@ -31,7 +32,25 @@ class OceanData:
     total_last_share: str = "N/A"
     last_block_earnings: str = None
 
-def convert_to_ths(value: float, unit: str) -> float:
+@dataclass
+class WorkerData:
+    """Data structure for individual worker information."""
+    name: str = None
+    status: str = "offline"
+    type: str = "ASIC"  # ASIC or FPGA
+    model: str = "Unknown"
+    hashrate_60sec: float = 0
+    hashrate_60sec_unit: str = "TH/s"
+    hashrate_3hr: float = 0
+    hashrate_3hr_unit: str = "TH/s"
+    efficiency: float = 0
+    last_share: str = "N/A"
+    earnings: float = 0
+    acceptance_rate: float = 0
+    power_consumption: float = 0
+    temperature: float = 0
+
+def convert_to_ths(value, unit):
     """
     Convert any hashrate unit to TH/s equivalent.
     
@@ -42,18 +61,30 @@ def convert_to_ths(value: float, unit: str) -> float:
     Returns:
         float: The hashrate value in TH/s
     """
-    unit = unit.lower()
-    if 'ph/s' in unit:
-        return value * 1000  # 1 PH/s = 1000 TH/s
-    elif 'eh/s' in unit:
-        return value * 1000000  # 1 EH/s = 1,000,000 TH/s
-    elif 'gh/s' in unit:
-        return value / 1000  # 1 TH/s = 1000 GH/s
-    elif 'mh/s' in unit:
-        return value / 1000000  # 1 TH/s = 1,000,000 MH/s
-    elif 'th/s' in unit:
-        return value
-    else:
-        # Log unexpected unit
-        logging.warning(f"Unexpected hashrate unit: {unit}, defaulting to treating as TH/s")
-        return value
+    if value is None or value == 0:
+        return 0
+        
+    try:
+        unit = unit.lower() if unit else 'th/s'
+        
+        if 'ph/s' in unit:
+            return value * 1000  # 1 PH/s = 1000 TH/s
+        elif 'eh/s' in unit:
+            return value * 1000000  # 1 EH/s = 1,000,000 TH/s
+        elif 'gh/s' in unit:
+            return value / 1000  # 1 TH/s = 1000 GH/s
+        elif 'mh/s' in unit:
+            return value / 1000000  # 1 TH/s = 1,000,000 MH/s
+        elif 'kh/s' in unit:
+            return value / 1000000000  # 1 TH/s = 1,000,000,000 KH/s
+        elif 'h/s' in unit and not any(prefix in unit for prefix in ['th/s', 'ph/s', 'eh/s', 'gh/s', 'mh/s', 'kh/s']):
+            return value / 1000000000000  # 1 TH/s = 1,000,000,000,000 H/s
+        elif 'th/s' in unit:
+            return value
+        else:
+            # Log unexpected unit
+            logging.warning(f"Unexpected hashrate unit: {unit}, defaulting to treating as TH/s")
+            return value
+    except Exception as e:
+        logging.error(f"Error in convert_to_ths: {e}")
+        return value  # Return original value as fallback

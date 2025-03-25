@@ -43,6 +43,10 @@
             <a href="/dashboard" class="nav-link {% block dashboard_active %}{% endblock %}">Main Dashboard</a>
             <a href="/workers" class="nav-link {% block workers_active %}{% endblock %}">Workers Overview</a>
             <a href="/blocks" class="nav-link {% block blocks_active %}{% endblock %}">Bitcoin Blocks</a>
+            <a href="/notifications" class="nav-link {% block notifications_active %}{% endblock %}">
+                Notifications
+                <span id="nav-unread-badge" class="nav-badge"></span>
+            </a>
         </div>
         {% endblock %}
 

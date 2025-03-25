@@ -354,7 +354,7 @@ body {
   }
   
   .terminal-title {
-    font-size: 14px;
+    font-size: 12px;
   }
   
   .terminal-dot {
@@ -366,4 +366,46 @@ body {
     padding: 6px 10px;
     font-size: 12px;
   }
+}
+/* Add these styles to retro-refresh.css to make the progress bar transitions smoother */
+
+/* Smooth transition for progress bar width */
+#retro-terminal-bar #bitcoin-progress-inner {
+    transition: width 0.3s ease-out;
+}
+
+/* Add a will-change property to optimize the animation */
+#retro-terminal-bar .bitcoin-progress-container {
+    will-change: contents;
+}
+
+/* Smooth transition when changing from waiting state */
+#retro-terminal-bar #bitcoin-progress-inner.waiting-for-update {
+    transition: width 0.3s ease-out, box-shadow 1s ease;
+}
+
+/* Ensure the scan line stays smooth during transitions */
+#retro-terminal-bar .scan-line {
+    will-change: transform;
+}
+/* Improve mobile centering for collapsed system monitor */
+@media (max-width: 767px) {
+    /* Target both possible selectors to ensure we catch the right one */
+    #retro-terminal-bar.collapsed,
+    .bitcoin-terminal.collapsed,
+    .retro-terminal-bar.collapsed,
+    div[id*="terminal"].collapsed {
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: auto !important;
+        max-width: 300px !important; /* Smaller max-width for mobile */
+    }
+
+    /* Ensure consistent height for minimized view */
+    .terminal-minimized {
+        height: 40px;
+        display: flex;
+        align-items: center;
+    }
 }

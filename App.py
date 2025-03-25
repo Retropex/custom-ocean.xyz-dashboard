@@ -17,7 +17,7 @@ from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Import custom modules
-from config import load_config
+from config import load_config, save_config
 from data_service import MiningDashboardService
 from worker_service import WorkerService
 from state_manager import StateManager, arrow_history, metrics_log
@@ -451,6 +451,13 @@ def api_metrics():
         update_metrics_job()
     return jsonify(cached_metrics)
 
+# Add this new route to App.py
+@app.route("/blocks")
+def blocks_page():
+    """Serve the blocks overview page."""
+    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
+    return render_template("blocks.html", current_time=current_time)
+
 # --- Workers Dashboard Route and API ---
 @app.route("/workers")
 def workers_dashboard():
@@ -487,6 +494,72 @@ def api_time():
         "server_timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat(),
         "server_start_time": SERVER_START_TIME.astimezone(ZoneInfo("America/Los_Angeles")).isoformat()
     })
+
+# --- New Config Endpoints ---
+@app.route("/api/config", methods=["GET"])
+def get_config():
+    """API endpoint to get current configuration."""
+    try:
+        config = load_config()
+        return jsonify(config)
+    except Exception as e:
+        logging.error(f"Error getting configuration: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/config", methods=["POST"])
+def update_config():
+    """API endpoint to update configuration."""
+    global dashboard_service  # Add this to access the global dashboard_service
+    
+    try:
+        # Get the request data
+        new_config = request.json
+        logging.info(f"Received config update request: {new_config}")
+        
+        # Validate the configuration data
+        if not isinstance(new_config, dict):
+            logging.error("Invalid configuration format")
+            return jsonify({"error": "Invalid configuration format"}), 400
+            
+        # Required fields and default values
+        defaults = {
+            "wallet": "bc1py5zmrtssheq3shd8cptpl5l5m3txxr5afynyg2gyvam6w78s4dlqqnt4v9",
+            "power_cost": 0.0,
+            "power_usage": 0.0
+        }
+        
+        # Merge new config with defaults for any missing fields
+        for key, value in defaults.items():
+            if key not in new_config or new_config[key] is None:
+                new_config[key] = value
+                
+        # Save the configuration
+        logging.info(f"Saving configuration: {new_config}")
+        if save_config(new_config):
+            # Important: Reinitialize the dashboard service with the new configuration
+            dashboard_service = MiningDashboardService(
+                new_config.get("power_cost", 0.0),
+                new_config.get("power_usage", 0.0),
+                new_config.get("wallet")
+            )
+            logging.info(f"Dashboard service reinitialized with new wallet: {new_config.get('wallet')}")
+            
+            # Force a metrics update to reflect the new configuration
+            update_metrics_job(force=True)
+            logging.info("Forced metrics update after configuration change")
+            
+            # Return success response with the saved configuration
+            return jsonify({
+                "status": "success",
+                "message": "Configuration saved successfully",
+                "config": new_config
+            })
+        else:
+            logging.error("Failed to save configuration")
+            return jsonify({"error": "Failed to save configuration"}), 500
+    except Exception as e:
+        logging.error(f"Error updating configuration: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # Health check endpoint with detailed diagnostics
 @app.route("/api/health")
@@ -633,6 +706,8 @@ class RobustMiddleware:
 # Add the middleware
 app.wsgi_app = RobustMiddleware(app.wsgi_app)
 
+# Update this section in App.py to properly initialize services
+
 # Initialize the dashboard service and worker service
 config = load_config()
 dashboard_service = MiningDashboardService(
@@ -641,6 +716,8 @@ dashboard_service = MiningDashboardService(
     config.get("wallet")
 )
 worker_service = WorkerService()
+# Connect the services
+worker_service.set_dashboard_service(dashboard_service)
 
 # Restore critical state if available
 last_run, last_update = state_manager.load_critical_state()

@@ -418,3 +418,17 @@ h1 {
     margin-bottom: 0.5rem;
   }
 }
+
+/* Navigation badges for notifications */
+.nav-badge {
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    padding: 1px 5px;
+    min-width: 16px;
+    text-align: center;
+    display: none;
+    margin-left: 5px;
+    vertical-align: middle;
+}

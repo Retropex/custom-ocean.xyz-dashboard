@@ -51,7 +51,6 @@ body {
   padding-top: 0.5rem;
   font-size: var(--text-size-base);
   font-family: var(--terminal-font);
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 h1 {

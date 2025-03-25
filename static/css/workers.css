@@ -331,3 +331,14 @@
       padding-right: 0.3rem !important;
   }
 }
+/* Add extra padding at bottom of worker grid to avoid overlap */
+.worker-grid {
+    margin-bottom: 60px;
+}
+
+/* Ensure summary stats have proper spacing on mobile */
+@media (max-width: 576px) {
+    .summary-stats {
+        margin-bottom: 60px;
+    }
+}

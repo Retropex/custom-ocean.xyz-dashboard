@@ -263,17 +263,17 @@ h1 {
 
 .yellow-glow {
   color: #ffd700 !important;
-  text-shadow: 0 0 6px #ffd700, 0 0 12px #ffd700;
+  text-shadow: 0 0 6px #ffd700, 0 0 10px #ffd700;
 }
 
 .blue-glow {
   color: #00dfff !important;
-  text-shadow: 0 0 6px #00dfff, 0 0 12px #00dfff;
+  text-shadow: 0 0 6px #00dfff, 0 0 10px #00dfff;
 }
 
 .white-glow {
   color: #ffffff !important;
-  text-shadow: 0 0 6px #ffffff, 0 0 12px #ffffff;
+  text-shadow: 0 0 6px #ffffff, 0 0 10px #ffffff;
 }
 
 /* Basic color classes for backward compatibility */

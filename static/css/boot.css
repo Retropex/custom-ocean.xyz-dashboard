@@ -164,19 +164,20 @@ body::before {
 }
 
 #user-input {
-  background: transparent;
-  border: none;
-  color: #f7931a;
-  font-family: 'VT323', monospace;
-  font-size: 20px;
-  caret-color: transparent;
-  outline: none;
-  width: 20px;
-  padding: 0;
-  margin: 0;
-  text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
-  display: inline-block;
-  vertical-align: top;
+    background: transparent;
+    border: none;
+    color: #f7931a;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    caret-color: transparent;
+    outline: none;
+    width: 35px;
+    height: 33px;
+    padding: 0;
+    margin: 0;
+    text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+    display: inline-block;
+    vertical-align: top;
 }
 
 .prompt-cursor {

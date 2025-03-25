@@ -15,6 +15,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
+from notification_service import NotificationService, NotificationLevel, NotificationCategory
 
 # Import custom modules
 from config import load_config, save_config
@@ -52,6 +53,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Initialize state manager with Redis URL from environment
 redis_url = os.environ.get("REDIS_URL")
 state_manager = StateManager(redis_url)
+
+# Initialize notification service after state_manager
+notification_service = NotificationService(state_manager)
 
 # --- Disable Client Caching for All Responses ---
 @app.after_request
@@ -166,6 +170,13 @@ def update_metrics_job(force=False):
                 
                 # Update state history
                 state_manager.update_metrics_history(metrics)
+                if metrics:
+                # Check for notifications
+                    notification_service.check_and_generate_notifications(metrics, cached_metrics)
+                # Update cached metrics
+                    cached_metrics = metrics
+                # Update state history
+                    state_manager.update_metrics_history(metrics)
                 
                 logging.info("Background job: Metrics updated successfully")
                 job_successful = True
@@ -678,6 +689,91 @@ def force_refresh():
     except Exception as e:
         logging.error(f"Force refresh error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/notifications")
+def api_notifications():
+    """API endpoint for notification data."""
+    limit = request.args.get('limit', 50, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    unread_only = request.args.get('unread_only', 'false').lower() == 'true'
+    category = request.args.get('category')
+    level = request.args.get('level')
+    
+    notifications = notification_service.get_notifications(
+        limit=limit,
+        offset=offset,
+        unread_only=unread_only,
+        category=category,
+        level=level
+    )
+    
+    unread_count = notification_service.get_unread_count()
+    
+    return jsonify({
+        "notifications": notifications,
+        "unread_count": unread_count,
+        "total": len(notifications),
+        "limit": limit,
+        "offset": offset
+    })
+
+@app.route("/api/notifications/unread_count")
+def api_unread_count():
+    """API endpoint for unread notification count."""
+    return jsonify({
+        "unread_count": notification_service.get_unread_count()
+    })
+
+@app.route("/api/notifications/mark_read", methods=["POST"])
+def api_mark_read():
+    """API endpoint to mark notifications as read."""
+    notification_id = request.json.get('notification_id')
+    
+    success = notification_service.mark_as_read(notification_id)
+    
+    return jsonify({
+        "success": success,
+        "unread_count": notification_service.get_unread_count()
+    })
+
+@app.route("/api/notifications/delete", methods=["POST"])
+def api_delete_notification():
+    """API endpoint to delete a notification."""
+    notification_id = request.json.get('notification_id')
+    
+    if not notification_id:
+        return jsonify({"error": "notification_id is required"}), 400
+    
+    success = notification_service.delete_notification(notification_id)
+    
+    return jsonify({
+        "success": success,
+        "unread_count": notification_service.get_unread_count()
+    })
+
+@app.route("/api/notifications/clear", methods=["POST"])
+def api_clear_notifications():
+    """API endpoint to clear notifications."""
+    category = request.json.get('category')
+    older_than_days = request.json.get('older_than_days')
+    
+    cleared_count = notification_service.clear_notifications(
+        category=category,
+        older_than_days=older_than_days
+    )
+    
+    return jsonify({
+        "success": True,
+        "cleared_count": cleared_count,
+        "unread_count": notification_service.get_unread_count()
+    })
+
+# Add notifications page route
+@app.route("/notifications")
+def notifications_page():
+    """Serve the notifications page."""
+    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
+    return render_template("notifications.html", current_time=current_time)
 
 @app.errorhandler(404)
 def page_not_found(e):

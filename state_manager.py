@@ -408,3 +408,33 @@ class StateManager:
             # Cap the metrics log to three hours worth (180 entries)
             if len(metrics_log) > MAX_HISTORY_ENTRIES:
                 metrics_log = metrics_log[-MAX_HISTORY_ENTRIES:]
+
+def save_notifications(self, notifications):
+    """Save notifications to persistent storage."""
+    try:
+        # If we have Redis, use it
+        if self.redis_client:
+            notifications_json = json.dumps(notifications)
+            self.redis_client.set("dashboard_notifications", notifications_json)
+            return True
+        else:
+            # Otherwise just keep in memory
+            return True
+    except Exception as e:
+        logging.error(f"Error saving notifications: {e}")
+        return False
+
+def get_notifications(self):
+    """Retrieve notifications from persistent storage."""
+    try:
+        # If we have Redis, use it
+        if self.redis_client:
+            notifications_json = self.redis_client.get("dashboard_notifications")
+            if notifications_json:
+                return json.loads(notifications_json)
+        
+        # Return empty list if not found or no Redis
+        return []
+    except Exception as e:
+        logging.error(f"Error retrieving notifications: {e}")
+        return []

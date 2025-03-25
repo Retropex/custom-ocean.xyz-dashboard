@@ -1,8 +1,8 @@
 # Ocean.xyz Bitcoin Mining Dashboard
 
-## A Practical Monitoring Solution for Bitcoin Miners
+## A Comprehensive Monitoring Solution for Bitcoin Miners
 
-This open-source dashboard provides comprehensive monitoring for Ocean.xyz pool miners, offering real-time data on hashrate, profitability, and worker status. Designed to be resource-efficient and user-friendly, it helps miners maintain oversight of their operations.
+This open-source dashboard provides real-time monitoring for Ocean.xyz pool miners, offering detailed insights on hashrate, profitability, worker status, and network metrics. Designed with a retro terminal aesthetic and focused on reliability, it helps miners maintain complete oversight of their operations.
 
 ---
 ## Gallery:
@@ -11,49 +11,59 @@ This open-source dashboard provides comprehensive monitoring for Ocean.xyz pool 
 ![Workers Overview](https://github.com/user-attachments/assets/ae78c34c-fbdf-4186-9706-760a67eac44c)
 ---
 
-## Practical Mining Intelligence
-
-The dashboard aggregates essential metrics in one accessible interface:
-
-- **Profitability Analysis**: Monitor daily and monthly earnings in BTC and USD
-- **Worker Status**: Track online/offline status of mining equipment
-- **Payout Monitoring**: View unpaid balance and estimated time to next payout
-- **Network Metrics**: Stay informed of difficulty adjustments and network hashrate
-- **Cost Analysis**: Calculate profit margins based on power consumption
-
 ## Key Features
 
-### Mining Performance Metrics
-- **Hashrate Visualization**: Clear graphical representation of hashrate trends
-- **Financial Calculations**: Automatic conversion between BTC and USD values
-- **Payout Estimation**: Projected time until minimum payout threshold is reached
-- **Network Intelligence**: Current Bitcoin price, difficulty, and total network hashrate
+### Real-Time Mining Metrics
+- **Live Hashrate Tracking**: Monitor 60-second, 10-minute, 3-hour, and 24-hour average hashrates
+- **Profitability Analysis**: View daily and monthly earnings in both BTC and USD
+- **Financial Calculations**: Automatically calculate revenue, power costs, and net profit
+- **Network Statistics**: Track current Bitcoin price, difficulty, and network hashrate
+- **Payout Monitoring**: View unpaid balance and estimated time to next payout
 
 ### Worker Management
-- **Equipment Overview**: Consolidated view of all mining devices
-- **Status Monitoring**: Clear indicators for active and inactive devices
+- **Fleet Overview**: Comprehensive view of all mining devices in one interface
+- **Status Monitoring**: Real-time status indicators for online and offline devices
 - **Performance Data**: Individual hashrate, temperature, and acceptance rate metrics
 - **Filtering Options**: Sort and search by device type or operational status
 
-### Thoughtful Design Elements
-- **Retro Terminal Monitor**: A floating system monitor with classic design aesthetics
-- **Boot Sequence**: An engaging initialization sequence on startup
-- **Responsive Interface**: Adapts seamlessly to desktop and mobile devices
+### Bitcoin Block Explorer
+- **Recent Blocks**: View the latest blocks added to the blockchain
+- **Block Details**: Examine transaction counts, fees, and mining pool information
+- **Visual Indicators**: Track network difficulty and block discovery times
+
+### System Resilience
+- **Connection Recovery**: Automatic reconnection after network interruptions
+- **Backup Polling**: Fallback to traditional polling if real-time connection fails
+- **Cross-Tab Synchronization**: Data consistency across multiple browser tabs
+- **Server Health Monitoring**: Built-in watchdog processes ensure reliability
+
+### Distinctive Design Elements
+- **Retro Terminal Aesthetic**: Nostalgic interface with modern functionality
+- **Boot Sequence Animation**: Engaging initialization sequence on startup
+- **System Monitor**: Floating status display with uptime and refresh information
+- **Responsive Interface**: Adapts to desktop and mobile devices
 
 ## Quick Start
 
 ### Installation
 
 1. Clone the repository
+   ```
+   git clone https://github.com/yourusername/bitcoin-mining-dashboard.git
+   cd bitcoin-mining-dashboard
+   ```
+
 2. Install dependencies:
    ```
    pip install -r requirements.txt
    ```
+
 3. Run the setup script:
    ```
    python setup.py
    ```
-4. Configure your wallet:
+
+4. Configure your mining settings:
    ```json
    {
      "power_cost": 0.12,
@@ -61,90 +71,142 @@ The dashboard aggregates essential metrics in one accessible interface:
      "wallet": "your-wallet-address"
    }
    ```
+
 5. Start the application:
    ```
    python App.py
    ```
+
 6. Open your browser at `http://localhost:5000`
 
 ### Docker Deployment
 
 ```bash
+docker build -t bitcoin-mining-dashboard .
 docker run -d -p 5000:5000 \
   -e WALLET=your-wallet-address \
   -e POWER_COST=0.12 \
   -e POWER_USAGE=3450 \
-  yourusername/bitcoin-mining-dashboard
+  bitcoin-mining-dashboard
 ```
 
-For full deployment instructions, see [DEPLOYMENT.md]
+For detailed deployment instructions with Redis persistence and Gunicorn configuration, see [deployment_steps.md](deployment_steps.md).
 
 ## Dashboard Components
 
 ### Main Dashboard
 
-- Interactive hashrate visualization
-- Detailed profitability metrics
-- Network statistics
-- Current Bitcoin price
-- Balance and payment information
+- Interactive hashrate visualization with trend analysis
+- Real-time profitability metrics with cost calculations
+- Network statistics with difficulty and price tracking
+- Payout information with estimation timing
+- Visual indicators for metric changes
 
 ### Workers Dashboard
 
 - Fleet summary with aggregate statistics
-- Individual worker performance metrics
-- Status indicators for each device
-- Flexible filtering and search functionality
+- Individual worker cards with detailed metrics
+- Status indicators with color-coded alerts
+- Search and filtering functionality
+- Performance trend mini-charts
 
-### Retro Terminal Monitor
+### Blocks Explorer
+
+- Recent block visualization with mining details
+- Transaction statistics and fee information
+- Mining pool attribution
+- Block details modal with comprehensive data
+
+### System Monitor
 
 - Floating interface providing system statistics
 - Progress indicator for data refresh cycles
 - System uptime display
-- Minimizable design for unobtrusive monitoring
-- Thoughtful visual styling reminiscent of classic computer terminals
+- Real-time connection status
 
 ## System Requirements
 
 The application is designed for efficient resource utilization:
-- Compatible with standard desktop and laptop computers
-- Modest CPU and memory requirements
-- Suitable for continuous operation
-- Cross-platform support for Windows, macOS, and Linux
+- **Server**: Any system capable of running Python 3.9+
+- **Memory**: Minimal requirements (~100MB RAM)
+- **Storage**: Less than 50MB for application files
+- **Database**: Optional Redis for persistent state
+- **Compatible with**: Windows, macOS, and Linux
+
+## Technical Architecture
+
+Built with a modern stack for reliability and performance:
+- **Backend**: Flask with Server-Sent Events for real-time updates
+- **Frontend**: Vanilla JavaScript with Chart.js for visualization
+- **Data Processing**: Concurrent API calls with smart caching
+- **Resilience**: Automatic recovery mechanisms and state persistence
+- **Configuration**: Environment variables and JSON-based settings
 
 ## Project Structure
 
-For details on the project's architecture and organization, see [PROJECT_STRUCTURE.md]
+The project follows a modular architecture with clear separation of concerns:
+
+```
+bitcoin-mining-dashboard/
+│
+├── App.py                      # Main application entry point
+├── config.py                   # Configuration management
+├── config.json                 # Configuration file
+├── data_service.py             # Service for fetching mining data
+├── models.py                   # Data models
+├── state_manager.py            # Manager for persistent state
+├── worker_service.py           # Service for worker data management
+├── setup.py                    # Setup script for organizing files
+├── requirements.txt            # Python dependencies
+├── Dockerfile                  # Docker configuration
+│
+├── templates/                  # HTML templates
+│   ├── base.html              # Base template with common elements
+│   ├── boot.html              # Boot sequence animation
+│   ├── dashboard.html         # Main dashboard template
+│   ├── workers.html           # Workers dashboard template
+│   ├── blocks.html            # Bitcoin blocks template
+│   └── error.html             # Error page template
+│
+├── static/                     # Static assets
+│   ├── css/                   # CSS files
+│   │   ├── common.css         # Shared styles across all pages
+│   │   ├── dashboard.css      # Main dashboard styles
+│   │   ├── workers.css        # Workers page styles
+│   │   ├── boot.css           # Boot sequence styles
+│   │   ├── blocks.css         # Blocks page styles
+│   │   ├── error.css          # Error page styles
+│   │   └── retro-refresh.css  # Floating refresh bar styles
+│   │
+│   └── js/                    # JavaScript files
+│       ├── main.js            # Main dashboard functionality
+│       ├── workers.js         # Workers page functionality
+│       ├── blocks.js          # Blocks page functionality
+│       ├── block-animation.js # Block mining animation
+│       └── BitcoinProgressBar.js # System monitor functionality
+│
+├── deployment_steps.md         # Deployment guide
+└── project_structure.md        # Additional structure documentation
+```
+
+For more detailed information on the architecture and component interactions, see [project_structure.md](project_structure.md).
 
 ## Troubleshooting
 
 For optimal performance:
 
-1. Use the refresh function if data appears outdated
-2. Verify network connectivity for consistent updates
-3. Restart the application after configuration changes
-4. Access the health endpoint at `/api/health` for system status information
+1. Ensure your wallet address is correctly configured
+2. Check network connectivity for consistent updates
+3. Use the system monitor to verify connection status
+4. Access the health endpoint at `/api/health` for diagnostics
+5. For stale data issues, use the Force Refresh function
 
-## Getting Started
+## License
 
-1. Download the latest release
-2. Configure with your mining information
-3. Launch the application to begin monitoring
-
-The dashboard requires only your Ocean.xyz mining wallet address for basic functionality.
-
----
-
-## Technical Foundation
-
-Built on Flask with Chart.js for visualization and Server-Sent Events for real-time updates, this dashboard retrieves data from Ocean.xyz and performs calculations based on current network metrics and your specified parameters.
-
-The application prioritizes stability and efficiency for reliable long-term operation. Source code is available for review and customization.
+Available under the MIT License. This is an independent project not affiliated with Ocean.xyz.
 
 ## Acknowledgments
 
 - Ocean.xyz mining pool for their service
 - The open-source community for their contributions
 - Bitcoin protocol developers
-
-Available under the MIT License. This is an independent project not affiliated with Ocean.xyz.

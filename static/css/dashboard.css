@@ -188,3 +188,12 @@
   border-radius: 5px; 
   box-shadow: 0 0 15px rgba(247, 147, 26, 0.7);
 }
+/* Add bottom padding to accommodate minimized system monitor */
+.container-fluid {
+    padding-bottom: 60px !important; /* Enough space for minimized monitor */
+}
+
+/* Ensure last card has proper margin to avoid being hidden */
+#payoutMiscCard {
+    margin-bottom: 60px;
+}

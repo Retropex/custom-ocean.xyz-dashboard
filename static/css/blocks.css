@@ -57,6 +57,10 @@
     flex-direction: column;
 }
 
+.stat-item strong {
+    color: #f7931a; /* Use the Bitcoin orange color for labels */
+}
+
 /* Blocks grid */
 .blocks-container {
     overflow-x: auto;

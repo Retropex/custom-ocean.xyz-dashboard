@@ -791,7 +791,8 @@ function updateUI() {
                 "animation": "glowPulse 1s infinite"
             });
         } else {
-            const days = parseFloat(payoutText);
+            const daysMatch = payoutText.match(/(\d+)/);
+            const days = daysMatch ? parseFloat(daysMatch[1]) : NaN;
             if (!isNaN(days)) {
                 if (days < 4) {
                     $("#est_time_to_payout").css({ "color": "#32CD32", "animation": "none" });

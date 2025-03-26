@@ -218,7 +218,7 @@ class NotificationService:
             
             # Check for blocks found
             if previous_metrics and current_metrics:
-                if self._check_blocks_found(current_metrics, previous_metrics):
+                if self._check_last_block_change(current_metrics, previous_metrics):
                     block_notification = self._generate_block_notification(current_metrics)
                     if block_notification:
                         new_notifications.append(block_notification)
@@ -307,20 +307,19 @@ class NotificationService:
             logging.error(f"Error generating daily stats notification: {e}")
             return None
     
-    def _check_blocks_found(self, current, previous):
-        """Check if new blocks were found by the pool."""
-        current_blocks = current.get("blocks_found", "0")
-        previous_blocks = previous.get("blocks_found", "0")
+    def _check_last_block_change(self, current, previous):
+        """Check if a new block has been found by comparing last_block_height."""
+        current_block = current.get("last_block_height", "0")
+        previous_block = previous.get("last_block_height", "0")
         
         try:
-            return int(current_blocks) > int(previous_blocks)
+            return str(current_block) != str(previous_block) and current_block != "N/A" and previous_block != "N/A"
         except (ValueError, TypeError):
             return False
     
     def _generate_block_notification(self, metrics):
         """Generate notification for a new block found."""
         try:
-            blocks_found = metrics.get("blocks_found", "0")
             last_block_height = metrics.get("last_block_height", "Unknown")
             last_block_earnings = metrics.get("last_block_earnings", "0")
             
@@ -331,7 +330,6 @@ class NotificationService:
                 level=NotificationLevel.SUCCESS,
                 category=NotificationCategory.BLOCK,
                 data={
-                    "blocks_found": blocks_found,
                     "block_height": last_block_height,
                     "earnings": last_block_earnings
                 }

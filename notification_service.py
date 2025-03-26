@@ -30,9 +30,13 @@ class NotificationService:
         self.daily_stats_time = "00:00:00"  # When to post daily stats (midnight)
         self.last_daily_stats = None
         self.max_notifications = 100  # Maximum number to store
+        self.last_block_height = None  # Track the last seen block height
         
         # Load existing notifications from state
         self._load_notifications()
+        
+        # Load last block height from state
+        self._load_last_block_height()
     
     def _load_notifications(self):
         """Load notifications from persistent storage."""
@@ -43,6 +47,29 @@ class NotificationService:
                 logging.info(f"Loaded {len(self.notifications)} notifications from storage")
         except Exception as e:
             logging.error(f"Error loading notifications: {e}")
+    
+    def _load_last_block_height(self):
+        """Load last block height from persistent storage."""
+        try:
+            if hasattr(self.state_manager, 'redis_client') and self.state_manager.redis_client:
+                # Use Redis if available
+                last_height = self.state_manager.redis_client.get("last_block_height")
+                if last_height:
+                    self.last_block_height = last_height.decode('utf-8')
+                    logging.info(f"Loaded last block height from storage: {self.last_block_height}")
+            else:
+                logging.info("Redis not available, starting with no last block height")
+        except Exception as e:
+            logging.error(f"Error loading last block height: {e}")
+    
+    def _save_last_block_height(self):
+        """Save last block height to persistent storage."""
+        try:
+            if hasattr(self.state_manager, 'redis_client') and self.state_manager.redis_client and self.last_block_height:
+                self.state_manager.redis_client.set("last_block_height", str(self.last_block_height))
+                logging.info(f"Saved last block height to storage: {self.last_block_height}")
+        except Exception as e:
+            logging.error(f"Error saving last block height: {e}")
     
     def _save_notifications(self):
         """Save notifications to persistent storage."""
@@ -83,6 +110,7 @@ class NotificationService:
         self.notifications.append(notification)
         self._save_notifications()
         
+        logging.info(f"Added notification: {message}")
         return notification
     
     def get_notifications(self, limit=50, offset=0, unread_only=False, category=None, level=None):
@@ -210,37 +238,48 @@ class NotificationService:
         new_notifications = []
         
         try:
-            # Check for daily stats
-            if self._should_post_daily_stats():
-                stats_notification = self._generate_daily_stats(current_metrics)
-                if stats_notification:
-                    new_notifications.append(stats_notification)
+            # Skip if no metrics
+            if not current_metrics:
+                logging.warning("No current metrics available, skipping notification checks")
+                return new_notifications
             
-            # Check for blocks found
-            if previous_metrics and current_metrics:
-                if self._check_last_block_change(current_metrics, previous_metrics):
+            # Check for block updates (using persistent storage)
+            last_block_height = current_metrics.get("last_block_height")
+            if last_block_height and last_block_height != "N/A":
+                if self.last_block_height is not None and self.last_block_height != last_block_height:
+                    logging.info(f"Block change detected: {self.last_block_height} -> {last_block_height}")
                     block_notification = self._generate_block_notification(current_metrics)
                     if block_notification:
                         new_notifications.append(block_notification)
+                
+                # Always update the stored last block height when it changes
+                if self.last_block_height != last_block_height:
+                    self.last_block_height = last_block_height
+                    self._save_last_block_height()
             
-            # Check for significant hashrate drop
-            if previous_metrics and current_metrics:
+            # Regular comparison with previous metrics
+            if previous_metrics:
+                # Check for daily stats
+                if self._should_post_daily_stats():
+                    stats_notification = self._generate_daily_stats(current_metrics)
+                    if stats_notification:
+                        new_notifications.append(stats_notification)
+                
+                # Check for significant hashrate drop
                 hashrate_notification = self._check_hashrate_change(current_metrics, previous_metrics)
                 if hashrate_notification:
                     new_notifications.append(hashrate_notification)
-            
-            # Check for worker status changes
-            if previous_metrics and current_metrics:
+                
+                # Check for worker status changes
                 worker_notification = self._check_worker_status_change(current_metrics, previous_metrics)
                 if worker_notification:
                     new_notifications.append(worker_notification)
-            
-            # Check for earnings and payout progress
-            if previous_metrics and current_metrics:
+                
+                # Check for earnings and payout progress
                 earnings_notification = self._check_earnings_progress(current_metrics, previous_metrics)
                 if earnings_notification:
                     new_notifications.append(earnings_notification)
-                    
+            
             return new_notifications
                 
         except Exception as e:
@@ -307,21 +346,13 @@ class NotificationService:
             logging.error(f"Error generating daily stats notification: {e}")
             return None
     
-    def _check_last_block_change(self, current, previous):
-        """Check if a new block has been found by comparing last_block_height."""
-        current_block = current.get("last_block_height", "0")
-        previous_block = previous.get("last_block_height", "0")
-        
-        try:
-            return str(current_block) != str(previous_block) and current_block != "N/A" and previous_block != "N/A"
-        except (ValueError, TypeError):
-            return False
-    
     def _generate_block_notification(self, metrics):
         """Generate notification for a new block found."""
         try:
             last_block_height = metrics.get("last_block_height", "Unknown")
             last_block_earnings = metrics.get("last_block_earnings", "0")
+            
+            logging.info(f"Generating block notification: height={last_block_height}, earnings={last_block_earnings}")
             
             message = f"New block found by the pool! Block #{last_block_height}, earnings: {last_block_earnings} sats"
             

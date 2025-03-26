@@ -93,7 +93,7 @@ class StateManager:
                         arrow_history[key] = [
                             {"time": entry.get("t", ""), 
                              "value": entry.get("v", 0), 
-                             "arrow": ""}  # Default empty arrow
+                             "arrow": entry.get("a", "")}  # Use saved arrow value
                             for entry in values
                         ]
                     
@@ -146,9 +146,9 @@ class StateManager:
                 if isinstance(values, list) and values:
                     # Only store recent history (last 2 hours)
                     recent_values = values[-120:] if len(values) > 120 else values
-                    # Use shorter field names and remove unnecessary fields
+                    # Use shorter field names and preserve arrow directions
                     compact_arrow_history[key] = [
-                        {"t": entry["time"], "v": entry["value"]} 
+                        {"t": entry["time"], "v": entry["value"], "a": entry["arrow"]} 
                         for entry in recent_values
                     ]
             

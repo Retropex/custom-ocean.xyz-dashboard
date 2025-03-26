@@ -462,7 +462,7 @@ function updateServerTime() {
     });
 }
 
-// Update UI indicators (arrows) with unit normalization
+// FIXED: Update UI indicators (arrows) with unit normalization
 function updateIndicators(newMetrics) {
     console.log("Updating indicators with new metrics");
 
@@ -479,7 +479,10 @@ function updateIndicators(newMetrics) {
         const newVal = parseFloat(newMetrics[key]);
         if (isNaN(newVal)) return;
 
+        // First try to calculate arrow based on comparison with previous value
+        let arrowCalculated = false;
         const oldVal = parseFloat(previousMetrics[key]);
+
         if (!isNaN(oldVal)) {
             // For hashrate values, normalize both values to the same unit before comparison
             if (key.includes('hashrate')) {
@@ -489,38 +492,45 @@ function updateIndicators(newMetrics) {
                 const normalizedNewVal = normalizeHashrate(newVal, newUnit);
                 const normalizedOldVal = normalizeHashrate(oldVal, oldUnit);
 
-                // Lower threshold to 0.5% to catch more changes
-                if (normalizedNewVal > normalizedOldVal * 1.0001) {
+                // Lower threshold to 0.1% to catch more changes
+                if (normalizedNewVal > normalizedOldVal * 1.001) {
                     persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-up bounce-up' style='color: green;'></i>";
-                } else if (normalizedNewVal < normalizedOldVal * 0.9999) {
+                    arrowCalculated = true;
+                } else if (normalizedNewVal < normalizedOldVal * 0.999) {
                     persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-down bounce-down' style='color: red; position: relative; top: -2px;'></i>";
+                    arrowCalculated = true;
                 }
             } else {
-                // Lower threshold to 0.5% for non-hashrate values too
-                if (newVal > oldVal * 1.0001) {
+                // Lower threshold to 0.1% for non-hashrate values too
+                if (newVal > oldVal * 1.001) {
                     persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-up bounce-up' style='color: green;'></i>";
-                } else if (newVal < oldVal * 0.9999) {
+                    arrowCalculated = true;
+                } else if (newVal < oldVal * 0.999) {
                     persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-down bounce-down' style='color: red; position: relative; top: -2px;'></i>";
-                }
-            }
-        } else {
-            // Keep using arrow_history as fallback - this code is unchanged
-            if (newMetrics.arrow_history && newMetrics.arrow_history[key] && newMetrics.arrow_history[key].length > 0) {
-                const historyArr = newMetrics.arrow_history[key];
-                for (let i = historyArr.length - 1; i >= 0; i--) {
-                    if (historyArr[i].arrow !== "") {
-                        if (historyArr[i].arrow === "↑") {
-                            persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-up bounce-up' style='color: green;'></i>";
-                        } else if (historyArr[i].arrow === "↓") {
-                            persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-down bounce-down' style='color: red; position: relative; top: -2px;'></i>";
-                        }
-                        break;
-                    }
+                    arrowCalculated = true;
                 }
             }
         }
 
-        // Debug which indicators exist
+        // If we couldn't calculate arrow from comparison or initial load
+        // Try to use arrow_history
+        if (!arrowCalculated && newMetrics.arrow_history && newMetrics.arrow_history[key] && newMetrics.arrow_history[key].length > 0) {
+            const historyArr = newMetrics.arrow_history[key];
+            for (let i = historyArr.length - 1; i >= 0; i--) {
+                if (historyArr[i].arrow !== "") {
+                    if (historyArr[i].arrow === "↑") {
+                        persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-up bounce-up' style='color: green;'></i>";
+                        arrowCalculated = true;
+                    } else if (historyArr[i].arrow === "↓") {
+                        persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-down bounce-down' style='color: red; position: relative; top: -2px;'></i>";
+                        arrowCalculated = true;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Update indicator in DOM
         const indicator = document.getElementById("indicator_" + key);
         if (indicator) {
             indicator.innerHTML = persistentArrows[key] || "";
@@ -706,6 +716,37 @@ function updateUI() {
             console.log(`Server metrics fetch took ${data.execution_time.toFixed(2)}s`);
         }
 
+        // Ensure persistentArrows has initial values from arrow_history on first load
+        if (initialLoad && data.arrow_history) {
+            console.log("First load - ensuring arrows are initialized from history");
+            for (const key in data.arrow_history) {
+                const historyArr = data.arrow_history[key];
+                if (historyArr && historyArr.length > 0) {
+                    // Look for the most recent arrow in history
+                    for (let i = historyArr.length - 1; i >= 0; i--) {
+                        if (historyArr[i].arrow !== "") {
+                            if (historyArr[i].arrow === "↑") {
+                                persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-up bounce-up' style='color: green;'></i>";
+                            } else if (historyArr[i].arrow === "↓") {
+                                persistentArrows[key] = "<i class='arrow chevron fa-solid fa-angle-double-down bounce-down' style='color: red; position: relative; top: -2px;'></i>";
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Immediately apply the first set of arrows
+            Object.keys(persistentArrows).forEach(key => {
+                const indicator = document.getElementById("indicator_" + key);
+                if (indicator) {
+                    indicator.innerHTML = persistentArrows[key] || "";
+                }
+            });
+
+            initialLoad = false;
+        }
+
         // Cache jQuery selectors for performance and use safe update methods
         // Format each hashrate with proper normalization
 
@@ -791,7 +832,7 @@ function updateUI() {
                 "animation": "glowPulse 1s infinite"
             });
         } else {
-            const daysMatch = payoutText.match(/(\d+)/);
+            const daysMatch = payoutText ? payoutText.match(/(\d+)/) : null;
             const days = daysMatch ? parseFloat(daysMatch[1]) : NaN;
             if (!isNaN(days)) {
                 if (days < 4) {

@@ -409,3 +409,33 @@ body {
         align-items: center;
     }
 }
+
+/* Make the terminal draggable in desktop view */
+@media (min-width: 768px) {
+    /* Target both possible selectors to handle all cases */
+    #bitcoin-terminal,
+    .bitcoin-terminal,
+    #retro-terminal-bar {
+        cursor: grab; /* Show a grab cursor to indicate draggability */
+        user-select: none; /* Prevent text selection during drag */
+    }
+
+        /* Change cursor during active dragging */
+        #bitcoin-terminal.dragging,
+        .bitcoin-terminal.dragging,
+        #retro-terminal-bar.dragging {
+            cursor: grabbing;
+        }
+
+    /* Style for drag handle in the header */
+    .terminal-header {
+        cursor: grab;
+    }
+
+        .terminal-header::before {
+            content: "⋮⋮"; /* Add drag indicator */
+            position: absolute;
+            left: 10px;
+            opacity: 0.5;
+        }
+}

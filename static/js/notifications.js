@@ -36,6 +36,9 @@ $(document).ready(function () {
         BitcoinMinuteRefresh.initialize(refreshNotifications);
         console.log("BitcoinMinuteRefresh initialized with refresh function");
     }
+
+    // Start periodic update of notification timestamps every 30 seconds
+    setInterval(updateNotificationTimestamps, 30000);
 });
 
 // Load notifications with current filter
@@ -100,6 +103,17 @@ function refreshNotifications() {
         updateUnreadCount();
     }
 }
+// Update notification timestamps to relative time
+function updateNotificationTimestamps() {
+    $('.notification-item').each(function () {
+        const timestampStr = $(this).attr('data-timestamp');
+        if (timestampStr) {
+            const timestamp = new Date(timestampStr);
+            const relativeTime = formatTimestamp(timestamp);
+            $(this).find('.notification-time').text(relativeTime);
+        }
+    });
+}
 
 // Show loading indicator
 function showLoading() {
@@ -150,11 +164,11 @@ function createNotificationElement(notification) {
     const element = $(template);
 
     // Set data attributes
-    element.find('.notification-item')
-        .attr('data-id', notification.id)
+    element.attr('data-id', notification.id)
         .attr('data-level', notification.level)
         .attr('data-category', notification.category)
-        .attr('data-read', notification.read);
+        .attr('data-read', notification.read)
+        .attr('data-timestamp', notification.timestamp);
 
     // Set icon based on level
     const iconElement = element.find('.notification-icon i');
@@ -175,12 +189,31 @@ function createNotificationElement(notification) {
             iconElement.addClass('fa-bell');
     }
 
-    // Set message
-    element.find('.notification-message').text(notification.message);
+    // Append "Z" to indicate UTC if not present
+    let utcTimestampStr = notification.timestamp;
+    if (!utcTimestampStr.endsWith('Z')) {
+        utcTimestampStr += 'Z';
+    }
+    const utcDate = new Date(utcTimestampStr);
 
-    // Set metadata
-    const timestamp = new Date(notification.timestamp);
-    element.find('.notification-time').text(formatTimestamp(timestamp));
+    // Convert UTC date to Los Angeles time with a timezone name for clarity
+    const fullTimestamp = utcDate.toLocaleString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        timeZoneName: 'short'
+    });
+
+    // Append the full timestamp to the notification message
+    const messageWithTimestamp = `${notification.message}<br><span class="full-timestamp">${fullTimestamp}</span>`;
+    element.find('.notification-message').html(messageWithTimestamp);
+
+    // Set metadata for relative time display
+    element.find('.notification-time').text(formatTimestamp(utcDate));
     element.find('.notification-category').text(notification.category);
 
     // Set up action buttons
@@ -188,7 +221,6 @@ function createNotificationElement(notification) {
         e.stopPropagation();
         markAsRead(notification.id);
     });
-
     element.find('.delete-button').on('click', function (e) {
         e.stopPropagation();
         deleteNotification(notification.id);
@@ -221,7 +253,7 @@ function formatTimestamp(timestamp) {
         return `${diffDay}d ago`;
     } else {
         // Format as date for older notifications
-        return timestamp.toLocaleDateString();
+        return timestamp.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' });
     }
 }
 

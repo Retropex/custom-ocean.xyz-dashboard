@@ -45,7 +45,7 @@ const BitcoinMinuteRefresh = (function () {
           </div>
           <span id="terminal-clock" class="terminal-clock">00:00:00</span>
         </div>
-        
+        <!-- Removed for now
         <div class="minute-progress-container">
           <div class="minute-labels">
             <span>0s</span>
@@ -64,7 +64,7 @@ const BitcoinMinuteRefresh = (function () {
             Next refresh at the top of the minute
           </div>
         </div>
-        
+        -->
         <div id="uptime-timer" class="uptime-timer">
           <div class="uptime-title">UPTIME</div>
           <div class="uptime-display">
@@ -549,55 +549,16 @@ const BitcoinMinuteRefresh = (function () {
      */
     function updateMinuteProgress() {
         try {
-            // Get current server time
+            // Get current server time - keep this for other functions that might use it
             const now = new Date(Date.now() + (serverTimeOffset || 0));
-            const seconds = now.getSeconds();
-            const milliseconds = now.getMilliseconds();
 
-            // Calculate precise progress within the minute (0-1)
-            const progress = (seconds + (milliseconds / 1000)) / 60;
-
-            // Update the progress bar
-            const progressBar = document.getElementById('minute-progress-inner');
-            if (progressBar) {
-                // Set the width based on the current progress through the minute
-                progressBar.style.width = (progress * 100) + "%";
-
-                // Add effects when close to the end of the minute
-                if (seconds >= 50) {
-                    progressBar.classList.add('near-refresh');
-                    document.getElementById('refresh-status').textContent = `Refresh in ${60 - seconds} seconds...`;
-                } else {
-                    progressBar.classList.remove('near-refresh');
-                    document.getElementById('refresh-status').textContent = 'Next refresh at the top of the minute';
-                }
-
-                // Flash when reaching 00 seconds (new minute)
-                if (seconds === 0 && milliseconds < 500) {
-                    progressBar.classList.add('refresh-now');
-                    document.getElementById('refresh-status').textContent = 'Refreshing data...';
-
-                    // Remove the class after animation completes
-                    setTimeout(() => {
-                        progressBar.classList.remove('refresh-now');
-                    }, 1000);
-                } else {
-                    progressBar.classList.remove('refresh-now');
-                }
-            }
-
-            // Check if we've crossed into a new minute
+            // We need to keep track of minutes for other functionality
             const currentMinute = now.getMinutes();
-            if (lastMinuteValue !== -1 && currentMinute !== lastMinuteValue && seconds === 0) {
-                // Trigger refresh on minute change (only when seconds are 0)
-                if (typeof refreshCallback === 'function') {
-                    console.log('New minute started - triggering refresh...');
-                    refreshCallback();
-                }
-            }
 
-            // Update last minute value
+            // Update last minute value (keeping this for any other code that might rely on it)
             lastMinuteValue = currentMinute;
+
+            // No progress bar updates or effects
 
         } catch (e) {
             console.error("BitcoinMinuteRefresh: Error updating progress bar:", e);
@@ -654,6 +615,12 @@ const BitcoinMinuteRefresh = (function () {
                 if (minimizedUptimeElement) {
                     minimizedUptimeElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                 }
+
+                // NEW CODE: Update the dashboard's uptime display if it exists
+                const dashboardUptimeElement = document.getElementById('uptimeTimer');
+                if (dashboardUptimeElement) {
+                    dashboardUptimeElement.innerHTML = `<strong>Uptime:</strong> ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+                }
             } catch (e) {
                 console.error("BitcoinMinuteRefresh: Error updating uptime:", e);
             }
@@ -684,6 +651,12 @@ const BitcoinMinuteRefresh = (function () {
             // Get references to existing elements
             terminalElement = document.getElementById('bitcoin-terminal');
             uptimeElement = document.getElementById('uptime-timer');
+        }
+
+        // NEW CODE: Check if dashboard uptime element exists
+        const dashboardUptimeElement = document.getElementById('uptimeTimer');
+        if (dashboardUptimeElement) {
+            console.log("BitcoinMinuteRefresh: Found dashboard uptime element, will sync with it");
         }
 
         // Try to get stored server time information

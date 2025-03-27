@@ -343,6 +343,7 @@ class StateManager:
                         try:
                             previous_val = arrow_history[key][-1]["value"]
                             previous_unit = arrow_history[key][-1].get("unit", "")
+                            previous_arrow = arrow_history[key][-1].get("arrow", "")  # Get previous arrow
                             
                             # Use the convert_to_ths function to normalize both values before comparison
                             if key.startswith("hashrate") and current_unit:
@@ -350,23 +351,44 @@ class StateManager:
                                 norm_curr_val = convert_to_ths(float(current_val), current_unit)
                                 norm_prev_val = convert_to_ths(float(previous_val), previous_unit if previous_unit else "th/s")
                                 
-                                if norm_curr_val > norm_prev_val * 1.01:  # 1% threshold to avoid minor fluctuations
+                                # Lower the threshold to 0.05% for more sensitivity
+                                if norm_curr_val > norm_prev_val * 1.0005:
                                     arrow = "↑"
-                                elif norm_curr_val < norm_prev_val * 0.99:  # 1% threshold
+                                elif norm_curr_val < norm_prev_val * 0.9995:
                                     arrow = "↓"
+                                else:
+                                    arrow = previous_arrow  # Preserve previous arrow if change is insignificant
                             else:
                                 # For non-hashrate values or when units are missing
-                                if float(current_val) > float(previous_val) * 1.01:
-                                    arrow = "↑"
-                                elif float(current_val) < float(previous_val) * 0.99:
-                                    arrow = "↓"
+                                # Try to convert to float for comparison
+                                try:
+                                    curr_float = float(current_val)
+                                    prev_float = float(previous_val)
+                                    
+                                    # Lower the threshold to 0.05% for more sensitivity
+                                    if curr_float > prev_float * 1.0005:
+                                        arrow = "↑"
+                                    elif curr_float < prev_float * 0.9995:
+                                        arrow = "↓"
+                                    else:
+                                        arrow = previous_arrow  # Preserve previous arrow
+                                except (ValueError, TypeError):
+                                    # If values can't be converted to float, compare directly
+                                    if current_val != previous_val:
+                                        arrow = "↑" if current_val > previous_val else "↓"
+                                    else:
+                                        arrow = previous_arrow  # Preserve previous arrow
                         except Exception as e:
                             logging.error(f"Error calculating arrow for {key}: {e}")
+                            # Keep previous arrow on error instead of empty string
+                            if arrow_history[key] and arrow_history[key][-1].get("arrow"):
+                                arrow = arrow_history[key][-1]["arrow"]
                             
                     if key not in arrow_history:
                         arrow_history[key] = []
                         
                     if not arrow_history[key] or arrow_history[key][-1]["time"] != current_second:
+                        # Create new entry
                         entry = {
                             "time": current_second,
                             "value": current_val,
@@ -378,8 +400,11 @@ class StateManager:
                             
                         arrow_history[key].append(entry)
                     else:
+                        # Update existing entry
                         arrow_history[key][-1]["value"] = current_val
-                        arrow_history[key][-1]["arrow"] = arrow
+                        # Only update arrow if it's not empty - this preserves arrows between changes
+                        if arrow:
+                            arrow_history[key][-1]["arrow"] = arrow
                         # Update unit if available
                         if current_unit:
                             arrow_history[key][-1]["unit"] = current_unit

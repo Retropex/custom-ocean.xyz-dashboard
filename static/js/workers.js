@@ -70,6 +70,9 @@ function formatHashrateForDisplay(value, unit) {
 $(document).ready(function () {
     console.log("Worker page initializing...");
 
+    // Initialize notification badge
+    initNotificationBadge();
+
     // Set up initial UI
     initializePage();
 
@@ -132,6 +135,33 @@ function initializePage() {
             }, 3000);
         });
     }
+}
+
+// Update unread notifications badge in navigation
+function updateNotificationBadge() {
+    $.ajax({
+        url: "/api/notifications/unread_count",
+        method: "GET",
+        success: function (data) {
+            const unreadCount = data.unread_count;
+            const badge = $("#nav-unread-badge");
+
+            if (unreadCount > 0) {
+                badge.text(unreadCount).show();
+            } else {
+                badge.hide();
+            }
+        }
+    });
+}
+
+// Initialize notification badge checking
+function initNotificationBadge() {
+    // Update immediately
+    updateNotificationBadge();
+
+    // Update every 60 seconds
+    setInterval(updateNotificationBadge, 60000);
 }
 
 // Server time update via polling - enhanced to use shared storage

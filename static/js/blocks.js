@@ -9,6 +9,9 @@ let isLoading = false;
 // DOM ready initialization
 $(document).ready(function() {
     console.log("Blocks page initialized");
+
+    // Initialize notification badge
+    initNotificationBadge();
     
     // Load the latest blocks on page load
     loadLatestBlocks();
@@ -52,6 +55,32 @@ $(document).ready(function() {
     }
 });
 
+// Update unread notifications badge in navigation
+function updateNotificationBadge() {
+    $.ajax({
+        url: "/api/notifications/unread_count",
+        method: "GET",
+        success: function (data) {
+            const unreadCount = data.unread_count;
+            const badge = $("#nav-unread-badge");
+
+            if (unreadCount > 0) {
+                badge.text(unreadCount).show();
+            } else {
+                badge.hide();
+            }
+        }
+    });
+}
+
+// Initialize notification badge checking
+function initNotificationBadge() {
+    // Update immediately
+    updateNotificationBadge();
+
+    // Update every 60 seconds
+    setInterval(updateNotificationBadge, 60000);
+}
 // Helper function to format timestamps as readable dates
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp * 1000);

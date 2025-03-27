@@ -20,6 +20,112 @@ const BitcoinMinuteRefresh = (function () {
     let refreshCallback = null;
 
     /**
+     * Add dragging functionality to the terminal
+     */
+    function addDraggingBehavior() {
+        // Find the terminal element (checking both possible selectors)
+        const terminal = document.getElementById('bitcoin-terminal') ||
+            document.querySelector('.bitcoin-terminal') ||
+            document.getElementById('retro-terminal-bar');
+
+        if (!terminal) {
+            console.warn('Terminal element not found for drag behavior');
+            return;
+        }
+
+        let isDragging = false;
+        let startX = 0;
+        let startLeft = 0;
+
+        // Function to handle mouse down (drag start)
+        function handleMouseDown(e) {
+            // Only enable dragging in desktop view
+            if (window.innerWidth < 768) return;
+
+            // Don't handle drag if clicking on controls
+            if (e.target.closest('.terminal-dot')) return;
+
+            isDragging = true;
+            terminal.classList.add('dragging');
+
+            // Calculate start position
+            startX = e.clientX;
+
+            // Get current left position accounting for different possible styles
+            const style = window.getComputedStyle(terminal);
+            if (style.left !== 'auto') {
+                startLeft = parseInt(style.left) || 0;
+            } else {
+                // Calculate from right if left is not set
+                startLeft = window.innerWidth -
+                    (parseInt(style.right) || 0) -
+                    terminal.offsetWidth;
+            }
+
+            e.preventDefault(); // Prevent text selection
+        }
+
+        // Function to handle mouse move (dragging)
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+
+            // Calculate the horizontal movement - vertical stays fixed
+            const deltaX = e.clientX - startX;
+            let newLeft = startLeft + deltaX;
+
+            // Constrain to window boundaries
+            const maxLeft = window.innerWidth - terminal.offsetWidth;
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+
+            // Update position - only horizontally along bottom
+            terminal.style.left = newLeft + 'px';
+            terminal.style.right = 'auto'; // Remove right positioning
+            terminal.style.transform = 'none'; // Remove transformations
+
+            // Bottom position remains fixed
+        }
+
+        // Function to handle mouse up (drag end)
+        function handleMouseUp() {
+            if (isDragging) {
+                isDragging = false;
+                terminal.classList.remove('dragging');
+            }
+        }
+
+        // Find the terminal header for dragging
+        const terminalHeader = terminal.querySelector('.terminal-header');
+        if (terminalHeader) {
+            terminalHeader.addEventListener('mousedown', handleMouseDown);
+        } else {
+            // If no header found, make the whole terminal draggable
+            terminal.addEventListener('mousedown', handleMouseDown);
+        }
+
+        // Add mousemove and mouseup listeners to document
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        // Handle window resize to keep terminal visible
+        window.addEventListener('resize', function () {
+            if (window.innerWidth < 768) {
+                // Reset position for mobile view
+                terminal.style.left = '50%';
+                terminal.style.right = 'auto';
+                terminal.style.transform = 'translateX(-50%)';
+            } else {
+                // Ensure terminal stays visible in desktop view
+                const maxLeft = window.innerWidth - terminal.offsetWidth;
+                const currentLeft = parseInt(window.getComputedStyle(terminal).left) || 0;
+
+                if (currentLeft > maxLeft) {
+                    terminal.style.left = maxLeft + 'px';
+                }
+            }
+        });
+    }
+
+    /**
      * Create and inject the retro terminal element into the DOM
      */
     function createTerminalElement() {
@@ -100,6 +206,9 @@ const BitcoinMinuteRefresh = (function () {
 
         // Append to body
         document.body.appendChild(terminalElement);
+
+        // Add dragging behavior
+        addDraggingBehavior();
 
         // Cache element references
         uptimeElement = document.getElementById('uptime-timer');

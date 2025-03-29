@@ -3,12 +3,12 @@
 // Global variables
 let currentFilter = "all";
 let currentOffset = 0;
-let pageSize = 20;
+const pageSize = 20;
 let hasMoreNotifications = true;
 let isLoading = false;
 
 // Initialize when document is ready
-$(document).ready(function () {
+$(document).ready(() => {
     console.log("Notification page initializing...");
 
     // Set up filter buttons
@@ -58,10 +58,10 @@ function loadNotifications() {
     }
 
     $.ajax({
-        url: "/api/notifications?" + $.param(params),
+        url: `/api/notifications?${$.param(params)}`,
         method: "GET",
         dataType: "json",
-        success: function (data) {
+        success: (data) => {
             renderNotifications(data.notifications, currentOffset === 0);
             updateUnreadBadge(data.unread_count);
 
@@ -71,7 +71,7 @@ function loadNotifications() {
 
             isLoading = false;
         },
-        error: function (xhr, status, error) {
+        error: (xhr, status, error) => {
             console.error("Error loading notifications:", error);
             showError("Failed to load notifications. Please try again.");
             isLoading = false;
@@ -103,6 +103,7 @@ function refreshNotifications() {
         updateUnreadCount();
     }
 }
+
 // Update notification timestamps to relative time
 function updateNotificationTimestamps() {
     $('.notification-item').each(function () {
@@ -149,7 +150,7 @@ function renderNotifications(notifications, isFirstPage) {
     }
 
     // Render each notification
-    notifications.forEach(function (notification) {
+    notifications.forEach(notification => {
         const notificationElement = createNotificationElement(notification);
         container.append(notificationElement);
     });
@@ -217,11 +218,11 @@ function createNotificationElement(notification) {
     element.find('.notification-category').text(notification.category);
 
     // Set up action buttons
-    element.find('.mark-read-button').on('click', function (e) {
+    element.find('.mark-read-button').on('click', (e) => {
         e.stopPropagation();
         markAsRead(notification.id);
     });
-    element.find('.delete-button').on('click', function (e) {
+    element.find('.delete-button').on('click', (e) => {
         e.stopPropagation();
         deleteNotification(notification.id);
     });
@@ -264,7 +265,7 @@ function markAsRead(notificationId) {
         method: "POST",
         data: JSON.stringify({ notification_id: notificationId }),
         contentType: "application/json",
-        success: function (data) {
+        success: (data) => {
             // Update UI
             $(`[data-id="${notificationId}"]`).attr('data-read', 'true');
             $(`[data-id="${notificationId}"]`).find('.mark-read-button').hide();
@@ -272,7 +273,7 @@ function markAsRead(notificationId) {
             // Update unread badge
             updateUnreadBadge(data.unread_count);
         },
-        error: function (xhr, status, error) {
+        error: (xhr, status, error) => {
             console.error("Error marking notification as read:", error);
         }
     });
@@ -285,7 +286,7 @@ function markAllAsRead() {
         method: "POST",
         data: JSON.stringify({}),
         contentType: "application/json",
-        success: function (data) {
+        success: (data) => {
             // Update UI
             $('.notification-item').attr('data-read', 'true');
             $('.mark-read-button').hide();
@@ -293,7 +294,7 @@ function markAllAsRead() {
             // Update unread badge
             updateUnreadBadge(0);
         },
-        error: function (xhr, status, error) {
+        error: (xhr, status, error) => {
             console.error("Error marking all notifications as read:", error);
         }
     });
@@ -306,7 +307,7 @@ function deleteNotification(notificationId) {
         method: "POST",
         data: JSON.stringify({ notification_id: notificationId }),
         contentType: "application/json",
-        success: function (data) {
+        success: (data) => {
             // Remove from UI with animation
             $(`[data-id="${notificationId}"]`).fadeOut(300, function () {
                 $(this).remove();
@@ -321,7 +322,7 @@ function deleteNotification(notificationId) {
             // Update unread badge
             updateUnreadBadge(data.unread_count);
         },
-        error: function (xhr, status, error) {
+        error: (xhr, status, error) => {
             console.error("Error deleting notification:", error);
         }
     });
@@ -341,11 +342,11 @@ function clearReadNotifications() {
             read_only: true
         }),
         contentType: "application/json",
-        success: function (data) {
+        success: () => {
             // Reload notifications
             resetAndLoadNotifications();
         },
-        error: function (xhr, status, error) {
+        error: (xhr, status, error) => {
             console.error("Error clearing read notifications:", error);
         }
     });
@@ -362,11 +363,11 @@ function clearAllNotifications() {
         method: "POST",
         data: JSON.stringify({}),
         contentType: "application/json",
-        success: function (data) {
+        success: () => {
             // Reload notifications
             resetAndLoadNotifications();
         },
-        error: function (xhr, status, error) {
+        error: (xhr, status, error) => {
             console.error("Error clearing all notifications:", error);
         }
     });
@@ -389,10 +390,10 @@ function updateUnreadCount() {
     $.ajax({
         url: "/api/notifications/unread_count",
         method: "GET",
-        success: function (data) {
+        success: (data) => {
             updateUnreadBadge(data.unread_count);
         },
-        error: function (xhr, status, error) {
+        error: (xhr, status, error) => {
             console.error("Error updating unread count:", error);
         }
     });

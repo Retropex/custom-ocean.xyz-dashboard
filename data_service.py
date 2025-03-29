@@ -473,6 +473,40 @@ class MiningDashboardService:
             
         return difficulty, network_hashrate, btc_price, block_count
 
+    def get_all_worker_rows(self):
+        """
+        Iterate through wpage parameter values to collect all worker table rows.
+
+        Returns:
+            list: A list of BeautifulSoup row elements containing worker data.
+        """
+        all_rows = []
+        page_num = 0
+        while True:
+            url = f"https://ocean.xyz/stats/{self.wallet}?wpage={page_num}#workers-fulltable"
+            logging.info(f"Fetching worker data from: {url}")
+            response = self.session.get(url, timeout=15)
+            if not response.ok:
+                logging.error(f"Error fetching page {page_num}: status code {response.status_code}")
+                break
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            workers_table = soup.find('tbody', id='workers-tablerows')
+            if not workers_table:
+                logging.debug(f"No workers table found on page {page_num}")
+                break
+
+            rows = workers_table.find_all("tr", class_="table-row")
+            if not rows:
+                logging.debug(f"No worker rows found on page {page_num}, stopping pagination")
+                break
+
+            logging.info(f"Found {len(rows)} worker rows on page {page_num}")
+            all_rows.extend(rows)
+            page_num += 1
+
+        return all_rows
+
     def get_worker_data(self):
         """
         Get worker data from Ocean.xyz using multiple parsing strategies.
@@ -775,204 +809,107 @@ class MiningDashboardService:
     def get_worker_data_alternative(self):
         """
         Alternative implementation to get worker data from Ocean.xyz.
-        Uses a more focused approach to extract worker names and status.
-        
+        This version consolidates worker rows from all pages using the wpage parameter.
+
         Returns:
-            dict: Worker data dictionary with stats and list of workers
+            dict: Worker data dictionary with stats and list of workers.
         """
-        base_url = "https://ocean.xyz"
-        stats_url = f"{base_url}/stats/{self.wallet}"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Cache-Control': 'no-cache'
-        }
-        
         try:
-            logging.info(f"Fetching worker data from {stats_url} (alternative method)")
-            response = self.session.get(stats_url, headers=headers, timeout=15)
-            if not response.ok:
-                logging.error(f"Error fetching ocean worker data: status code {response.status_code}")
+            logging.info("Fetching worker data across multiple pages (alternative method)")
+            # Get all worker rows from every page
+            rows = self.get_all_worker_rows()
+            if not rows:
+                logging.error("No worker rows found across any pages")
                 return None
-                    
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Save the HTML to a file for debugging if needed
-            try:
-                with open('debug_ocean_page.html', 'w', encoding='utf-8') as f:
-                    f.write(soup.prettify())
-                logging.debug("Saved HTML to debug_ocean_page.html for inspection")
-            except Exception as e:
-                logging.warning(f"Could not save debug HTML: {e}")
-            
-            # ---- Specialized Approach ----
-            # Look specifically for the workers table by characteristic selectors
-            workers_table = None
-            
-            # First try to find table with workers-tablerows ID
-            workers_table = soup.find('tbody', id='workers-tablerows')
-            
-            # If not found, try alternative selectors
-            if not workers_table:
-                # Try to find any table
-                tables = soup.find_all('table')
-                logging.debug(f"Found {len(tables)} tables on page")
-                
-                # Look for a table that contains worker information
-                for table in tables:
-                    # Look at the header to determine if this is the workers table
-                    thead = table.find('thead')
-                    if thead:
-                        headers = [th.get_text(strip=True).lower() for th in thead.find_all('th')]
-                        logging.debug(f"Table headers: {headers}")
-                        
-                        # Check if this looks like a workers table by looking for common headers
-                        worker_headers = ['worker', 'name', 'status', 'hashrate', 'share']
-                        if any(header in ''.join(headers) for header in worker_headers):
-                            logging.info("Found likely workers table by header content")
-                            workers_table = table.find('tbody')
-                            break
-            
-            if not workers_table:
-                logging.error("Could not find workers table")
-                return None
-            
-            # Debug: Dump all rows in the workers table
-            rows = workers_table.find_all('tr')
-            logging.info(f"Found {len(rows)} rows in workers table")
-            
-            # Debug the first few rows
-            for i, row in enumerate(rows[:3]):
-                if i == 0:  # First row special handling - likely contains headers or column info
-                    cols = row.find_all(['td', 'th'])
-                    col_texts = [col.get_text(strip=True) for col in cols]
-                    logging.debug(f"First row columns: {col_texts}")
-            
-            # Find workers by looking at each row in the table
+
             workers = []
             total_hashrate = 0
             total_earnings = 0
             workers_online = 0
             workers_offline = 0
-            
-            # List of invalid worker names (these are likely status labels)
             invalid_names = ['online', 'offline', 'status', 'worker', 'total']
-            
-            # Process each row in the table
+
+            # Process each row from all pages
             for row_idx, row in enumerate(rows):
-                # Skip rows that look like headers or total
                 cells = row.find_all(['td', 'th'])
                 if not cells or len(cells) < 3:
                     continue
-                
-                # Get the first cell text (likely worker name)
+
                 first_cell_text = cells[0].get_text(strip=True)
-                
-                # Skip rows with invalid names or total rows
                 if first_cell_text.lower() in invalid_names:
                     continue
-                
+
                 try:
-                    # Extract hashrate and status from row
-                    
-                    # --- Generate a valid worker name ---
-                    worker_name = first_cell_text
-                    
-                    # If name is empty or invalid, generate a fallback name based on row number
-                    if not worker_name or worker_name.lower() in invalid_names:
-                        worker_name = f"Worker_{row_idx+1}"
-                    
-                    # Debug logging for extracted name
-                    logging.debug(f"Extracted worker name: '{worker_name}'")
-                    
-                    # This is likely a worker row - extract data
+                    worker_name = first_cell_text or f"Worker_{row_idx+1}"
                     worker = {
                         "name": worker_name,
-                        "status": "online",  # Default to online since most workers are online
-                        "type": "ASIC",      # Default type
+                        "status": "online",  # Default assumption
+                        "type": "ASIC",
                         "model": "Unknown",
                         "hashrate_60sec": 0,
                         "hashrate_60sec_unit": "TH/s",
                         "hashrate_3hr": 0,
                         "hashrate_3hr_unit": "TH/s",
-                        "efficiency": 90.0,   # Default
+                        "efficiency": 90.0,
                         "last_share": "N/A",
                         "earnings": 0,
-                        "acceptance_rate": 95.0,  # Default
+                        "acceptance_rate": 95.0,
                         "power_consumption": 0,
                         "temperature": 0
                     }
-                    
-                    # --- Extract status and other data ---
-                    # For most tables, column 1 is status, 2 is last share, 3 is 60sec hashrate, 4 is 3hr hashrate, 5 is earnings
-                    
-                    # Get status from second column if available
+                
+                    # Extract status from second cell if available
                     if len(cells) > 1:
-                        status_cell = cells[1]
-                        status_text = status_cell.get_text(strip=True).lower()
-                        
-                        # Check if this cell actually contains status information
-                        if 'online' in status_text or 'offline' in status_text:
-                            worker["status"] = "online" if "online" in status_text else "offline"
-                        else:
-                            # If the second column doesn't contain status info, check cell contents for clues
-                            for cell in cells:
-                                cell_text = cell.get_text(strip=True).lower()
-                                if 'online' in cell_text:
-                                    worker["status"] = "online"
-                                    break
-                                elif 'offline' in cell_text:
-                                    worker["status"] = "offline"
-                                    break
-                        
-                        # Update counters based on status
+                        status_text = cells[1].get_text(strip=True).lower()
+                        worker["status"] = "online" if "online" in status_text else "offline"
                         if worker["status"] == "online":
                             workers_online += 1
                         else:
                             workers_offline += 1
-                    
-                    # Parse last share time
-                    last_share_idx = 2  # Typical position for last share
-                    if len(cells) > last_share_idx:
-                        last_share_cell = cells[last_share_idx]
-                        worker["last_share"] = last_share_cell.get_text(strip=True)
-                    
-                    # Parse hashrates
-                    for i, cell in enumerate(cells):
-                        cell_text = cell.get_text(strip=True)
-                        
-                        # Look for hashrate patterns - numbers followed by H/s, TH/s, GH/s, etc.
-                        hashrate_match = re.search(r'([\d\.]+)\s*([KMGTPE]?H/s)', cell_text, re.IGNORECASE)
-                        if hashrate_match:
-                            value = float(hashrate_match.group(1))
-                            unit = hashrate_match.group(2)
-                            
-                            # Assign to appropriate hashrate field based on position or content
-                            if i == 3 or "60" in cell_text:
-                                worker["hashrate_60sec"] = value
-                                worker["hashrate_60sec_unit"] = unit
-                            elif i == 4 or "3h" in cell_text:
-                                worker["hashrate_3hr"] = value
-                                worker["hashrate_3hr_unit"] = unit
-                                # Add to total hashrate
-                                total_hashrate += convert_to_ths(value, unit)
-                    
-                    # Parse earnings from any cell that might contain BTC values
+
+                    # Parse last share from third cell if available
+                    if len(cells) > 2:
+                        worker["last_share"] = cells[2].get_text(strip=True)
+
+                    # Parse 60sec hashrate from fourth cell if available
+                    if len(cells) > 3:
+                        hashrate_60s_text = cells[3].get_text(strip=True)
+                        try:
+                            parts = hashrate_60s_text.split()
+                            if parts:
+                                worker["hashrate_60sec"] = float(parts[0])
+                                if len(parts) > 1:
+                                    worker["hashrate_60sec_unit"] = parts[1]
+                        except ValueError:
+                            logging.warning(f"Could not parse 60-sec hashrate: {hashrate_60s_text}")
+
+                    # Parse 3hr hashrate from fifth cell if available
+                    if len(cells) > 4:
+                        hashrate_3hr_text = cells[4].get_text(strip=True)
+                        try:
+                            parts = hashrate_3hr_text.split()
+                            if parts:
+                                worker["hashrate_3hr"] = float(parts[0])
+                                if len(parts) > 1:
+                                    worker["hashrate_3hr_unit"] = parts[1]
+                                # Normalize and add to total hashrate (using your convert_to_ths helper)
+                                total_hashrate += convert_to_ths(worker["hashrate_3hr"], worker["hashrate_3hr_unit"])
+                        except ValueError:
+                            logging.warning(f"Could not parse 3hr hashrate: {hashrate_3hr_text}")
+
+                    # Look for earnings in any cell containing 'btc'
                     for cell in cells:
                         cell_text = cell.get_text(strip=True)
-                        # Look for BTC pattern
                         if "btc" in cell_text.lower():
                             try:
-                                # Extract the number part
                                 earnings_match = re.search(r'([\d\.]+)', cell_text)
                                 if earnings_match:
                                     worker["earnings"] = float(earnings_match.group(1))
                                     total_earnings += worker["earnings"]
-                            except ValueError:
+                            except Exception:
                                 pass
-                    
-                    # Set worker type based on name (if it can be inferred)
+
+                    # Set worker type based on name
                     lower_name = worker["name"].lower()
                     if 'antminer' in lower_name:
                         worker["type"] = 'ASIC'
@@ -982,106 +919,33 @@ class MiningDashboardService:
                         worker["model"] = 'MicroBT Whatsminer'
                     elif 'bitaxe' in lower_name or 'nerdqaxe' in lower_name:
                         worker["type"] = 'Bitaxe'
-                        worker["model"] = 'Bitaxe Gamma 601'
-                    
-                    # Only add workers with valid data
-                    if worker["name"] and worker["name"].lower() not in invalid_names:
+                        worker["model"] = 'BitAxe Gamma 601'
+
+                    if worker["name"].lower() not in invalid_names:
                         workers.append(worker)
-                        logging.debug(f"Added worker: {worker['name']}, status: {worker['status']}")
-                    
+
                 except Exception as e:
                     logging.error(f"Error parsing worker row: {e}")
-                    import traceback
-                    logging.error(traceback.format_exc())
                     continue
-            
-            # If no valid workers were found, try one more approach - generate worker names
-            if not workers and len(rows) > 0:
-                logging.warning("No valid workers found, generating worker names based on row indices")
-                
-                for row_idx, row in enumerate(rows):
-                    # Skip first row (likely header)
-                    if row_idx == 0:
-                        continue
-                        
-                    # Skip rows that look like totals
-                    cells = row.find_all(['td', 'th'])
-                    if not cells or len(cells) < 3:
-                        continue
-                        
-                    first_cell_text = cells[0].get_text(strip=True)
-                    if first_cell_text.lower() == 'total':
-                        continue
-                    
-                    # Generate a worker
-                    worker_name = f"Worker_{row_idx}"
-                    
-                    # Basic worker data
-                    worker = {
-                        "name": worker_name,
-                        "status": "online",  # Default to online
-                        "type": "ASIC",      # Default type
-                        "model": "Unknown",
-                        "hashrate_60sec": 0,
-                        "hashrate_60sec_unit": "TH/s",
-                        "hashrate_3hr": row_idx * 50,  # Generate some reasonable value
-                        "hashrate_3hr_unit": "TH/s",
-                        "efficiency": 90.0,
-                        "last_share": "N/A",
-                        "earnings": 0.00001 * row_idx,
-                        "acceptance_rate": 95.0,
-                        "power_consumption": 0,
-                        "temperature": 0
-                    }
-                    
-                    workers.append(worker)
-                    workers_online += 1
-            
-            # Get daily sats from other elements on the page
-            daily_sats = 0
-            try:
-                # Look for earnings per day
-                earnings_elements = soup.find_all('div', text=lambda t: t and 'earnings per day' in t.lower())
-                for element in earnings_elements:
-                    # Look for nearest span with a value
-                    value_span = element.find_next('span')
-                    if value_span:
-                        value_text = value_span.get_text(strip=True)
-                        try:
-                            value_parts = value_text.split()
-                            if value_parts:
-                                btc_per_day = float(value_parts[0])
-                                daily_sats = int(btc_per_day * self.sats_per_btc)
-                                break
-                        except (ValueError, IndexError):
-                            pass
-            except Exception as e:
-                logging.error(f"Error parsing daily sats: {e}")
-            
-            # Check if we found any workers
+
             if not workers:
-                logging.warning("No workers found in the table")
+                logging.error("No valid worker data parsed")
                 return None
-            
-            # Return worker stats dictionary
+
             result = {
                 'workers': workers,
                 'total_hashrate': total_hashrate,
-                'hashrate_unit': 'TH/s',  # Always use TH/s for consistent display
+                'hashrate_unit': 'TH/s',
                 'workers_total': len(workers),
                 'workers_online': workers_online,
                 'workers_offline': workers_offline,
                 'total_earnings': total_earnings,
-                'avg_acceptance_rate': 95.0,  # Default value
-                'daily_sats': daily_sats,
+                'avg_acceptance_rate': 99.0,
                 'timestamp': datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
             }
-            
-            logging.info(f"Successfully retrieved {len(workers)} workers using alternative method")
+            logging.info(f"Successfully retrieved {len(workers)} workers across multiple pages")
             return result
-                
+
         except Exception as e:
             logging.error(f"Error in alternative worker data fetch: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
             return None

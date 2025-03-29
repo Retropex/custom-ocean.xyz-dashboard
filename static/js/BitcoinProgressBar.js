@@ -703,6 +703,9 @@ const BitcoinMinuteRefresh = (function () {
     /**
      * Update the uptime display
      */
+    /**
+ * Update the uptime display
+ */
     function updateUptime() {
         if (serverStartTime) {
             try {
@@ -715,9 +718,19 @@ const BitcoinMinuteRefresh = (function () {
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
                 // Update the main uptime display with digital clock style
-                document.getElementById('uptime-hours').textContent = String(hours).padStart(2, '0');
-                document.getElementById('uptime-minutes').textContent = String(minutes).padStart(2, '0');
-                document.getElementById('uptime-seconds').textContent = String(seconds).padStart(2, '0');
+                const uptimeHoursElement = document.getElementById('uptime-hours');
+                const uptimeMinutesElement = document.getElementById('uptime-minutes');
+                const uptimeSecondsElement = document.getElementById('uptime-seconds');
+
+                if (uptimeHoursElement) {
+                    uptimeHoursElement.textContent = String(hours).padStart(2, '0');
+                }
+                if (uptimeMinutesElement) {
+                    uptimeMinutesElement.textContent = String(minutes).padStart(2, '0');
+                }
+                if (uptimeSecondsElement) {
+                    uptimeSecondsElement.textContent = String(seconds).padStart(2, '0');
+                }
 
                 // Update the minimized uptime display
                 const minimizedUptimeElement = document.getElementById('minimized-uptime-value');
@@ -725,16 +738,12 @@ const BitcoinMinuteRefresh = (function () {
                     minimizedUptimeElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                 }
 
-                // NEW CODE: Update the dashboard's uptime display if it exists
-                const dashboardUptimeElement = document.getElementById('uptimeTimer');
-                if (dashboardUptimeElement) {
-                    dashboardUptimeElement.innerHTML = `<strong>Uptime:</strong> ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
-                }
             } catch (e) {
                 console.error("BitcoinMinuteRefresh: Error updating uptime:", e);
             }
         }
     }
+
 
     /**
      * Notify other tabs that data has been refreshed

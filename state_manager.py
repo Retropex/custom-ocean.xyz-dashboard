@@ -352,9 +352,9 @@ class StateManager:
                                 norm_prev_val = convert_to_ths(float(previous_val), previous_unit if previous_unit else "th/s")
                                 
                                 # Lower the threshold to 0.05% for more sensitivity
-                                if norm_curr_val > norm_prev_val * 1.0005:
+                                if norm_curr_val > norm_prev_val * 1.0001:
                                     arrow = "↑"
-                                elif norm_curr_val < norm_prev_val * 0.9995:
+                                elif norm_curr_val < norm_prev_val * 0.9999:
                                     arrow = "↓"
                                 else:
                                     arrow = previous_arrow  # Preserve previous arrow if change is insignificant
@@ -366,9 +366,9 @@ class StateManager:
                                     prev_float = float(previous_val)
                                     
                                     # Lower the threshold to 0.05% for more sensitivity
-                                    if curr_float > prev_float * 1.0005:
+                                    if curr_float > prev_float * 1.0001:
                                         arrow = "↑"
-                                    elif curr_float < prev_float * 0.9995:
+                                    elif curr_float < prev_float * 0.9999:
                                         arrow = "↓"
                                     else:
                                         arrow = previous_arrow  # Preserve previous arrow

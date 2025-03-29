@@ -631,17 +631,44 @@ function initializeChart() {
         // Check if Chart.js plugin is available
         const hasAnnotationPlugin = window['chartjs-plugin-annotation'] !== undefined;
 
+        // Replace the simple color definitions with gradient definitions
+
+        // Inside the initializeChart function, modify the dataset configuration:
         return new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
                 datasets: [{
-                    label: 'Hashrate Trend (TH/s)', // Always use TH/s as the normalized unit
+                    label: 'Hashrate Trend (TH/s)',
                     data: [],
-                    borderColor: '#f7931a',
-                    backgroundColor: 'rgba(247,147,26,0.1)',
+                    borderWidth: 2,
+                    borderColor: function (context) {
+                        const chart = context.chart;
+                        const { ctx, chartArea } = chart;
+                        if (!chartArea) {
+                            return '#f7931a';
+                        }
+                        // Create gradient for line
+                        const gradient = ctx.createLinearGradient(0, 0, 0, chartArea.bottom);
+                        gradient.addColorStop(0, '#ffa64d');  // Lighter orange
+                        gradient.addColorStop(1, '#f7931a');  // Bitcoin orange
+                        return gradient;
+                    },
+                    backgroundColor: function (context) {
+                        const chart = context.chart;
+                        const { ctx, chartArea } = chart;
+                        if (!chartArea) {
+                            return 'rgba(247,147,26,0.1)';
+                        }
+                        // Create gradient for fill
+                        const gradient = ctx.createLinearGradient(0, 0, 0, chartArea.bottom);
+                        gradient.addColorStop(0, 'rgba(255, 166, 77, 0.3)');  // Lighter orange with transparency
+                        gradient.addColorStop(0.5, 'rgba(247, 147, 26, 0.2)'); // Bitcoin orange with medium transparency
+                        gradient.addColorStop(1, 'rgba(247, 147, 26, 0.05)');  // Bitcoin orange with high transparency
+                        return gradient;
+                    },
                     fill: true,
-                    tension: 0.2,
+                    tension: 0.3,  // Slightly increase tension for smoother curves
                 }]
             },
             options: {
@@ -723,16 +750,29 @@ function initializeChart() {
                                 type: 'line',
                                 yMin: 0,
                                 yMax: 0,
-                                borderColor: '#f7931a',
-                                borderWidth: 2,
-                                borderDash: [6, 6],
+                                borderColor: '#ffd700', // Changed to gold color for better contrast
+                                borderWidth: 3,         // Increased from 2 to 3
+                                borderDash: [8, 4],     // Modified dash pattern for distinction
+                                // Add shadow effect
+                                shadowColor: 'rgba(255, 215, 0, 0.5)',
+                                shadowBlur: 8,
+                                shadowOffsetX: 0,
+                                shadowOffsetY: 0,
                                 label: {
                                     enabled: true,
                                     content: '24hr Avg: 0 TH/s',
-                                    backgroundColor: 'rgba(0,0,0,0.7)',
-                                    color: '#f7931a',
-                                    font: { weight: 'bold', size: 13 },
-                                    position: 'start'
+                                    backgroundColor: 'rgba(0,0,0,0.8)',
+                                    color: '#ffd700',   // Changed to match the line color
+                                    font: {
+                                        weight: 'bold',
+                                        size: 14,       // Increased from 13 to 14
+                                        family: 'var(--terminal-font)' // Use the terminal font
+                                    },
+                                    padding: { top: 4, bottom: 4, left: 8, right: 8 },
+                                    borderRadius: 2,
+                                    position: 'start',
+                                    // Add a subtle shadow to the label
+                                    textShadow: '0 0 5px rgba(255, 215, 0, 0.7)'
                                 }
                             }
                         }

@@ -432,7 +432,7 @@ class WorkerService:
             "hashrate_unit": hashrate_unit,
             "total_earnings": total_earnings,
             "daily_sats": daily_sats,  # Fixed daily_sats value
-            "avg_acceptance_rate": 95.0,  # Default value
+            "avg_acceptance_rate": 98.8,  # Default value
             "hashrate_history": hashrate_history,
             "timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
         }
@@ -474,8 +474,8 @@ class WorkerService:
         online_count = max(1, int(num_workers * 0.8))  # At least 1 online worker
         offline_count = num_workers - online_count
         
-        # Average hashrate per online worker (ensure it's at least 1 TH/s)
-        avg_hashrate = max(1.0, total_hashrate / online_count if online_count > 0 else 0)
+        # Average hashrate per online worker (ensure it's at least 0.5 TH/s)
+        avg_hashrate = max(0.5, total_hashrate / online_count if online_count > 0 else 0)
         
         workers = []
         current_time = datetime.now(ZoneInfo("America/Los_Angeles"))
@@ -627,8 +627,8 @@ class WorkerService:
         online_count = max(1, int(num_workers * 0.8))  # At least 1 online worker
         offline_count = num_workers - online_count
         
-        # Average hashrate per online worker (ensure it's at least 1 TH/s)
-        avg_hashrate = max(1.0, total_hashrate / online_count if online_count > 0 else 0)
+        # Average hashrate per online worker (ensure it's at least 0.5 TH/s)
+        avg_hashrate = max(0.5, total_hashrate / online_count if online_count > 0 else 0)
         
         workers = []
         current_time = datetime.now(ZoneInfo("America/Los_Angeles"))
@@ -664,8 +664,8 @@ class WorkerService:
             hashrate_60sec = round(base_hashrate * random.uniform(0.9, 1.1), 2)
             hashrate_3hr = round(base_hashrate * random.uniform(0.85, 1.0), 2)
             
-            # Generate last share time (within last 5 minutes)
-            minutes_ago = random.randint(0, 5)
+            # Generate last share time (within last 3 minutes)
+            minutes_ago = random.randint(0, 3)
             last_share = (current_time - timedelta(minutes=minutes_ago)).strftime("%Y-%m-%d %H:%M")
             
             # Generate acceptance rate (95-100%)

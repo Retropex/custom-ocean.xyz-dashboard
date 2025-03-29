@@ -467,7 +467,7 @@ class WorkerService:
             {"type": "ASIC", "model": "Bitmain Antminer S19 Pro", "max_hashrate": 110, "power": 3250},
             {"type": "ASIC", "model": "Bitmain Antminer T21", "max_hashrate": 130, "power": 3276},
             {"type": "ASIC", "model": "Bitmain Antminer S19j Pro", "max_hashrate": 104, "power": 3150},
-            {"type": "FPGA", "model": "Bitaxe Gamma 601", "max_hashrate": 3.2, "power": 35}
+            {"type": "Bitaxe", "model": "Bitaxe Gamma 601", "max_hashrate": 3.2, "power": 35}
         ]
         
         # Calculate hashrate distribution - majority of hashrate to online workers
@@ -491,9 +491,9 @@ class WorkerService:
             
             # For Antminers and regular ASICs, use ASIC model
             if i < online_count - 1 or avg_hashrate > 5:
-                model_idx = random.randint(0, len(models) - 2)  # Exclude FPGA for most workers
+                model_idx = random.randint(0, len(models) - 2)  # Exclude Bitaxe for most workers
             else:
-                model_idx = len(models) - 1  # FPGA for last worker if small hashrate
+                model_idx = len(models) - 1  # Bitaxe for last worker if small hashrate
                     
             model_info = models[model_idx]
             
@@ -534,9 +534,9 @@ class WorkerService:
         
         # Generate offline workers
         for i in range(offline_count):
-            # Select a model - more likely to be FPGA for offline
+            # Select a model - more likely to be Bitaxe for offline
             if random.random() > 0.6:
-                model_info = models[-1]  # FPGA
+                model_info = models[-1]  # Bitaxe
             else:
                 model_info = random.choice(models[:-1])  # ASIC
                     
@@ -545,7 +545,7 @@ class WorkerService:
             last_share = (current_time - timedelta(hours=hours_ago)).strftime("%Y-%m-%d %H:%M")
             
             # Generate hashrate (historical before going offline)
-            if model_info["type"] == "FPGA":
+            if model_info["type"] == "Bitaxe":
                 hashrate_3hr = round(random.uniform(1, 3), 2)
             else:
                 hashrate_3hr = round(random.uniform(20, 90), 2)
@@ -617,7 +617,7 @@ class WorkerService:
             {"type": "ASIC", "model": "Bitmain Antminer S19k Pro", "max_hashrate": 110, "power": 3250},
             {"type": "ASIC", "model": "Bitmain Antminer T21", "max_hashrate": 130, "power": 3276},
             {"type": "ASIC", "model": "Bitmain Antminer S19j Pro", "max_hashrate": 104, "power": 3150},
-            {"type": "FPGA", "model": "Bitaxe Gamma 601", "max_hashrate": 3.2, "power": 35}
+            {"type": "Bitaxe", "model": "Bitaxe Gamma 601", "max_hashrate": 3.2, "power": 35}
         ]
         
         # Worker names for simulation - only used if no real worker names are provided
@@ -653,9 +653,9 @@ class WorkerService:
             
             # For Antminers and regular ASICs, use ASIC model
             if i < online_count - 1 or avg_hashrate > 5:
-                model_idx = random.randint(0, len(models) - 2)  # Exclude FPGA for most workers
+                model_idx = random.randint(0, len(models) - 2)  # Exclude Bitaxe for most workers
             else:
-                model_idx = len(models) - 1  # FPGA for last worker if small hashrate
+                model_idx = len(models) - 1  # Bitaxe for last worker if small hashrate
                     
             model_info = models[model_idx]
             
@@ -679,7 +679,7 @@ class WorkerService:
                 name = name_list[i]
             else:
                 # Create a unique name
-                if model_info["type"] == "FPGA":
+                if model_info["type"] == "Bitaxe":
                     name = f"{prefixes[-1]}{random.randint(1, 99):02d}"
                 else:
                     name = f"{random.choice(prefixes[:-1])}{random.randint(1, 99):02d}"
@@ -703,9 +703,9 @@ class WorkerService:
         
         # Generate offline workers
         for i in range(offline_count):
-            # Select a model - more likely to be FPGA for offline
+            # Select a model - more likely to be Bitaxe for offline
             if random.random() > 0.6:
-                model_info = models[-1]  # FPGA
+                model_info = models[-1]  # Bitaxe
             else:
                 model_info = random.choice(models[:-1])  # ASIC
                     
@@ -714,7 +714,7 @@ class WorkerService:
             last_share = (current_time - timedelta(hours=hours_ago)).strftime("%Y-%m-%d %H:%M")
             
             # Generate hashrate (historical before going offline)
-            if model_info["type"] == "FPGA":
+            if model_info["type"] == "Bitaxe":
                 hashrate_3hr = round(random.uniform(1, 3), 2)
             else:
                 hashrate_3hr = round(random.uniform(20, 90), 2)
@@ -725,7 +725,7 @@ class WorkerService:
                 name = name_list[idx]
             else:
                 # Create a unique name
-                if model_info["type"] == "FPGA":
+                if model_info["type"] == "Bitaxe":
                     name = f"{prefixes[-1]}{random.randint(1, 99):02d}"
                 else:
                     name = f"{random.choice(prefixes[:-1])}{random.randint(1, 99):02d}"

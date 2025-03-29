@@ -534,7 +534,7 @@ function setupEventSource() {
                 eventSource.close();
                 manualRefresh();
             }
-        }, 10000); // 10 seconds timeout to establish connection
+        }, 30000); // 30 seconds timeout to establish connection
 
     } catch (error) {
         console.error("Failed to create EventSource:", error);

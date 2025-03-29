@@ -715,8 +715,8 @@ class MiningDashboardService:
                         worker["type"] = 'ASIC'
                         worker["model"] = 'MicroBT Whatsminer'
                     elif 'bitaxe' in lower_name or 'nerdqaxe' in lower_name:
-                        worker["type"] = 'FPGA'
-                        worker["model"] = 'BitAxe FPGA Miner'
+                        worker["type"] = 'Bitaxe'
+                        worker["model"] = 'BitAxe Gamma 601'
                     
                     workers.append(worker)
                     
@@ -981,8 +981,8 @@ class MiningDashboardService:
                         worker["type"] = 'ASIC'
                         worker["model"] = 'MicroBT Whatsminer'
                     elif 'bitaxe' in lower_name or 'nerdqaxe' in lower_name:
-                        worker["type"] = 'FPGA'
-                        worker["model"] = 'BitAxe FPGA Miner'
+                        worker["type"] = 'Bitaxe'
+                        worker["model"] = 'Bitaxe Gamma 601'
                     
                     # Only add workers with valid data
                     if worker["name"] and worker["name"].lower() not in invalid_names:

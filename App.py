@@ -91,6 +91,8 @@ def update_metrics_job(force=False):
     """
     global cached_metrics, last_metrics_update_time, scheduler, scheduler_last_successful_run
     
+    logging.info("Starting update_metrics_job")
+
     try:
         # Check scheduler health - enhanced logic to detect failed executors
         if not scheduler or not hasattr(scheduler, 'running'):
@@ -147,6 +149,7 @@ def update_metrics_job(force=False):
             
         # Set last update time to now
         last_metrics_update_time = current_time
+        logging.info(f"Updated last_metrics_update_time: {last_metrics_update_time}")
         
         # Add timeout handling with a timer
         job_timeout = 45  # seconds
@@ -165,6 +168,7 @@ def update_metrics_job(force=False):
             # Use the dashboard service to fetch metrics
             metrics = dashboard_service.fetch_metrics()
             if metrics:
+                logging.info("Fetched metrics successfully")
                 # Update cached metrics
                 cached_metrics = metrics
                 
@@ -183,16 +187,19 @@ def update_metrics_job(force=False):
                 
                 # Mark successful run time for watchdog
                 scheduler_last_successful_run = time.time()
+                logging.info(f"Updated scheduler_last_successful_run: {scheduler_last_successful_run}")
 
                 # Persist critical state
                 state_manager.persist_critical_state(cached_metrics, scheduler_last_successful_run, last_metrics_update_time)
                 
                 # Periodically check and prune data to prevent memory growth
                 if current_time % 300 < 60:  # Every ~5 minutes
+                    logging.info("Pruning old data")
                     state_manager.prune_old_data()
                     
                 # Only save state to Redis on a similar schedule, not every update
                 if current_time % 300 < 60:  # Every ~5 minutes
+                    logging.info("Saving graph state")
                     state_manager.save_graph_state()
                     
                 # Periodic full memory cleanup (every 2 hours)
@@ -213,6 +220,7 @@ def update_metrics_job(force=False):
         logging.error(f"Background job: Unhandled exception: {e}")
         import traceback
         logging.error(traceback.format_exc())
+    logging.info("Completed update_metrics_job")
 
 # --- SchedulerWatchdog to monitor and recover ---
 def scheduler_watchdog():

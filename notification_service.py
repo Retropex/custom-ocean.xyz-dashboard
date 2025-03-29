@@ -292,23 +292,30 @@ class NotificationService:
             return [error_notification]
     
     def _should_post_daily_stats(self):
-        """Check if it's time to post daily stats."""
+        """Check if it's time to post daily stats every 6 hours."""
         now = datetime.now()
+        
+        # Define the times to post daily stats (every 6 hours)
+        daily_stats_times = ["00:00:00", "06:00:00", "12:00:00", "18:00:00"]
         
         # If we have a last_daily_stats timestamp
         if self.last_daily_stats:
-            # Check if it's been more than a day
-            if (now - self.last_daily_stats).days >= 1:
-                # Check if we're past the scheduled time
+            # Check time elapsed since last stats
+            time_since_last_stats = now - self.last_daily_stats
+            
+            # If more than 6 hours have passed
+            if time_since_last_stats.total_seconds() >= 6 * 3600:
                 current_time_str = now.strftime("%H:%M:%S")
-                if current_time_str >= self.daily_stats_time:
+                
+                # Check if current time is one of our scheduled times
+                if current_time_str >= "00:00:00" and current_time_str in daily_stats_times:
                     self.last_daily_stats = now
                     return True
             return False
         else:
-            # First time - post if it's past the scheduled time
+            # First time - post if current time is one of our scheduled times
             current_time_str = now.strftime("%H:%M:%S")
-            if current_time_str >= self.daily_stats_time:
+            if current_time_str in daily_stats_times:
                 self.last_daily_stats = now
                 return True
             return False

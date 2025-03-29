@@ -342,7 +342,7 @@ function filterWorkersData(workers) {
             (filterState.currentFilter === 'online' && isOnline) ||
             (filterState.currentFilter === 'offline' && !isOnline) ||
             (filterState.currentFilter === 'asic' && workerType === 'asic') ||
-            (filterState.currentFilter === 'fpga' && workerType === 'fpga');
+            (filterState.currentFilter === 'bitaxe' && workerType === 'bitaxe');
 
         const matchesSearch = filterState.searchTerm === '' || workerName.includes(filterState.searchTerm);
 

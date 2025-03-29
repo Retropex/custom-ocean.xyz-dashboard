@@ -37,7 +37,7 @@ class WorkerData:
     """Data structure for individual worker information."""
     name: str = None
     status: str = "offline"
-    type: str = "ASIC"  # ASIC or FPGA
+    type: str = "ASIC"  # ASIC or Bitaxe
     model: str = "Unknown"
     hashrate_60sec: float = 0
     hashrate_60sec_unit: str = "TH/s"

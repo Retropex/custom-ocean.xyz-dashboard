@@ -362,23 +362,23 @@ class BlockMiningAnimation {
 }
 
 // Initialize and start the animation when the page loads
-document.addEventListener("DOMContentLoaded", function () {
-    console.log("DOM content loaded, initializing animation");
+// document.addEventListener("DOMContentLoaded", function () {
+    // console.log("DOM content loaded, initializing animation");
 
     // Ensure we give the SVG enough time to be fully rendered and accessible
-    setTimeout(() => {
-        const svgContainer = document.getElementById("svg-container");
-        if (!svgContainer) {
-            console.error("SVG container not found in DOM");
-            return;
-        }
+    // setTimeout(() => {
+        // const svgContainer = document.getElementById("svg-container");
+        // if (!svgContainer) {
+            // console.error("SVG container not found in DOM");
+            // return;
+        // }
 
-        try {
-            const animation = new BlockMiningAnimation("svg-container");
-            animation.start();
-            console.log("Animation started successfully");
-        } catch (error) {
-            console.error("Error starting animation:", error);
-        }
-    }, 1500); // Increased delay to ensure SVG is fully loaded
-});
+        // try {
+            // const animation = new BlockMiningAnimation("svg-container");
+            // animation.start();
+            // console.log("Animation started successfully");
+        // } catch (error) {
+            // console.error("Error starting animation:", error);
+        // }
+    // }, 1500); // Increased delay to ensure SVG is fully loaded
+// });

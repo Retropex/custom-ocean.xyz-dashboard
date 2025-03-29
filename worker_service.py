@@ -614,10 +614,10 @@ class WorkerService:
         
         # Worker model types for simulation
         models = [
-            {"type": "ASIC", "model": "Bitmain Antminer S19 Pro", "max_hashrate": 110, "power": 3250},
-            {"type": "ASIC", "model": "MicroBT Whatsminer M50S", "max_hashrate": 130, "power": 3276},
+            {"type": "ASIC", "model": "Bitmain Antminer S19k Pro", "max_hashrate": 110, "power": 3250},
+            {"type": "ASIC", "model": "Bitmain Antminer T21", "max_hashrate": 130, "power": 3276},
             {"type": "ASIC", "model": "Bitmain Antminer S19j Pro", "max_hashrate": 104, "power": 3150},
-            {"type": "FPGA", "model": "BitAxe FPGA Miner", "max_hashrate": 3.2, "power": 35}
+            {"type": "FPGA", "model": "Bitaxe Gamma 601", "max_hashrate": 3.2, "power": 35}
         ]
         
         # Worker names for simulation - only used if no real worker names are provided

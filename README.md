@@ -6,14 +6,16 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 
 ---
 ## Gallery:
-![Boot Sequence](https://github.com/user-attachments/assets/8205e8c0-79ad-4780-bc50-237131373cf8)
-![Main Dashboard](https://github.com/user-attachments/assets/33dafb93-38ef-4fee-aba1-3a7d38eca3c9)
-![Workers Overview](https://github.com/user-attachments/assets/ae78c34c-fbdf-4186-9706-760a67eac44c)
-![Block Page](https://github.com/user-attachments/assets/2606b8c3-53ed-427c-b5b9-ca3ba32443b6)
+![boot](https://github.com/user-attachments/assets/52d787ab-10d9-4c36-9cba-3ed8878dfa2b)
+![dashboard](https://github.com/user-attachments/assets/7b35ecbc-6775-4298-a68c-67c01f23ce69)
+![blocks](https://github.com/user-attachments/assets/66bc198d-10cc-4302-a89b-fc8c3d796680)
+![workers](https://github.com/user-attachments/assets/ca66d504-9086-4413-acfb-9592d4c57f98)
+![notifications](https://github.com/user-attachments/assets/cb191fc5-fa85-49a6-a155-459c68008b8f)
 
 ---
 
 ## Key Features
+
 
 ### Real-Time Mining Metrics
 - **Live Hashrate Tracking**: Monitor 60-second, 10-minute, 3-hour, and 24-hour average hashrates

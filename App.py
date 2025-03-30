@@ -528,7 +528,7 @@ def get_config():
 @app.route("/api/config", methods=["POST"])
 def update_config():
     """API endpoint to update configuration."""
-    global dashboard_service  # Add this to access the global dashboard_service
+    global dashboard_service, worker_service  # Add this to access the global dashboard_service
     
     try:
         # Get the request data

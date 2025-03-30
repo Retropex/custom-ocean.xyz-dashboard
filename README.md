@@ -8,8 +8,8 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 ## Gallery:
 ![boot](https://github.com/user-attachments/assets/52d787ab-10d9-4c36-9cba-3ed8878dfa2b)
 ![dashboard](https://github.com/user-attachments/assets/7b35ecbc-6775-4298-a68c-67c01f23ce69)
-![blocks](https://github.com/user-attachments/assets/66bc198d-10cc-4302-a89b-fc8c3d796680)
 ![workers](https://github.com/user-attachments/assets/ca66d504-9086-4413-acfb-9592d4c57f98)
+![blocks](https://github.com/user-attachments/assets/66bc198d-10cc-4302-a89b-fc8c3d796680)
 ![notifications](https://github.com/user-attachments/assets/cb191fc5-fa85-49a6-a155-459c68008b8f)
 
 ---

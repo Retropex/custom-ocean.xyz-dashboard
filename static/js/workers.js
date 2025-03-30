@@ -251,6 +251,12 @@ function fetchWorkerData(forceRefresh = false) {
     });
 }
 
+// Refresh worker data every 60 seconds
+setInterval(function () {
+    console.log("Refreshing worker data at " + new Date().toLocaleTimeString());
+    fetchWorkerData();
+}, 60000);
+
 // Update the worker grid with data
 function updateWorkerGrid() {
     console.log("Updating worker grid...");

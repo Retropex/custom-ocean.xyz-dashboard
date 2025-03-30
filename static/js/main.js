@@ -881,6 +881,11 @@ function updateChartWithNormalizedData(chart, data) {
     }
 
     try {
+        // Ensure we preserve block found points across updates
+        if (!data.block_found_points && latestMetrics && latestMetrics.block_found_points) {
+            data.block_found_points = latestMetrics.block_found_points;
+        }
+
         // Always update the 24hr average line even if we don't have data points yet
         const avg24hr = parseFloat(data.hashrate_24hr || 0);
         const avg24hrUnit = data.hashrate_24hr_unit ? data.hashrate_24hr_unit.toLowerCase() : 'th/s';
@@ -964,29 +969,34 @@ function updateChartWithNormalizedData(chart, data) {
             }
         }
 
-        // Add a new dataset for block found points
-        const blockFoundDataset = {
-            label: 'Block Found',
-            data: [], // This will be populated with the points where a block is found
-            borderColor: '#32CD32',
-            backgroundColor: 'green',
-            pointRadius: 9,
-            pointHoverRadius: 12,
-            pointStyle: 'rect', // Set point style to square
-            borderWidth: 2, // Add border for more visibility
-            showLine: false
-        };
+        // Remove existing block found dataset to avoid duplicates
+        chart.data.datasets = chart.data.datasets.filter(dataset => dataset.label !== 'Block Found');
 
-        // Populate the block found dataset
-        if (data.block_found_points) {
-            blockFoundDataset.data = data.block_found_points.map(point => ({
-                x: point.time,
-                y: point.value
-            }));
+        // Add block found points if available
+        if (data.block_found_points && data.block_found_points.length > 0) {
+            const blockFoundDataset = {
+                label: 'Block Found',
+                data: data.block_found_points.map(point => {
+                    // Normalize the value using the same function as for hashrate
+                    const val = parseFloat(point.value);
+                    const unit = point.unit || data.hashrate_60sec_unit || 'th/s';
+                    return {
+                        x: point.time,
+                        y: normalizeHashrate(val, unit)
+                    };
+                }),
+                borderColor: '#32CD32',
+                backgroundColor: 'green',
+                pointRadius: 9,
+                pointHoverRadius: 12,
+                pointStyle: 'rect',
+                borderWidth: 2,
+                showLine: false
+            };
+
+            // Add the dataset to the chart
+            chart.data.datasets.push(blockFoundDataset);
         }
-
-        // Add the new dataset to the chart
-        chart.data.datasets.push(blockFoundDataset);
 
         // Always update the chart
         chart.update('none');
@@ -1156,10 +1166,16 @@ function highlightBlockFound(blockHeight) {
         return;
     }
 
+    if (!latestMetrics || !latestMetrics.hashrate_60sec) {
+        console.warn("Cannot highlight block - latestMetrics or hashrate is not available");
+        return;
+    }
+
     // Add the block found point to the chart data
     const blockFoundPoint = {
         time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
         value: latestMetrics.hashrate_60sec, // Use the current hashrate value
+        unit: latestMetrics.hashrate_60sec_unit || 'th/s', // Add this to store the unit
         flash: true // Mark this point to flash/pulse
     };
 
@@ -1168,6 +1184,13 @@ function highlightBlockFound(blockHeight) {
     }
 
     latestMetrics.block_found_points.push(blockFoundPoint);
+
+    // Save block found points to localStorage
+    try {
+        localStorage.setItem('blockFoundPoints', JSON.stringify(latestMetrics.block_found_points));
+    } catch (e) {
+        console.error("Error saving block found points to localStorage:", e);
+    }
 
     // Update the chart with the new block found point
     updateChartWithNormalizedData(trendChart, latestMetrics);
@@ -1270,8 +1293,32 @@ $(document).ready(function () {
         }
     };
 
+    // Load block found points from localStorage
+    try {
+        const savedBlockFoundPoints = localStorage.getItem('blockFoundPoints');
+        if (savedBlockFoundPoints) {
+            if (!latestMetrics) {
+                latestMetrics = {};
+            }
+            latestMetrics.block_found_points = JSON.parse(savedBlockFoundPoints);
+        }
+    } catch (e) {
+        console.error("Error loading block found points from localStorage:", e);
+    }
+
     // Initialize the chart
     trendChart = initializeChart();
+
+    // THIRD: If we have block found points, apply them to the chart
+    if (latestMetrics && latestMetrics.block_found_points && latestMetrics.block_found_points.length > 0) {
+        console.log("Initializing chart with block points:", latestMetrics.block_found_points);
+        // Create minimal data to initialize chart with block points
+        const initialData = {
+            block_found_points: latestMetrics.block_found_points,
+            hashrate_60sec_unit: 'th/s' // Provide default unit for normalization
+        };
+        updateChartWithNormalizedData(trendChart, initialData);
+    }
 
     // Apply any saved arrows to DOM on page load
     arrowIndicator.forceApplyArrows();

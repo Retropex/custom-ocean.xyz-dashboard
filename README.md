@@ -67,31 +67,18 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
    python setup.py
    ```
 
-4. Configure your mining settings:
-   ```json
-   {
-     "power_cost": 0.12,
-     "power_usage": 3450,
-     "wallet": "yourwallethere"  <--- make sure to replace this value in all project files (boot.html, app.py, config.py, config.json, & setup.py)
-   }
-   ```
-
-5. Start the application:
+4. Start the application:
    ```
    python App.py
    ```
 
-6. Open your browser at `http://localhost:5000`
+5. Open your browser at `http://localhost:5000` and complete the boot sequence to enter your wallet address.
 
 ### Docker Deployment
 
 ```bash
 docker build -t bitcoin-mining-dashboard .
-docker run -d -p 5000:5000 \
-  -e WALLET=your-wallet-address \
-  -e POWER_COST=0.12 \
-  -e POWER_USAGE=3450 \
-  bitcoin-mining-dashboard
+docker run -d -p 5000:5000 bitcoin-mining-dashboard
 ```
 
 For detailed deployment instructions with Redis persistence and Gunicorn configuration, see [deployment_steps.md](deployment_steps.md).

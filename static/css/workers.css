@@ -333,7 +333,7 @@
 }
 /* Add extra padding at bottom of worker grid to avoid overlap */
 .worker-grid {
-    margin-bottom: 60px;
+    margin-bottom: 120px;
 }
 
 /* Ensure summary stats have proper spacing on mobile */

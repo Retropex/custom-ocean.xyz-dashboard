@@ -577,10 +577,16 @@
             }
         }
 
-        // Skip button: immediately redirect
+        // Skip button: reveal configuration form only
         skipButton.addEventListener('click', function () {
             clearTimeout(timeoutId);
-            redirectToDashboard();
+            // Optionally, clear boot messages or hide elements related to boot sequence
+            outputElement.innerHTML = "";
+            // Hide any loading or prompt messages
+            loadingMessage.style.display = 'none';
+            promptContainer.style.display = 'none';
+            // Show the configuration form
+            configForm.style.display = 'block';
         });
 
         // Start the typing animation (hides loading message)

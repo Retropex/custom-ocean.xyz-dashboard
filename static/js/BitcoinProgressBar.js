@@ -673,17 +673,19 @@ const BitcoinMinuteRefresh = (function () {
             console.error("BitcoinMinuteRefresh: Error updating progress bar:", e);
         }
     }
-
     /**
      * Update the terminal clock
      */
     function updateClock() {
         try {
             const now = new Date(Date.now() + (serverTimeOffset || 0));
-            const hours = String(now.getHours()).padStart(2, '0');
+            let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            const timeString = `${String(hours).padStart(2, '0')}:${minutes}:${seconds} ${ampm}`;
 
             // Update both clocks (normal and minimized views)
             const clockElement = document.getElementById('terminal-clock');
@@ -703,9 +705,6 @@ const BitcoinMinuteRefresh = (function () {
     /**
      * Update the uptime display
      */
-    /**
- * Update the uptime display
- */
     function updateUptime() {
         if (serverStartTime) {
             try {

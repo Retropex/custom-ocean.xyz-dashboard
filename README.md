@@ -1,6 +1,6 @@
 # Ocean.xyz Bitcoin Mining Dashboard
 
-## A Retro Mining Monitoring Solution for Ocean.xyz Pool
+## A Retro Mining Monitoring Solution
 
 This open-source dashboard provides real-time monitoring for Ocean.xyz pool miners, offering detailed insights on hashrate, profitability, worker status, and network metrics. Designed with a retro terminal aesthetic and focused on reliability, it helps miners maintain complete oversight of their operations.
 

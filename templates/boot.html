@@ -264,7 +264,7 @@
         let bootComplete = false;
         let configLoaded = false;
         let currentConfig = {
-            wallet: "bc1py5zmrtssheq3shd8cptpl5l5m3txxr5afynyg2gyvam6w78s4dlqqnt4v9",
+            wallet: "yourwallethere",
             power_cost: 0.0,
             power_usage: 0.0
         };
@@ -293,7 +293,7 @@
                     console.error("Error loading config:", err);
                     // Use default values if loading fails
                     currentConfig = {
-                        wallet: "bc1py5zmrtssheq3shd8cptpl5l5m3txxr5afynyg2gyvam6w78s4dlqqnt4v9",
+                        wallet: "yourwallethere",
                         power_cost: 0.0,
                         power_usage: 0.0
                     };
@@ -389,7 +389,7 @@
             console.log("Use Defaults button clicked");
 
             // Always use the hardcoded default values, not the currentConfig
-            const defaultWallet = "bc1py5zmrtssheq3shd8cptpl5l5m3txxr5afynyg2gyvam6w78s4dlqqnt4v9";
+            const defaultWallet = "yourwallethere";
             const defaultPowerCost = 0.0;
             const defaultPowerUsage = 0.0;
 

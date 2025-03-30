@@ -562,6 +562,10 @@ def update_config():
                 new_config.get("wallet")
             )
             logging.info(f"Dashboard service reinitialized with new wallet: {new_config.get('wallet')}")
+
+            # Update worker service to use the new dashboard service (with the updated wallet)
+            worker_service.set_dashboard_service(dashboard_service)
+            logging.info(f"Worker service updated with the new dashboard service")
             
             # Force a metrics update to reflect the new configuration
             update_metrics_job(force=True)

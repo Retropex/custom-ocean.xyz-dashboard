@@ -19,7 +19,7 @@ def load_config():
     default_config = {
         "power_cost": 0.0,
         "power_usage": 0.0,
-        "wallet": "bc1py5zmrtssheq3shd8cptpl5l5m3txxr5afynyg2gyvam6w78s4dlqqnt4v9"
+        "wallet": "yourwallethere"
     }
     
     if os.path.exists(CONFIG_FILE):

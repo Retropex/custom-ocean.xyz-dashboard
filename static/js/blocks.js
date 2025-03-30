@@ -209,49 +209,63 @@ function loadBlocksFromHeight(height) {
     });
 }
 
-// Function to load the latest blocks
+// Function to load the latest blocks and return a promise with the latest block height
 function loadLatestBlocks() {
-    if (isLoading) return;
-    
+    if (isLoading) return Promise.resolve(null);
+
     isLoading = true;
-    
+
     // Show loading state
     $("#blocks-grid").html('<div class="loader"><span class="loader-text">Loading latest blocks<span class="terminal-cursor"></span></span></div>');
-    
+
     // Fetch the latest blocks from the API
-    $.ajax({
+    return $.ajax({
         url: `${mempoolBaseUrl}/api/v1/blocks`,
         method: "GET",
         dataType: "json",
         timeout: 10000,
-        success: function(data) {
+        success: function (data) {
             // Cache the data (use the first block's height as the key)
             if (data.length > 0) {
                 currentStartHeight = data[0].height;
                 blocksCache[currentStartHeight] = data;
-                
+
                 // Update the block height input with the latest height
                 $("#block-height").val(currentStartHeight);
-                
+
                 // Update latest block stats
                 updateLatestBlockStats(data[0]);
             }
-            
+
             // Display the blocks
             displayBlocks(data);
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error("Error fetching latest blocks:", error);
             $("#blocks-grid").html('<div class="error">Error fetching blocks. Please try again later.</div>');
-            
+
             // Show error toast
             showToast("Failed to load latest blocks. Please try again later.");
         },
-        complete: function() {
+        complete: function () {
             isLoading = false;
         }
-    });
+    }).then(data => data.length > 0 ? data[0].height : null);
 }
+
+// Refresh blocks page every 60 seconds if there are new blocks
+setInterval(function () {
+    console.log("Checking for new blocks at " + new Date().toLocaleTimeString());
+    loadLatestBlocks().then(latestHeight => {
+        if (latestHeight && latestHeight > currentStartHeight) {
+            console.log("New blocks detected, refreshing the page");
+            location.reload();
+        } else {
+            console.log("No new blocks detected");
+        }
+    });
+}, 60000);
+
 
 // Function to update the latest block stats section
 function updateLatestBlockStats(block) {

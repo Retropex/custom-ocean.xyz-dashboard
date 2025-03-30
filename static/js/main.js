@@ -326,6 +326,7 @@ let reconnectionDelay = 1000; // Start with 1 second
 let pingInterval = null;
 let lastPingTime = Date.now();
 let connectionLostTimeout = null;
+let previousBlockHeight = null; // Declare and initialize previousBlockHeight
 
 // Server time variables for uptime calculation
 let serverTimeOffset = 0;
@@ -744,40 +745,40 @@ function initializeChart() {
                         }
                     },
                     legend: { display: false },
-                    annotation: hasAnnotationPlugin ? {
-                        annotations: {
-                            averageLine: {
-                                type: 'line',
-                                yMin: 0,
-                                yMax: 0,
-                                borderColor: '#ffd700', // Changed to gold color for better contrast
-                                borderWidth: 3,         // Increased from 2 to 3
-                                borderDash: [8, 4],     // Modified dash pattern for distinction
-                                // Add shadow effect
-                                shadowColor: 'rgba(255, 215, 0, 0.5)',
-                                shadowBlur: 8,
-                                shadowOffsetX: 0,
-                                shadowOffsetY: 0,
-                                label: {
-                                    enabled: true,
-                                    content: '24hr Avg: 0 TH/s',
-                                    backgroundColor: 'rgba(0,0,0,0.8)',
-                                    color: '#ffd700',   // Changed to match the line color
-                                    font: {
-                                        weight: 'bold',
-                                        size: 14,       // Increased from 13 to 14
-                                        family: 'var(--terminal-font)' // Use the terminal font
-                                    },
-                                    padding: { top: 4, bottom: 4, left: 8, right: 8 },
-                                    borderRadius: 2,
-                                    position: 'start',
-                                    // Add a subtle shadow to the label
-                                    textShadow: '0 0 5px rgba(255, 215, 0, 0.7)'
-                                }
-                            }
-                        }
-                    } : {}
+    annotation: hasAnnotationPlugin ? {
+        annotations: {
+            averageLine: {
+                type: 'line',
+                yMin: 0,
+                yMax: 0,
+                borderColor: '#ffd700', // Changed to gold color for better contrast
+                borderWidth: 3,         // Increased from 2 to 3
+                borderDash: [8, 4],     // Modified dash pattern for distinction
+                // Add shadow effect
+                shadowColor: 'rgba(255, 215, 0, 0.5)',
+                shadowBlur: 8,
+                shadowOffsetX: 0,
+                shadowOffsetY: 0,
+                label: {
+                    enabled: true,
+                    content: '24hr Avg: 0 TH/s',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    color: '#ffd700',   // Changed to match the line color
+                    font: { 
+                        weight: 'bold', 
+                        size: 14,       // Increased from 13 to 14
+                        family: 'var(--terminal-font)' // Use the terminal font
+                    },
+                    padding: { top: 4, bottom: 4, left: 8, right: 8 },
+                    borderRadius: 2,
+                    position: 'start',
+                    // Add a subtle shadow to the label
+                    textShadow: '0 0 5px rgba(255, 215, 0, 0.7)'
                 }
+            }
+        }
+    } : {}
+}
             }
         });
     } catch (error) {
@@ -963,6 +964,28 @@ function updateChartWithNormalizedData(chart, data) {
             }
         }
 
+        // Add a new dataset for block found points
+        const blockFoundDataset = {
+            label: 'Block Found',
+            data: [], // This will be populated with the points where a block is found
+            borderColor: 'red',
+            backgroundColor: 'red',
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            showLine: false
+        };
+
+        // Populate the block found dataset
+        if (data.block_found_points) {
+            blockFoundDataset.data = data.block_found_points.map(point => ({
+                x: point.time,
+                y: point.value
+            }));
+        }
+
+        // Add the new dataset to the chart
+        chart.data.datasets.push(blockFoundDataset);
+
         // Always update the chart
         chart.update('none');
     } catch (chartError) {
@@ -979,6 +1002,14 @@ function updateUI() {
 
     try {
         const data = latestMetrics;
+
+        // Check for block updates
+        if (previousBlockHeight !== null && data.last_block_height !== previousBlockHeight) {
+            // Block found, update the chart
+            highlightBlockFound(data.last_block_height);
+        }
+
+        previousBlockHeight = data.last_block_height;
 
         // If this is the initial load, force a reset of all arrows
         if (initialLoad) {
@@ -1116,6 +1147,27 @@ function updateUI() {
     } catch (error) {
         console.error("Error updating UI:", error);
     }
+}
+function highlightBlockFound(blockHeight) {
+    if (!trendChart) {
+        console.warn("Chart not initialized");
+        return;
+    }
+
+    // Add the block found point to the chart data
+    const blockFoundPoint = {
+        time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        value: latestMetrics.hashrate_60sec // Use the current hashrate value
+    };
+
+    if (!latestMetrics.block_found_points) {
+        latestMetrics.block_found_points = [];
+    }
+
+    latestMetrics.block_found_points.push(blockFoundPoint);
+
+    // Update the chart with the new block found point
+    updateChartWithNormalizedData(trendChart, latestMetrics);
 }
 
 // Update unread notifications badge in navigation

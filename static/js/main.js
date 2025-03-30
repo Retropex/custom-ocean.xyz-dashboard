@@ -869,7 +869,7 @@ function showCongrats(message) {
     $congrats.text(message).fadeIn(500, function () {
         setTimeout(function () {
             $congrats.fadeOut(500);
-        }, 3000);
+        }, 900000); //15 minutes fade out
     });
 }
 
@@ -968,11 +968,12 @@ function updateChartWithNormalizedData(chart, data) {
         const blockFoundDataset = {
             label: 'Block Found',
             data: [], // This will be populated with the points where a block is found
-            borderColor: 'red',
-            backgroundColor: 'red',
-            pointRadius: 7,
-            pointHoverRadius: 9,
+            borderColor: '#32CD32',
+            backgroundColor: 'green',
+            pointRadius: 9,
+            pointHoverRadius: 12,
             pointStyle: 'rect', // Set point style to square
+            borderWidth: 2, // Add border for more visibility
             showLine: false
         };
 
@@ -1158,7 +1159,8 @@ function highlightBlockFound(blockHeight) {
     // Add the block found point to the chart data
     const blockFoundPoint = {
         time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-        value: latestMetrics.hashrate_60sec // Use the current hashrate value
+        value: latestMetrics.hashrate_60sec, // Use the current hashrate value
+        flash: true // Mark this point to flash/pulse
     };
 
     if (!latestMetrics.block_found_points) {
@@ -1169,6 +1171,32 @@ function highlightBlockFound(blockHeight) {
 
     // Update the chart with the new block found point
     updateChartWithNormalizedData(trendChart, latestMetrics);
+
+    // Flash the point by animating opacity
+    flashBlockFoundIndicator();
+}
+
+// Add this function to create a flashing effect
+function flashBlockFoundIndicator() {
+    const flashCount = 5; // Number of flashes
+    let count = 0;
+
+    const flashInterval = setInterval(() => {
+        if (count >= flashCount * 2) {
+            clearInterval(flashInterval);
+            return;
+        }
+
+        // Toggle visibility of the dataset
+        if (trendChart && trendChart.data.datasets.length > 1) {
+            const opacity = count % 2 === 0 ? 1.0 : 0.3; // Toggle between full and partial opacity
+            trendChart.data.datasets[1].pointBackgroundColor = `rgba(50, 205, 50, ${opacity})`;
+            trendChart.data.datasets[1].borderColor = `rgba(50, 205, 50, ${opacity})`;
+            trendChart.update('none');
+        }
+
+        count++;
+    }, 300); // Flash every 300ms
 }
 
 // Update unread notifications badge in navigation

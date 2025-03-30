@@ -72,7 +72,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
    {
      "power_cost": 0.12,
      "power_usage": 3450,
-     "wallet": "your-wallet-address"
+     "wallet": "yourwallethere"  <--- make sure to replace this value in all project files (boot.html, app.py, config.py, config.json, & setup.py)
    }
    ```
 

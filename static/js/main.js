@@ -970,8 +970,9 @@ function updateChartWithNormalizedData(chart, data) {
             data: [], // This will be populated with the points where a block is found
             borderColor: 'red',
             backgroundColor: 'red',
-            pointRadius: 5,
-            pointHoverRadius: 7,
+            pointRadius: 7,
+            pointHoverRadius: 9,
+            pointStyle: 'rect', // Set point style to square
             showLine: false
         };
 

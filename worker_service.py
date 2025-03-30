@@ -25,6 +25,10 @@ class WorkerService:
             dashboard_service (MiningDashboardService): The initialized dashboard service
         """
         self.dashboard_service = dashboard_service
+        # Immediately access the wallet from dashboard_service when it's set
+        if hasattr(dashboard_service, 'wallet'):
+            self.wallet = dashboard_service.wallet
+            logging.info(f"Worker service updated with new wallet: {self.wallet}")
         logging.info("Dashboard service connected to worker service")
 
     def generate_default_workers_data(self):

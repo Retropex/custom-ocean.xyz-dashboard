@@ -184,37 +184,38 @@ function updateServerTime() {
     });
 }
 
-// Fetch worker data from API
+// Utility functions to show/hide loader
+function showLoader() {
+    $("#loader").show();
+}
+
+function hideLoader() {
+    $("#loader").hide();
+}
+
+// Fetch worker data from API with pagination, limiting to 10 pages
 function fetchWorkerData(forceRefresh = false) {
     console.log("Fetching worker data...");
-
     lastManualRefreshTime = Date.now();
     $('#worker-grid').addClass('loading-fade');
 
-    const apiUrl = `/api/workers${forceRefresh ? '?force=true' : ''}`;
+    let allWorkers = [];
+    let aggregatedData = null; // Used to preserve summary stats from page 1
+    const maxPages = 10;
 
-    $.ajax({
-        url: apiUrl,
-        method: 'GET',
-        dataType: 'json',
-        timeout: 15000,
-        success: function (data) {
-            if (!data || !data.workers || data.workers.length === 0) {
-                console.warn("No workers found in data response");
-                $('#worker-grid').html(`
-                    <div class="text-center p-5">
-                        <p>No workers found. Try refreshing the page.</p>
-                    </div>
-                `);
-                return;
-            }
+    function fetchPage(page) {
+        if (page > maxPages) {
+            // Deduplicate workers based on a unique field (e.g., worker.name)
+            const uniqueWorkers = allWorkers.filter((worker, index, self) =>
+                index === self.findIndex((w) => w.name === worker.name)
+            );
 
-            workerData = data;
-
+            // After fetching up to maxPages, update the UI with aggregated (and deduplicated) data
+            workerData = aggregatedData || {};
+            workerData.workers = uniqueWorkers;
             if (typeof BitcoinMinuteRefresh !== 'undefined' && BitcoinMinuteRefresh.notifyRefresh) {
                 BitcoinMinuteRefresh.notifyRefresh();
             }
-
             updateWorkerGrid();
             updateSummaryStats();
             updateMiniChart();
@@ -222,34 +223,44 @@ function fetchWorkerData(forceRefresh = false) {
 
             $('#retry-button').hide();
             connectionRetryCount = 0;
-
             console.log("Worker data updated successfully");
-        },
-        error: function (xhr, status, error) {
-            console.error("Error fetching worker data:", error);
-
-            $('#worker-grid').html(`
-                <div class="text-center p-5 text-danger">
-                    <i class="fas fa-exclamation-triangle"></i> 
-                    <p>Error loading worker data: ${error || 'Unknown error'}</p>
-                </div>
-            `);
-
-            $('#retry-button').show();
-
-            connectionRetryCount++;
-            const delay = Math.min(30000, 1000 * Math.pow(1.5, Math.min(5, connectionRetryCount)));
-            console.log(`Will retry in ${delay / 1000} seconds (attempt ${connectionRetryCount})`);
-
-            setTimeout(() => {
-                fetchWorkerData(true);
-            }, delay);
-        },
-        complete: function () {
             $('#worker-grid').removeClass('loading-fade');
+            return;
         }
-    });
+
+        // Build URL with pagination
+        const apiUrl = `/api/workers?page=${page}${forceRefresh ? '&force=true' : ''}`;
+        $.ajax({
+            url: apiUrl,
+            method: 'GET',
+            dataType: 'json',
+            timeout: 15000,
+            success: function (data) {
+                if (data && data.workers && data.workers.length > 0) {
+                    allWorkers = allWorkers.concat(data.workers);
+                    // On the first page, preserve other properties (e.g., summary stats)
+                    if (page === 1) {
+                        aggregatedData = data;
+                    }
+                } else {
+                    console.warn(`No workers found on page ${page}`);
+                    // Optionally, stop fetching early if no data is returned:
+                    page = maxPages;
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error(`Error fetching worker data on page ${page}:`, error);
+            },
+            complete: function () {
+                // Continue to the next page regardless of success or error
+                fetchPage(page + 1);
+            }
+        });
+    }
+    // Start fetching from page 1
+    fetchPage(1);
 }
+
 
 // Refresh worker data every 60 seconds
 setInterval(function () {

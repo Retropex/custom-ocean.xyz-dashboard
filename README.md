@@ -53,7 +53,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/bitcoin-mining-dashboard.git
+   git clone https://github.com/djobleezy/bitcoin-mining-dashboard.git
    cd bitcoin-mining-dashboard
    ```
 

@@ -198,24 +198,51 @@ function fetchWorkerData(forceRefresh = false) {
     console.log("Fetching worker data...");
     lastManualRefreshTime = Date.now();
     $('#worker-grid').addClass('loading-fade');
+    showLoader();
 
-    let allWorkers = [];
-    let aggregatedData = null; // Used to preserve summary stats from page 1
     const maxPages = 10;
+    const requests = [];
 
-    function fetchPage(page) {
-        if (page > maxPages) {
-            // Deduplicate workers based on a unique field (e.g., worker.name)
+    // Create requests for pages 1 through maxPages concurrently
+    for (let page = 1; page <= maxPages; page++) {
+        const apiUrl = `/api/workers?page=${page}${forceRefresh ? '&force=true' : ''}`;
+        requests.push($.ajax({
+            url: apiUrl,
+            method: 'GET',
+            dataType: 'json',
+            timeout: 15000
+        }));
+    }
+
+    // Process all requests concurrently
+    Promise.all(requests)
+        .then(pages => {
+            let allWorkers = [];
+            let aggregatedData = null;
+
+            pages.forEach((data, i) => {
+                if (data && data.workers && data.workers.length > 0) {
+                    allWorkers = allWorkers.concat(data.workers);
+                    if (i === 0) {
+                        aggregatedData = data; // preserve stats from first page
+                    }
+                } else {
+                    console.warn(`No workers found on page ${i + 1}`);
+                }
+            });
+
+            // Deduplicate workers if necessary (using worker.name as unique key)
             const uniqueWorkers = allWorkers.filter((worker, index, self) =>
                 index === self.findIndex((w) => w.name === worker.name)
             );
 
-            // After fetching up to maxPages, update the UI with aggregated (and deduplicated) data
             workerData = aggregatedData || {};
             workerData.workers = uniqueWorkers;
+
             if (typeof BitcoinMinuteRefresh !== 'undefined' && BitcoinMinuteRefresh.notifyRefresh) {
                 BitcoinMinuteRefresh.notifyRefresh();
             }
+
             updateWorkerGrid();
             updateSummaryStats();
             updateMiniChart();
@@ -225,42 +252,14 @@ function fetchWorkerData(forceRefresh = false) {
             connectionRetryCount = 0;
             console.log("Worker data updated successfully");
             $('#worker-grid').removeClass('loading-fade');
-            return;
-        }
-
-        // Build URL with pagination
-        const apiUrl = `/api/workers?page=${page}${forceRefresh ? '&force=true' : ''}`;
-        $.ajax({
-            url: apiUrl,
-            method: 'GET',
-            dataType: 'json',
-            timeout: 15000,
-            success: function (data) {
-                if (data && data.workers && data.workers.length > 0) {
-                    allWorkers = allWorkers.concat(data.workers);
-                    // On the first page, preserve other properties (e.g., summary stats)
-                    if (page === 1) {
-                        aggregatedData = data;
-                    }
-                } else {
-                    console.warn(`No workers found on page ${page}`);
-                    // Optionally, stop fetching early if no data is returned:
-                    page = maxPages;
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error(`Error fetching worker data on page ${page}:`, error);
-            },
-            complete: function () {
-                // Continue to the next page regardless of success or error
-                fetchPage(page + 1);
-            }
+        })
+        .catch(error => {
+            console.error("Error fetching worker data:", error);
+        })
+        .finally(() => {
+            hideLoader();
         });
-    }
-    // Start fetching from page 1
-    fetchPage(1);
 }
-
 
 // Refresh worker data every 60 seconds
 setInterval(function () {

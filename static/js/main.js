@@ -1108,24 +1108,36 @@ function updateUI() {
         const payoutText = data.est_time_to_payout;
         updateElementText("est_time_to_payout", payoutText);
 
-        if (payoutText && payoutText.toLowerCase().includes("next block")) {
-            $("#est_time_to_payout").css({
-                "color": "#32CD32",
-                "animation": "glowPulse 1s infinite"
-            });
+        // Check for "next block" in any case format
+        if (payoutText && /next\s+block/i.test(payoutText)) {
+            $("#est_time_to_payout").attr("style", "color: #32CD32 !important; text-shadow: 0 0 6px rgba(50, 205, 50, 0.6) !important; animation: glowPulse 1s infinite !important;");
         } else {
-            const daysMatch = payoutText ? payoutText.match(/(\d+)/) : null;
-            const days = daysMatch ? parseFloat(daysMatch[1]) : NaN;
-            if (!isNaN(days)) {
-                if (days < 4) {
-                    $("#est_time_to_payout").css({ "color": "#32CD32", "animation": "none" });
-                } else if (days > 20) {
-                    $("#est_time_to_payout").css({ "color": "red", "animation": "none" });
+            // Trim any extra whitespace
+            const cleanText = payoutText ? payoutText.trim() : "";
+            // Use an improved regex that optionally captures hours after days (with or without a comma)
+            const regex = /(\d+)\s*days(?:,?\s*(\d+)\s*hours?)?/i;
+            const match = cleanText.match(regex);
+
+            console.log("Payout text:", cleanText, "Match:", match);  // Debug output
+
+            let totalDays = NaN;
+            if (match) {
+                const days = parseFloat(match[1]);
+                const hours = match[2] ? parseFloat(match[2]) : 0;
+                totalDays = days + (hours / 24);
+                console.log("Total days computed:", totalDays);  // Debug output
+            }
+
+            if (!isNaN(totalDays)) {
+                if (totalDays < 4) {
+                    $("#est_time_to_payout").attr("style", "color: #32CD32 !important; text-shadow: 0 0 6px rgba(50, 205, 50, 0.6) !important; animation: none !important;");
+                } else if (totalDays > 20) {
+                    $("#est_time_to_payout").attr("style", "color: #ff5555 !important; text-shadow: 0 0 6px rgba(255, 85, 85, 0.6) !important; animation: none !important;");
                 } else {
-                    $("#est_time_to_payout").css({ "color": "#ffd700", "animation": "none" });
+                    $("#est_time_to_payout").attr("style", "color: #ffd700 !important; text-shadow: 0 0 6px rgba(255, 215, 0, 0.6) !important; animation: none !important;");
                 }
             } else {
-                $("#est_time_to_payout").css({ "color": "#ffd700", "animation": "none" });
+                $("#est_time_to_payout").attr("style", "color: #ffd700 !important; text-shadow: 0 0 6px rgba(255, 215, 0, 0.6) !important; animation: none !important;");
             }
         }
 

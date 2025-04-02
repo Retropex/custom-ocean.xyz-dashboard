@@ -31,6 +31,8 @@ class NotificationService:
         self.last_daily_stats = None
         self.max_notifications = 100  # Maximum number to store
         self.last_block_height = None  # Track the last seen block height
+        self.last_payout_notification_time = None  # Track the last payout notification time
+        self.last_estimated_payout_time = None  # Track the last estimated payout time
         
         # Load existing notifications from state
         self._load_notifications()
@@ -227,22 +229,15 @@ class NotificationService:
     def check_and_generate_notifications(self, current_metrics, previous_metrics):
         """
         Check metrics and generate notifications for significant events.
-        
-        Args:
-            current_metrics (dict): Current mining metrics
-            previous_metrics (dict): Previous mining metrics
-            
-        Returns:
-            list: Newly created notifications
         """
         new_notifications = []
-        
+    
         try:
             # Skip if no metrics
             if not current_metrics:
                 logging.warning("No current metrics available, skipping notification checks")
                 return new_notifications
-            
+        
             # Check for block updates (using persistent storage)
             last_block_height = current_metrics.get("last_block_height")
             if last_block_height and last_block_height != "N/A":
@@ -251,12 +246,12 @@ class NotificationService:
                     block_notification = self._generate_block_notification(current_metrics)
                     if block_notification:
                         new_notifications.append(block_notification)
-                
+            
                 # Always update the stored last block height when it changes
                 if self.last_block_height != last_block_height:
                     self.last_block_height = last_block_height
                     self._save_last_block_height()
-            
+        
             # Regular comparison with previous metrics
             if previous_metrics:
                 # Check for daily stats
@@ -264,24 +259,19 @@ class NotificationService:
                     stats_notification = self._generate_daily_stats(current_metrics)
                     if stats_notification:
                         new_notifications.append(stats_notification)
-                
+            
                 # Check for significant hashrate drop
                 hashrate_notification = self._check_hashrate_change(current_metrics, previous_metrics)
                 if hashrate_notification:
                     new_notifications.append(hashrate_notification)
-                
-                # Check for worker status changes
-                worker_notification = self._check_worker_status_change(current_metrics, previous_metrics)
-                if worker_notification:
-                    new_notifications.append(worker_notification)
-                
+            
                 # Check for earnings and payout progress
                 earnings_notification = self._check_earnings_progress(current_metrics, previous_metrics)
                 if earnings_notification:
                     new_notifications.append(earnings_notification)
-            
+        
             return new_notifications
-                
+            
         except Exception as e:
             logging.error(f"Error generating notifications: {e}")
             error_notification = self.add_notification(
@@ -292,23 +282,27 @@ class NotificationService:
             return [error_notification]
     
     def _should_post_daily_stats(self):
-        """Check if it's time to post daily stats every 6 hours."""
+        """Check if it's time to post daily stats based on flexible conditions."""
         now = datetime.now()
         
-        # Define the times to post daily stats (every 6 hours)
+        # Define the times to post daily stats (every 6 hours by default)
         daily_stats_times = ["00:00:00", "06:00:00", "12:00:00", "18:00:00"]
+        
+        # Customizable interval in hours (default to 6 hours)
+        interval_hours = 6
         
         # If we have a last_daily_stats timestamp
         if self.last_daily_stats:
             # Check time elapsed since last stats
             time_since_last_stats = now - self.last_daily_stats
             
-            # If more than 6 hours have passed
-            if time_since_last_stats.total_seconds() >= 6 * 3600:
+            # If more than the interval has passed
+            if time_since_last_stats.total_seconds() >= interval_hours * 3600:
                 current_time_str = now.strftime("%H:%M:%S")
                 
                 # Check if current time is one of our scheduled times
-                if current_time_str >= "00:00:00" and current_time_str in daily_stats_times:
+                if current_time_str in daily_stats_times:
+                    logging.info(f"Posting daily stats at {current_time_str}")
                     self.last_daily_stats = now
                     return True
             return False
@@ -316,6 +310,7 @@ class NotificationService:
             # First time - post if current time is one of our scheduled times
             current_time_str = now.strftime("%H:%M:%S")
             if current_time_str in daily_stats_times:
+                logging.info(f"First time posting daily stats at {current_time_str}")
                 self.last_daily_stats = now
                 return True
             return False
@@ -324,6 +319,7 @@ class NotificationService:
         """Generate daily stats notification."""
         try:
             if not metrics:
+                logging.warning("No metrics available for daily stats")
                 return None
                 
             # Format hashrate with appropriate unit
@@ -338,6 +334,7 @@ class NotificationService:
             message = f"Daily Mining Summary: {hashrate_24hr} {hashrate_unit} average hashrate, {daily_mined_sats} sats mined (${daily_profit_usd:.2f})"
             
             # Add notification
+            logging.info(f"Generating daily stats notification: {message}")
             return self.add_notification(
                 message,
                 level=NotificationLevel.INFO,
@@ -381,25 +378,41 @@ class NotificationService:
         try:
             current_3hr = current.get("hashrate_3hr", 0)
             previous_3hr = previous.get("hashrate_3hr", 0)
-            
+        
+            # Log what we're comparing
+            logging.debug(f"Comparing hashrates - current: {current_3hr}, previous: {previous_3hr}")
+        
             # Skip if values are missing
             if not current_3hr or not previous_3hr:
+                logging.debug("Skipping hashrate check - missing values")
                 return None
-                
-            # Convert to float
-            current_3hr = float(current_3hr)
-            previous_3hr = float(previous_3hr)
+        
+            # Handle strings with units (e.g., "10.5 TH/s")
+            if isinstance(current_3hr, str):
+                current_3hr = float(current_3hr.split()[0])
+            else:
+                current_3hr = float(current_3hr)
             
+            if isinstance(previous_3hr, str):
+                previous_3hr = float(previous_3hr.split()[0])
+            else:
+                previous_3hr = float(previous_3hr)
+            
+            logging.debug(f"Converted hashrates - current: {current_3hr}, previous: {previous_3hr}")
+        
             # Skip if previous was zero (prevents division by zero)
             if previous_3hr == 0:
+                logging.debug("Skipping hashrate check - previous was zero")
                 return None
-                
+            
             # Calculate percentage change
             percent_change = ((current_3hr - previous_3hr) / previous_3hr) * 100
-            
+            logging.debug(f"Hashrate change: {percent_change:.1f}%")
+        
             # Significant decrease (more than 15%)
             if percent_change <= -15:
                 message = f"Significant hashrate drop detected: {abs(percent_change):.1f}% decrease"
+                logging.info(f"Generating hashrate notification: {message}")
                 return self.add_notification(
                     message,
                     level=NotificationLevel.WARNING,
@@ -410,10 +423,11 @@ class NotificationService:
                         "change": percent_change
                     }
                 )
-            
+        
             # Significant increase (more than 15%)
             elif percent_change >= 15:
                 message = f"Hashrate increase detected: {percent_change:.1f}% increase"
+                logging.info(f"Generating hashrate notification: {message}")
                 return self.add_notification(
                     message,
                     level=NotificationLevel.SUCCESS,
@@ -424,55 +438,10 @@ class NotificationService:
                         "change": percent_change
                     }
                 )
-            
+        
             return None
         except Exception as e:
             logging.error(f"Error checking hashrate change: {e}")
-            return None
-    
-    def _check_worker_status_change(self, current, previous):
-        """Check for worker status changes."""
-        try:
-            current_workers = current.get("workers_hashing", 0)
-            previous_workers = previous.get("workers_hashing", 0)
-            
-            # Skip if values are missing
-            if current_workers is None or previous_workers is None:
-                return None
-                
-            # Worker(s) went offline
-            if current_workers < previous_workers:
-                diff = previous_workers - current_workers
-                message = f"{diff} worker{'s' if diff > 1 else ''} went offline"
-                return self.add_notification(
-                    message,
-                    level=NotificationLevel.WARNING,
-                    category=NotificationCategory.WORKER,
-                    data={
-                        "previous_count": previous_workers,
-                        "current_count": current_workers,
-                        "difference": diff
-                    }
-                )
-            
-            # Worker(s) came online
-            elif current_workers > previous_workers:
-                diff = current_workers - previous_workers
-                message = f"{diff} new worker{'s' if diff > 1 else ''} came online"
-                return self.add_notification(
-                    message,
-                    level=NotificationLevel.SUCCESS,
-                    category=NotificationCategory.WORKER,
-                    data={
-                        "previous_count": previous_workers,
-                        "current_count": current_workers,
-                        "difference": diff
-                    }
-                )
-            
-            return None
-        except Exception as e:
-            logging.error(f"Error checking worker status change: {e}")
             return None
     
     def _check_earnings_progress(self, current, previous):
@@ -488,22 +457,26 @@ class NotificationService:
                 if est_time.isdigit() or (est_time[0] == '-' and est_time[1:].isdigit()):
                     days = int(est_time)
                     if 0 < days <= 1:
-                        message = f"Payout approaching! Estimated within 1 day"
+                        if self._should_send_payout_notification():
+                            message = f"Payout approaching! Estimated within 1 day"
+                            self.last_payout_notification_time = datetime.now()
+                            return self.add_notification(
+                                message,
+                                level=NotificationLevel.SUCCESS,
+                                category=NotificationCategory.EARNINGS,
+                                data={"days_to_payout": days}
+                            )
+                # If it says "next block"
+                elif "next block" in est_time.lower():
+                    if self._should_send_payout_notification():
+                        message = f"Payout expected with next block!"
+                        self.last_payout_notification_time = datetime.now()
                         return self.add_notification(
                             message,
                             level=NotificationLevel.SUCCESS,
                             category=NotificationCategory.EARNINGS,
-                            data={"days_to_payout": days}
+                            data={"payout_imminent": True}
                         )
-                # If it says "next block"
-                elif "next block" in est_time.lower():
-                    message = f"Payout expected with next block!"
-                    return self.add_notification(
-                        message,
-                        level=NotificationLevel.SUCCESS,
-                        category=NotificationCategory.EARNINGS,
-                        data={"payout_imminent": True}
-                    )
             
             # Check for payout (unpaid balance reset)
             if previous.get("unpaid_earnings"):
@@ -527,3 +500,10 @@ class NotificationService:
         except Exception as e:
             logging.error(f"Error checking earnings progress: {e}")
             return None
+
+    def _should_send_payout_notification(self):
+        """Check if enough time has passed since the last payout notification."""
+        if self.last_payout_notification_time is None:
+            return True
+        time_since_last_notification = datetime.now() - self.last_payout_notification_time
+        return time_since_last_notification.total_seconds() > 86400  # 1 Day

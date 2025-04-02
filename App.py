@@ -169,19 +169,16 @@ def update_metrics_job(force=False):
             metrics = dashboard_service.fetch_metrics()
             if metrics:
                 logging.info("Fetched metrics successfully")
-                # Update cached metrics
+    
+                # First check for notifications by comparing new metrics with old cached metrics
+                notification_service.check_and_generate_notifications(metrics, cached_metrics)
+    
+                # Then update cached metrics after comparison
                 cached_metrics = metrics
-                
-                # Update state history
+    
+                # Update state history (only once)
                 state_manager.update_metrics_history(metrics)
-                if metrics:
-                # Check for notifications
-                    notification_service.check_and_generate_notifications(metrics, cached_metrics)
-                # Update cached metrics
-                    cached_metrics = metrics
-                # Update state history
-                    state_manager.update_metrics_history(metrics)
-                
+    
                 logging.info("Background job: Metrics updated successfully")
                 job_successful = True
                 

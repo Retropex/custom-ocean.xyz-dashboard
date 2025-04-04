@@ -326,7 +326,6 @@ let reconnectionDelay = 1000; // Start with 1 second
 let pingInterval = null;
 let lastPingTime = Date.now();
 let connectionLostTimeout = null;
-let previousBlockHeight = null; // Declare and initialize previousBlockHeight
 
 // Server time variables for uptime calculation
 let serverTimeOffset = 0;
@@ -382,31 +381,6 @@ function formatHashrateForDisplay(value, unit) {
     } else { // MH/s range or smaller
         return (normalizedValue * 1000000).toFixed(2) + ' MH/s';
     }
-}
-
-// Helper function: Find an exact or nearest matching label
-function findMatchingLabel(timeStr, labels, toleranceMinutes = 2) {
-    // If exact match, return it
-    if (labels.includes(timeStr)) {
-        return timeStr;
-    }
-    // Parse timeStr into minutes from midnight
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const targetTotal = hours * 60 + minutes;
-    let closestLabel = null;
-    let smallestDiff = Infinity;
-
-    labels.forEach(label => {
-        if (!label.includes(':')) return; // skip non-time labels
-        const [lh, lm] = label.split(':').map(Number);
-        const labelTotal = lh * 60 + lm;
-        const diff = Math.abs(targetTotal - labelTotal);
-        if (diff < smallestDiff && diff <= toleranceMinutes) {
-            smallestDiff = diff;
-            closestLabel = label;
-        }
-    });
-    return closestLabel; // may be null if none within tolerance
 }
 
 // SSE Connection with Error Handling and Reconnection Logic
@@ -713,7 +687,7 @@ function initializeChart() {
                     y: {
                         title: {
                             display: true,
-                            text: 'Hashrate (TH/s)' // Always display unit as TH/s since that's our normalized unit
+                            text: 'HASHRATE (TH/S)' // Always display unit as TH/s since that's our normalized unit
                         },
                         ticks: {
                             color: 'white',
@@ -759,35 +733,12 @@ function initializeChart() {
                 },
                 plugins: {
                     tooltip: {
-                        // ADD THIS TOOLTIP CONFIGURATION HERE
                         callbacks: {
                             label: function (context) {
                                 // Format tooltip values with appropriate unit
                                 const value = context.raw;
                                 return 'Hashrate: ' + formatHashrateForDisplay(value);
                             }
-                        },
-                        // New tooltip filter to prioritize block found points
-                        filter: function (tooltipItem) {
-                            // Show Block Found tooltips with higher priority
-                            if (tooltipItem.dataset.label === 'Block Found') {
-                                return true;
-                            }
-
-                            // Check if there's a block found point at this position
-                            const blockDataset = tooltipItem.chart.data.datasets.find(ds => ds.label === 'Block Found');
-                            if (blockDataset) {
-                                const blockPoint = blockDataset.data.find(point =>
-                                    point.x === tooltipItem.label);
-
-                                if (blockPoint) {
-                                    // If there's a block point at this position, don't show hashrate tooltip
-                                    return false;
-                                }
-                            }
-
-                            // Show other tooltips
-                            return true;
                         }
                     },
                     legend: { display: false },
@@ -807,13 +758,14 @@ function initializeChart() {
                                 shadowOffsetY: 0,
                                 label: {
                                     enabled: true,
-                                    content: '24hr Avg: 0 TH/s',
+                                    content: '24HR AVG: 0 TH/S',
                                     backgroundColor: 'rgba(0,0,0,0.8)',
                                     color: '#ffd700',   // Changed to match the line color
                                     font: {
                                         weight: 'bold',
                                         size: 14,       // Increased from 13 to 14
-                                        family: 'var(--terminal-font)' // Use the terminal font
+                                        family: 'var(--terminal-font)', // Use the terminal font
+                                        uppercase: true // Make label text uppercase
                                     },
                                     padding: { top: 4, bottom: 4, left: 8, right: 8 },
                                     borderRadius: 2,
@@ -915,12 +867,16 @@ function showCongrats(message) {
 
     // Add timestamp to the message
     const now = new Date(Date.now() + serverTimeOffset); // Use server time offset for accuracy
-    const timeString = now.toLocaleTimeString('en-US', {
+    const options = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
         hour12: true
-    });
+    };
+    const timeString = now.toLocaleTimeString('en-US', options);
 
     // Format the message with the timestamp
     const messageWithTimestamp = `${message} [${timeString}]`;
@@ -940,11 +896,6 @@ function updateChartWithNormalizedData(chart, data) {
         return;
     }
     try {
-        // Ensure we preserve block found points across updates
-        if (!data.block_found_points && latestMetrics && latestMetrics.block_found_points) {
-            data.block_found_points = latestMetrics.block_found_points;
-        }
-
         // Always update the 24hr average line even if we don't have data points yet
         const avg24hr = parseFloat(data.hashrate_24hr || 0);
         const avg24hrUnit = data.hashrate_24hr_unit ? data.hashrate_24hr_unit.toLowerCase() : 'th/s';
@@ -957,67 +908,49 @@ function updateChartWithNormalizedData(chart, data) {
             const annotation = chart.options.plugins.annotation.annotations.averageLine;
             annotation.yMin = normalizedAvg;
             annotation.yMax = normalizedAvg;
-            annotation.label.content = '24hr Avg: ' + normalizedAvg.toFixed(1) + ' TH/s';
+            annotation.label.content = '24HR AVG: ' + normalizedAvg.toFixed(1) + ' TH/S';
         }
 
-        // Process block found points if they exist 
-        let blockFoundDataPoints = [];
-        if (data.block_found_points && data.block_found_points.length > 0) {
-            // Ensure block point times are formatted consistently to match chart labels
-            const validLabels = new Set(chart.data.labels);
-
-            blockFoundDataPoints = data.block_found_points
-                .filter(point => {
-                    const timeStr = point.time;
-                    // If the time is in HH:MM:SS format, truncate seconds to match chart labels
-                    const formattedTime = (timeStr.length === 8 && timeStr.indexOf(':') !== -1)
-                        ? timeStr.substring(0, 5)
-                        : timeStr;
-                    const exists = validLabels.has(formattedTime);
-                    if (!exists) {
-                        console.warn(`Block point time ${formattedTime} not found in chart labels`);
-                    }
-                    return exists;
-                })
-                .map(point => {
-                    const val = parseFloat(point.value);
-                    const unit = point.unit || data.hashrate_60sec_unit || 'th/s';
-                    const timeStr = point.time;
-                    const formattedTime = (timeStr.length === 8 && timeStr.indexOf(':') !== -1)
-                        ? timeStr.substring(0, 5)
-                        : timeStr;
-                    return {
-                        x: formattedTime,
-                        y: normalizeHashrate(val, unit)
-                    };
-                });
-
-            // Debug logging: output the current chart labels and compare each block point time
-            console.log("Chart labels after history update:", chart.data.labels);
-            blockFoundDataPoints.forEach((bp, index) => {
-                console.log(`Block found point ${index}: ${bp.x} vs Chart labels:`, chart.data.labels);
-            });
-        }
-
-        // Update data points if we have any history data
+        // In updateChartWithNormalizedData function:
         if (data.arrow_history && data.arrow_history.hashrate_60sec) {
             console.log("History data received:", data.arrow_history.hashrate_60sec);
             const historyData = data.arrow_history.hashrate_60sec;
             if (historyData && historyData.length > 0) {
-                const currentUnit = data.hashrate_60sec_unit ? data.hashrate_60sec_unit.toLowerCase() : 'th/s';
+                // Add day info to labels if they cross midnight
+                let prevHour = -1;
+                let dayCount = 0;
+
                 chart.data.labels = historyData.map(item => {
                     const timeStr = item.time;
+                    let timeLabel;
+
                     if (timeStr.length === 8 && timeStr.indexOf(':') !== -1) {
-                        return timeStr.substring(0, 5);
+                        timeLabel = timeStr.substring(0, 5); // HH:MM
+                    } else {
+                        timeLabel = timeStr;
                     }
-                    return timeStr;
+
+                    // Check if we crossed midnight (hour decreased)
+                    const hourMatch = timeLabel.match(/^(\d+):/);
+                    if (hourMatch) {
+                        const hour = parseInt(hourMatch[1]);
+                        if (prevHour !== -1 && hour < prevHour && hour < 12) {
+                            dayCount++; // We crossed midnight
+                        }
+                        prevHour = hour;
+                    }
+
+                    // Add day info for debugging
+                    if (dayCount > 0) {
+                        console.log(`Time ${timeLabel} considered from day+${dayCount}`);
+                    }
+
+                    return timeLabel;
                 });
                 chart.data.datasets[0].data = historyData.map(item => {
                     const val = parseFloat(item.value);
-                    if (item.unit) {
-                        return normalizeHashrate(val, item.unit);
-                    }
-                    return normalizeHashrate(val, currentUnit);
+                    const unit = item.unit || 'th/s'; // Ensure unit is assigned
+                    return normalizeHashrate(val, unit);
                 });
                 const values = chart.data.datasets[0].data.filter(v => !isNaN(v) && v !== null);
                 if (values.length > 0) {
@@ -1047,32 +980,10 @@ function updateChartWithNormalizedData(chart, data) {
             }
         }
 
-        // Keep only the main dataset, then add the block found dataset, if any
-        if (chart.data.datasets.length >= 1) {
-            const mainDataset = chart.data.datasets[0];
-            chart.data.datasets = [mainDataset];
-        }
-        if (blockFoundDataPoints.length > 0) {
-            const blockFoundDataset = {
-                label: 'Block Found',
-                data: blockFoundDataPoints,
-                borderColor: '#32CD32',
-                backgroundColor: 'green',
-                pointRadius: 9,
-                pointHoverRadius: 15,
-                pointStyle: 'rectRot',
-                borderWidth: 2,
-                showLine: false,
-                order: -10,
-                z: 1000
-            };
-            chart.data.datasets.push(blockFoundDataset);
-        }
         chart.update('none');
     } catch (chartError) {
         console.error("Error updating chart:", chartError);
     }
-    forceBlockPointsVisibility();
 }
 
 // Main UI update function with hashrate normalization
@@ -1084,18 +995,6 @@ function updateUI() {
 
     try {
         const data = latestMetrics;
-
-        // Add debug logging here
-        console.log("Current block height:", data.last_block_height,
-                    "Previous block height:", previousBlockHeight);
-
-        // Check for block updates
-        if (previousBlockHeight !== null && data.last_block_height !== previousBlockHeight) {
-            // Block found, update the chart
-            highlightBlockFound(data.last_block_height);
-        }
-
-        previousBlockHeight = data.last_block_height;
 
         // If this is the initial load, force a reset of all arrows
         if (initialLoad) {
@@ -1170,8 +1069,8 @@ function updateUI() {
         updateElementText("daily_power_cost", "$" + numberWithCommas(data.daily_power_cost.toFixed(2)));
         updateElementText("daily_profit_usd", "$" + numberWithCommas(data.daily_profit_usd.toFixed(2)));
         updateElementText("monthly_profit_usd", "$" + numberWithCommas(data.monthly_profit_usd.toFixed(2)));
-        updateElementText("daily_mined_sats", numberWithCommas(data.daily_mined_sats) + " sats");
-        updateElementText("monthly_mined_sats", numberWithCommas(data.monthly_mined_sats) + " sats");
+        updateElementText("daily_mined_sats", numberWithCommas(data.daily_mined_sats) + " SATS");
+        updateElementText("monthly_mined_sats", numberWithCommas(data.monthly_mined_sats) + " SATS");
 
         // Update worker count from metrics (just the number, not full worker data)
         updateWorkersCount();
@@ -1184,7 +1083,7 @@ function updateUI() {
 
         // Check for "next block" in any case format
         if (payoutText && /next\s+block/i.test(payoutText)) {
-            $("#est_time_to_payout").attr("style", "color: #32CD32 !important; text-shadow: 0 0 6px rgba(50, 205, 50, 0.6) !important; animation: pulse 1s infinite !important;");
+            $("#est_time_to_payout").attr("style", "color: #32CD32 !important; text-shadow: 0 0 6px rgba(50, 205, 50, 0.6) !important; animation: pulse 1s infinite !important; text-transform: uppercase !important;");
         } else {
             // Trim any extra whitespace
             const cleanText = payoutText ? payoutText.trim() : "";
@@ -1226,13 +1125,22 @@ function updateUI() {
         updateElementText("last_share", data.total_last_share || "");
 
         // Update Estimated Earnings metrics
-        updateElementText("estimated_earnings_per_day_sats", numberWithCommas(data.estimated_earnings_per_day_sats) + " sats");
-        updateElementText("estimated_earnings_next_block_sats", numberWithCommas(data.estimated_earnings_next_block_sats) + " sats");
-        updateElementText("estimated_rewards_in_window_sats", numberWithCommas(data.estimated_rewards_in_window_sats) + " sats");
+        updateElementText("estimated_earnings_per_day_sats", numberWithCommas(data.estimated_earnings_per_day_sats) + " SATS");
+        updateElementText("estimated_earnings_next_block_sats", numberWithCommas(data.estimated_earnings_next_block_sats) + " SATS");
+        updateElementText("estimated_rewards_in_window_sats", numberWithCommas(data.estimated_rewards_in_window_sats) + " SATS");
 
         // Update last updated timestamp
         const now = new Date(Date.now() + serverTimeOffset);
-        updateElementHTML("lastUpdated", "<strong>Last Updated:</strong> " + now.toLocaleString() + "<span id='terminal-cursor'></span>");
+        const options = {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        };
+        updateElementHTML("lastUpdated", "<strong>Last Updated:</strong> " + now.toLocaleString('en-US', options) + "<span id='terminal-cursor'></span>");
 
         // Update chart with normalized data if it exists
         if (trendChart) {
@@ -1249,292 +1157,6 @@ function updateUI() {
 
     } catch (error) {
         console.error("Error updating UI:", error);
-    }
-}
-function highlightBlockFound(blockHeight) {
-    if (!trendChart || !trendChart.data.labels || trendChart.data.labels.length === 0) {
-        console.warn("Chart not initialized or no labels available");
-        return;
-    }
-
-    if (!latestMetrics || !latestMetrics.hashrate_60sec) {
-        console.warn("Cannot highlight block - latestMetrics or hashrate is not available");
-        return;
-    }
-
-    // Get time in Los Angeles timezone
-    const now = new Date(Date.now() + serverTimeOffset);
-    const options = { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' };
-    let currentTime = now.toLocaleTimeString('en-US', options);
-
-    // Ensure time format matches EXACTLY with chart.data.labels format
-    if (trendChart.data.labels.length > 0) {
-        // If the chart has a specific time format, adapt to it
-        const sampleLabel = trendChart.data.labels[trendChart.data.labels.length - 1];
-        if (sampleLabel.length === 5) { // HH:MM format
-            currentTime = currentTime.length > 5 ? currentTime.substring(0, 5) : currentTime;
-        }
-    }
-
-    console.log("Adding block point at time:", currentTime);
-
-    // Find the nearest matching label
-    const matchingLabel = findMatchingLabel(currentTime, trendChart.data.labels, 5); // 5 minutes tolerance
-    if (!matchingLabel) {
-        console.warn(`Time ${currentTime} not found in chart labels:`, trendChart.data.labels);
-        return;
-    }
-
-    // Add the block found point to the chart data
-    const blockFoundPoint = {
-        time: matchingLabel, // Use the matching label
-        value: latestMetrics.hashrate_60sec,
-        unit: latestMetrics.hashrate_60sec_unit || 'th/s',
-        flash: true,
-        timestamp: new Date().toISOString() // Add a timestamp for reference
-    };
-
-    if (!latestMetrics.block_found_points) {
-        latestMetrics.block_found_points = [];
-    }
-
-    latestMetrics.block_found_points.push(blockFoundPoint);
-
-    // Save block found points to localStorage
-    try {
-        localStorage.setItem('blockFoundPoints', JSON.stringify(latestMetrics.block_found_points));
-    } catch (e) {
-        console.error("Error saving block found points to localStorage:", e);
-    }
-
-    // Update the chart with the new block found point
-    updateChartWithNormalizedData(trendChart, latestMetrics);
-
-    // Flash the point by animating opacity
-    flashBlockFoundIndicator();
-
-    // Call forceBlockPointsVisibility here
-    forceBlockPointsVisibility();
-}
-
-
-// Add this function to create a continuous flashing effect
-function flashBlockFoundIndicator() {
-    // Remove the flash count limit to make it indefinite
-    // Store the interval ID globally so we can reference it later if needed
-    if (window.blockFlashInterval) {
-        clearInterval(window.blockFlashInterval);
-    }
-
-    // Set up continuous flashing with oscillating opacity and size
-    window.blockFlashInterval = setInterval(() => {
-        // Toggle visibility of the dataset
-        if (trendChart && trendChart.data.datasets.length > 1) {
-            // Find the block dataset
-            const blockDataset = trendChart.data.datasets.find(ds => ds.label === 'Block Found');
-            if (!blockDataset) return;
-
-            // Create a pulsing effect using sine wave for smoother transition
-            const time = Date.now() / 1000; // Time in seconds
-            const opacity = 0.5 + (Math.sin(time * 3) + 1) / 2 * 0.5; // Oscillate between 0.5 and 1.0
-            const size = 10 + Math.sin(time * 2) * 5; // Size oscillates between 5 and 15
-
-            // Update all properties
-            blockDataset.pointBackgroundColor = `rgba(50, 205, 50, ${opacity})`;
-            blockDataset.borderColor = `rgba(50, 205, 50, ${opacity})`;
-            blockDataset.pointRadius = size;
-            blockDataset.z = 9999; // Keep z-index high
-            blockDataset.order = -1; // Keep order priority high
-
-            // Apply a glow effect by adjusting border properties
-            blockDataset.borderWidth = 3 + Math.sin(time * 4) * 2; // Border width oscillates
-
-            // Force a chart update with minimal animation
-            trendChart.update('none');
-
-            // At the end of updateChartWithNormalizedData after chart.update('none');
-            ensureBlockPointsDisplayed();
-        }
-    }, 50); // Update very frequently for smoother animation
-}
-
-// Fix the forceBlockPointsVisibility function to improve how it finds point coordinates
-function forceBlockPointsVisibility() {
-    // Increase the delay to give Chart.js more time to render
-    setTimeout(() => {
-        try {
-            const canvas = document.getElementById('trendGraph');
-            if (!canvas) return;
-
-            canvas.parentElement.classList.add('chart-container-relative');
-
-            let overlay = document.getElementById('blockPointsOverlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'blockPointsOverlay';
-                overlay.style.position = 'absolute';
-                overlay.style.top = '0';
-                overlay.style.left = '0';
-                overlay.style.width = '100%';
-                overlay.style.height = '100%';
-                overlay.style.pointerEvents = 'none';
-                canvas.parentElement.appendChild(overlay);
-            }
-
-            // Clear previous points
-            overlay.innerHTML = '';
-
-            if (!latestMetrics || !latestMetrics.block_found_points ||
-                !latestMetrics.block_found_points.length) return;
-
-            const chart = trendChart;
-            if (!chart || !chart.chartArea) return;
-
-            // Add CSS animation if not already added
-            if (!document.getElementById('block-marker-animation')) {
-                const style = document.createElement('style');
-                style.id = 'block-marker-animation';
-                style.textContent = `
-                    @keyframes pulse-block-marker {
-                        0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 1; }
-                        50% { transform: translate(-50%, -50%) rotate(45deg) scale(1.3); opacity: 0.8; }
-                        100% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 1; }
-                    }
-                    .chart-container-relative {
-                        position: relative;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-
-            // Fixed approach: use canvas width/height and chartarea for positioning
-            const chartArea = chart.chartArea;
-            const xAxis = chart.scales.x;
-            const yAxis = chart.scales.y;
-
-            // For debugging coordinates
-            console.log("Chart area:", chartArea);
-            console.log("Block points:", latestMetrics.block_found_points);
-
-            // For each block point, create a visible marker
-            latestMetrics.block_found_points.forEach((point, index) => {
-                // Find the time value in the labels array
-                const timeLabel = point.time;
-                const labelIndex = chart.data.labels.indexOf(timeLabel);
-
-                if (labelIndex === -1) {
-                    console.warn(`Time "${timeLabel}" not found in chart labels:`, chart.data.labels);
-                    return; // Skip if not found
-                }
-
-                // Calculate position based on axes and chart area
-                const value = parseFloat(point.value);
-                const unit = point.unit || 'th/s';
-                const normalizedValue = normalizeHashrate(value, unit);
-
-                // Map data values to pixel positions
-                const xPercent = (labelIndex) / (chart.data.labels.length - 1);
-                const xPosition = chartArea.left + (xPercent * (chartArea.right - chartArea.left));
-
-                // Get Y position (must be within chart boundaries)
-                const yPosition = yAxis.getPixelForValue(normalizedValue);
-
-                // Debug logging
-                console.log(`Block point ${index}: ${timeLabel}, Label index: ${labelIndex}, X: ${xPosition}, Y: ${yPosition}`);
-
-                // Create a marker element
-                const marker = document.createElement('div');
-                marker.className = 'block-found-marker';
-                marker.style.position = 'absolute';
-                marker.style.left = `${xPosition}px`;
-                marker.style.top = `${yPosition}px`;
-                marker.style.width = '20px'; // Larger for better visibility
-                marker.style.height = '20px';
-                marker.style.backgroundColor = 'green';
-                marker.style.borderRadius = '2px';
-                marker.style.transform = 'translate(-50%, -50%) rotate(45deg)';
-                marker.style.zIndex = '9999';
-                marker.style.boxShadow = '0 0 12px rgba(50, 205, 50, 0.9)';
-                marker.style.animation = 'pulse-block-marker 2s infinite';
-
-                // Add tooltip on hover
-                marker.title = `Block found at ${timeLabel} with hashrate ${formatHashrateForDisplay(value, unit)}`;
-
-                // Add it to the overlay
-                overlay.appendChild(marker);
-            });
-
-        } catch (e) {
-            console.error("Error forcing block points visibility:", e);
-        }
-    }, 500); // Increased delay to ensure chart is fully rendered
-}
-
-// Add this function to handle block point placement more intelligently
-function ensureBlockPointsDisplayed() {
-    if (!trendChart || !latestMetrics || !latestMetrics.block_found_points) return;
-    if (latestMetrics.block_found_points.length === 0) return;
-    console.log("Ensuring block points displayed:", latestMetrics.block_found_points);
-
-    const blockPoints = [];
-    const labels = trendChart.data.labels;
-    if (!labels || labels.length === 0) {
-        console.warn("No labels available for placement");
-        return;
-    }
-
-    // For each block point, try to find an exact or near match using our helper
-    latestMetrics.block_found_points.forEach(point => {
-        // Format the time like "HH:MM" if needed
-        const formattedTime = (point.time.trim().length === 8 && point.time.indexOf(':') !== -1)
-            ? point.time.trim().substring(0, 5)
-            : point.time.trim();
-
-        // Log the block point time and chart labels for debugging
-        const validLabels = new Set(labels);
-        console.log(`Comparing block point "${formattedTime}" with chart labels:`, [...validLabels].map(l => `"${l}"`));
-
-        // Use our helper to find a matching label (exact or within tolerance)
-        const match = findMatchingLabel(formattedTime, labels, 5); // 5 minutes tolerance
-        if (match) {
-            const val = parseFloat(point.value);
-            const unit = point.unit || 'th/s';
-            blockPoints.push({
-                x: match,
-                y: normalizeHashrate(val, unit)
-            });
-            // Update the point's time for future lookups
-            point.originalTime = point.time;
-            point.time = match;
-        } else {
-            console.warn(`No close match found for ${formattedTime}`);
-        }
-    });
-
-    if (blockPoints.length > 0) {
-        console.log("Adding block points to chart:", blockPoints);
-        const blockDataset = {
-            label: 'Block Found',
-            data: blockPoints,
-            borderColor: 'rgba(50, 205, 50, 1)', // Fully opaque 
-            backgroundColor: 'rgba(50, 205, 50, 1)',
-            pointRadius: 12,
-            pointHoverRadius: 15,
-            pointStyle: 'rectRot',
-            borderWidth: 3,
-            showLine: false,
-            order: -10,
-            z: 9999
-        };
-
-        const existingIndex = trendChart.data.datasets.findIndex(ds => ds.label === 'Block Found');
-        if (existingIndex !== -1) {
-            trendChart.data.datasets[existingIndex] = blockDataset;
-        } else {
-            trendChart.data.datasets.push(blockDataset);
-        }
-        trendChart.update('none');
-        setTimeout(forceBlockPointsVisibility, 100);
     }
 }
 
@@ -1609,137 +1231,8 @@ $(document).ready(function () {
         }
     };
 
-    // You might also want to modify your cleanupBlockFoundPoints function:
-    function cleanupBlockFoundPoints() {
-        try {
-            const savedPoints = localStorage.getItem('blockFoundPoints');
-            if (savedPoints) {
-                const points = JSON.parse(savedPoints);
-
-                // Only keep points from the last 2 hour - this is more appropriate for chart timespan
-                const now = Date.now();
-                const twoHourAgo = now - (2 * 60 * 60 * 1000); // New 2 hour time limit
-
-                // Filter out old or corrupted points
-                const validPoints = points.filter(point => {
-                    // If we have a block timestamp, use it to filter by time
-                    if (point && point.timestamp) {
-                        const pointTime = new Date(point.timestamp).getTime();
-                        return pointTime > twoHourAgo;
-                    }
-
-                    // Fallback validation for older points without timestamps
-                    return point && point.time && typeof point.time === 'string' &&
-                        point.value && !isNaN(parseFloat(point.value));
-                });
-
-                // Add timestamps to any remaining points for future filtering
-                const updatedPoints = validPoints.map(point => {
-                    if (!point.timestamp) {
-                        point.timestamp = new Date().toISOString();
-                    }
-                    return point;
-                });
-
-                if (updatedPoints.length !== points.length) {
-                    console.log(`Cleaned up ${points.length - updatedPoints.length} invalid or old block points`);
-                    localStorage.setItem('blockFoundPoints', JSON.stringify(updatedPoints));
-                }
-
-                return updatedPoints;
-            }
-        } catch (e) {
-            console.error("Error cleaning up block found points:", e);
-            // If there's an error, clear the storage to start fresh
-            localStorage.removeItem('blockFoundPoints');
-        }
-        return [];
-    }
-
-    // Add this after your cleanupBlockFoundPoints function
-    function resetBlockPoints() {
-        // Clear out any old block points that might be causing issues
-        console.log("Resetting block points in localStorage");
-        localStorage.removeItem('blockFoundPoints');
-
-        if (latestMetrics) {
-            latestMetrics.block_found_points = [];
-        }
-    }
-
-    // Add a button to reset block points (for debugging)
-    function addResetBlockPointsButton() {
-        const button = document.createElement('button');
-        button.id = 'resetBlockPointsBtn';
-        button.innerText = 'Reset Block Points';
-        button.style.position = 'fixed';
-        button.style.bottom = '20px';
-        button.style.right = '20px';
-        button.style.zIndex = '1000';
-        button.style.background = '#f7931a';
-        button.style.color = 'black';
-        button.style.border = 'none';
-        button.style.padding = '8px 16px';
-        button.style.borderRadius = '4px';
-        button.style.cursor = 'pointer';
-        button.style.display = 'none'; // Hidden by default
-
-        button.onclick = function () {
-            resetBlockPoints();
-            button.innerText = 'Block Points Reset';
-            setTimeout(() => {
-                button.innerText = 'Reset Block Points';
-            }, 2000);
-
-            // Refresh the chart
-            if (trendChart) {
-                updateChartWithNormalizedData(trendChart, latestMetrics);
-            }
-        };
-
-        document.body.appendChild(button);
-
-        // Show button on B
-        document.addEventListener('keydown', function (e) {
-            if (e.shiftKey && e.key === 'B') {
-                button.style.display = button.style.display === 'none' ? 'block' : 'none';
-            }
-        });
-    }
-
-    // Replace your existing localStorage block points loading code with:
-    try {
-        const cleanedPoints = cleanupBlockFoundPoints();
-        if (cleanedPoints.length > 0) {
-            if (!latestMetrics) {
-                latestMetrics = {};
-            }
-            latestMetrics.block_found_points = cleanedPoints;
-            console.log(`Loaded ${cleanedPoints.length} block points from storage`);
-        }
-    } catch (e) {
-        console.error("Error loading block found points from localStorage:", e);
-    }
-
-    // Inside your document ready function, add this before the chart initialization
-    addResetBlockPointsButton();
-
     // Initialize the chart
     trendChart = initializeChart();
-
-    // After initializing trendChart
-    setTimeout(ensureBlockPointsDisplayed, 1000);
-
-    // THIRD: If we have block found points, apply them to the chart
-    if (latestMetrics && latestMetrics.block_found_points && latestMetrics.block_found_points.length > 0) {
-        console.log("Initializing chart with block points:", latestMetrics.block_found_points);
-        // Create minimal data to initialize chart with block points
-        const initialData = {
-            block_found_points: latestMetrics.block_found_points,
-            hashrate_60sec_unit: 'th/s' // Provide default unit for normalization
-        };
-        updateChartWithNormalizedData(trendChart, initialData);
-    }
 
     // Apply any saved arrows to DOM on page load
     arrowIndicator.forceApplyArrows();

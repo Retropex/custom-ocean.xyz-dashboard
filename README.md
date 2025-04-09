@@ -53,8 +53,8 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 
 1. Clone the repository
    ```
-   git clone [https://github.com/Djobleezy/Custom-Ocean.xyz-Dashboard.git](https://github.com/Djobleezy/Custom-Ocean.xyz-Dashboard.git)
-   cd custom-ocean.xyz-dashboard
+   git clone https://github.com/yourusername/bitcoin-mining-dashboard.git
+   cd bitcoin-mining-dashboard
    ```
 
 2. Install dependencies:
@@ -95,6 +95,34 @@ docker run -d -p 5000:5000 \
 ```
 
 For detailed deployment instructions with Redis persistence and Gunicorn configuration, see [deployment_steps.md](deployment_steps.md).
+
+## Using docker-compose
+
+The `docker-compose.yml` file makes it easy to deploy the dashboard and its dependencies.
+
+### Steps to Deploy
+
+1. **Start the services**:
+   Run the following command in the project root:
+   docker-compose up -d
+
+2. **Access the dashboard**:
+   Open your browser at `http://localhost:5000`.
+
+3. **Stop the services**:
+   To stop the services, run:
+   docker-compose down
+
+### Customization
+
+You can modify the following environment variables in the `docker-compose.yml` file:
+- `WALLET`: Your Bitcoin wallet address.
+- `POWER_COST`: Cost of power per kWh.
+- `POWER_USAGE`: Power usage in watts.
+
+Redis data is stored in a persistent volume (`redis_data`), and application logs are saved in the `./logs` directory.
+
+For more details, refer to the [docker-compose documentation](https://docs.docker.com/compose/).
 
 ## Dashboard Components
 

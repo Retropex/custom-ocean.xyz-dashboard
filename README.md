@@ -104,15 +104,18 @@ The `docker-compose.yml` file makes it easy to deploy the dashboard and its depe
 
 1. **Start the services**:
    Run the following command in the project root:
+   ```
    docker-compose up -d
+   ```
 
 2. **Access the dashboard**:
    Open your browser at `http://localhost:5000`.
 
 3. **Stop the services**:
    To stop the services, run:
+   ```
    docker-compose down
-
+   ```
 ### Customization
 
 You can modify the following environment variables in the `docker-compose.yml` file:

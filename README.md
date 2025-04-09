@@ -83,20 +83,9 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 
 6. Open your browser at `http://localhost:5000`
 
-### Docker Deployment
-
-```bash
-docker build -t bitcoin-mining-dashboard .
-docker run -d -p 5000:5000 \
-  -e WALLET=your-wallet-address \
-  -e POWER_COST=0.12 \
-  -e POWER_USAGE=3450 \
-  bitcoin-mining-dashboard
-```
-
 For detailed deployment instructions with Redis persistence and Gunicorn configuration, see [deployment_steps.md](deployment_steps.md).
 
-## Using docker-compose
+## Using docker-compose (with Redis)
 
 The `docker-compose.yml` file makes it easy to deploy the dashboard and its dependencies.
 

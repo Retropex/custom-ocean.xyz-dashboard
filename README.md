@@ -67,7 +67,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
    python setup.py
    ```
 
-4. Configure your mining settings:
+4. Configure your mining settings in config.json:
    ```json
    {
      "power_cost": 0.12,

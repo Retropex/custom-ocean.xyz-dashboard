@@ -1,0 +1,138 @@
+:root {
+  --bg-color: #0a0a0a;
+  --bg-gradient: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+  --primary-color: #f7931a;
+  --text-color: white;
+  --terminal-font: 'VT323', monospace;
+  --header-font: 'Orbitron', sans-serif;
+}
+
+/* CRT Screen Effect */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.15;
+}
+
+/* Flicker Animation */
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.97; }
+  15% { opacity: 0.94; }
+  20% { opacity: 0.98; }
+  50% { opacity: 0.95; }
+  80% { opacity: 0.96; }
+  90% { opacity: 0.94; }
+  100% { opacity: 0.98; }
+}
+
+body {
+  background: var(--bg-gradient);
+  color: var(--text-color);
+  padding-top: 50px;
+  font-family: var(--terminal-font);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+a.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: black;
+  margin-top: 20px;
+  font-family: var(--header-font);
+  text-shadow: none;
+  box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+  transition: all 0.3s ease;
+}
+
+a.btn-primary:hover {
+  background-color: #ffa64d;
+  box-shadow: 0 0 15px rgba(247, 147, 26, 0.7);
+}
+
+/* Enhanced error container with scanlines */
+.error-container {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 2rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 15px rgba(247, 147, 26, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: flicker 4s infinite;
+}
+
+/* Scanline effect for error container */
+.error-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+h1 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  font-family: var(--header-font);
+  font-weight: bold;
+  text-shadow: 0 0 10px var(--primary-color);
+  position: relative;
+  z-index: 2;
+}
+
+p {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  position: relative;
+  z-index: 2;
+  color: #ff5555;
+  text-shadow: 0 0 8px rgba(255, 85, 85, 0.6);
+}
+
+/* Cursor blink for terminal feel */
+.terminal-cursor {
+  display: inline-block;
+  width: 10px;
+  height: 20px;
+  background-color: #f7931a;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Error code styling */
+.error-code {
+  font-family: var(--terminal-font);
+  font-size: 1.2rem;
+  color: #00dfff;
+  text-shadow: 0 0 10px #00dfff, 0 0 20px #00dfff;
+  margin-bottom: 1rem;
+}

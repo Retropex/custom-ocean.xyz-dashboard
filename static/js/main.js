@@ -889,12 +889,13 @@ function showCongrats(message) {
     });
 }
 
-// Enhanced Chart Update Function with Unit Normalization
+// Enhanced Chart Update Function with Dynamic Hashrate Selection
 function updateChartWithNormalizedData(chart, data) {
     if (!chart || !data) {
         console.warn("Cannot update chart - chart or data is null");
         return;
     }
+
     try {
         // Always update the 24hr average line even if we don't have data points yet
         const avg24hr = parseFloat(data.hashrate_24hr || 0);
@@ -911,10 +912,36 @@ function updateChartWithNormalizedData(chart, data) {
             annotation.label.content = '24HR AVG: ' + normalizedAvg.toFixed(1) + ' TH/S';
         }
 
-        // In updateChartWithNormalizedData function:
+        // Detect low hashrate devices (Bitaxe < 2 TH/s)
+        const hashrate60sec = parseFloat(data.hashrate_60sec || 0);
+        const hashrate60secUnit = data.hashrate_60sec_unit ? data.hashrate_60sec_unit.toLowerCase() : 'th/s';
+        const normalizedHashrate60sec = normalizeHashrate(hashrate60sec, hashrate60secUnit);
+
+        const hashrate3hr = parseFloat(data.hashrate_3hr || 0);
+        const hashrate3hrUnit = data.hashrate_3hr_unit ? data.hashrate_3hr_unit.toLowerCase() : 'th/s';
+        const normalizedHashrate3hr = normalizeHashrate(hashrate3hr, hashrate3hrUnit);
+
+        // Choose which hashrate average to display based on device characteristics
+        let useHashrate3hr = false;
+
+        // For devices with hashrate under 2 TH/s, use the 3hr average if:
+        // 1. Their 60sec average is zero (appears offline) AND
+        // 2. Their 3hr average shows actual mining activity
+        if (normalizedHashrate3hr < 2.0) {
+            if (normalizedHashrate60sec < 0.01 && normalizedHashrate3hr > 0.01) {
+                useHashrate3hr = true;
+                console.log("Low hashrate device detected. Using 3hr average instead of 60sec average.");
+            }
+        }
+
+        // Process history data if available
         if (data.arrow_history && data.arrow_history.hashrate_60sec) {
             console.log("History data received:", data.arrow_history.hashrate_60sec);
-            const historyData = data.arrow_history.hashrate_60sec;
+
+            // If we're using 3hr average, try to use that history if available
+            const historyData = useHashrate3hr && data.arrow_history.hashrate_3hr ?
+                data.arrow_history.hashrate_3hr : data.arrow_history.hashrate_60sec;
+
             if (historyData && historyData.length > 0) {
                 // Add day info to labels if they cross midnight
                 let prevHour = -1;
@@ -968,6 +995,10 @@ function updateChartWithNormalizedData(chart, data) {
                     return normalizeHashrate(val, unit);
                 });
 
+                // Update chart dataset label to indicate which average we're displaying
+                chart.data.datasets[0].label = useHashrate3hr ?
+                    'Hashrate Trend (3HR AVG)' : 'Hashrate Trend (60SEC AVG)';
+
                 const values = chart.data.datasets[0].data.filter(v => !isNaN(v) && v !== null);
                 if (values.length > 0) {
                     const max = Math.max(...values);
@@ -987,28 +1018,70 @@ function updateChartWithNormalizedData(chart, data) {
                 }
             }
         } else {
-            if (data.hashrate_60sec) {
-                // Format current time in 12-hour format for Los Angeles timezone without AM/PM
-                const now = new Date();
-                let currentTime;
+            // No history data, just use the current point
+            // Format current time in 12-hour format for Los Angeles timezone without AM/PM
+            const now = new Date();
+            let currentTime;
 
-                try {
-                    currentTime = now.toLocaleTimeString('en-US', {
-                        timeZone: 'America/Los_Angeles',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    }).replace(/\s[AP]M$/i, '');
-                } catch (e) {
-                    console.error("Error formatting current time:", e);
-                    currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                }
-
-                const currentUnit = data.hashrate_60sec_unit ? data.hashrate_60sec_unit.toLowerCase() : 'th/s';
-                const normalizedValue = normalizeHashrate(parseFloat(data.hashrate_60sec) || 0, currentUnit);
-                chart.data.labels = [currentTime];
-                chart.data.datasets[0].data = [normalizedValue];
+            try {
+                currentTime = now.toLocaleTimeString('en-US', {
+                    timeZone: 'America/Los_Angeles',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                }).replace(/\s[AP]M$/i, '');
+            } catch (e) {
+                console.error("Error formatting current time:", e);
+                currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
             }
+
+            // Choose which current hashrate to display based on our earlier logic
+            let currentValue, currentUnit;
+            if (useHashrate3hr) {
+                currentValue = parseFloat(data.hashrate_3hr || 0);
+                currentUnit = data.hashrate_3hr_unit ? data.hashrate_3hr_unit.toLowerCase() : 'th/s';
+                chart.data.datasets[0].label = 'Hashrate Trend (3HR AVG)';
+            } else {
+                currentValue = parseFloat(data.hashrate_60sec || 0);
+                currentUnit = data.hashrate_60sec_unit ? data.hashrate_60sec_unit.toLowerCase() : 'th/s';
+                chart.data.datasets[0].label = 'Hashrate Trend (60SEC AVG)';
+            }
+
+            const normalizedValue = normalizeHashrate(currentValue, currentUnit);
+            chart.data.labels = [currentTime];
+            chart.data.datasets[0].data = [normalizedValue];
+        }
+
+        // If using 3hr average due to low hashrate device detection, add visual indicator
+        if (useHashrate3hr) {
+            // Add indicator text to the chart
+            if (!chart.lowHashrateIndicator) {
+                // Create the indicator element if it doesn't exist
+                const graphContainer = document.getElementById('graphContainer');
+                if (graphContainer) {
+                    const indicator = document.createElement('div');
+                    indicator.id = 'lowHashrateIndicator';
+                    indicator.style.position = 'absolute';
+                    indicator.style.bottom = '10px';
+                    indicator.style.right = '10px';
+                    indicator.style.background = 'rgba(0,0,0,0.7)';
+                    indicator.style.color = '#f7931a';
+                    indicator.style.padding = '5px 10px';
+                    indicator.style.borderRadius = '3px';
+                    indicator.style.fontSize = '12px';
+                    indicator.style.zIndex = '10';
+                    indicator.style.fontWeight = 'bold';
+                    indicator.textContent = 'LOW HASHRATE MODE: SHOWING 3HR AVG';
+                    graphContainer.appendChild(indicator);
+                    chart.lowHashrateIndicator = indicator;
+                }
+            } else {
+                // Show the indicator if it already exists
+                chart.lowHashrateIndicator.style.display = 'block';
+            }
+        } else if (chart.lowHashrateIndicator) {
+            // Hide the indicator when not in low hashrate mode
+            chart.lowHashrateIndicator.style.display = 'none';
         }
 
         chart.update('none');

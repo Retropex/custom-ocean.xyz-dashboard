@@ -453,12 +453,12 @@ def dashboard():
                 "arrow_history": {}
             }
             logging.warning("Rendering dashboard with default metrics - no data available yet")
-            current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
+            current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S %p")
             return render_template("dashboard.html", metrics=default_metrics, current_time=current_time)
     
     # If we have metrics, use them
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
-    return render_template("dashboard.html", metrics=cached_metrics, current_time=current_time)
+    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S %p")
+    return render_template("dashboard.html", metrics=cached_metrics, current_time=current_time)# api/time endpoint
 
 @app.route("/api/metrics")
 def api_metrics():
@@ -471,7 +471,7 @@ def api_metrics():
 @app.route("/blocks")
 def blocks_page():
     """Serve the blocks overview page."""
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
+    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S %p")
     return render_template("blocks.html", current_time=current_time)
 
 # --- Workers Dashboard Route and API ---
@@ -479,7 +479,7 @@ def blocks_page():
 def workers_dashboard():
     """Serve the workers overview dashboard page."""
     current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
-    
+
     # Only get minimal worker stats for initial page load
     # Client-side JS will fetch the full data via API
     workers_data = worker_service.get_workers_data(cached_metrics)
@@ -506,7 +506,7 @@ def api_workers():
 @app.route("/api/time")
 def api_time():
     """API endpoint for server time."""
-    return jsonify({
+    return jsonify({ # correct time
         "server_timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat(),
         "server_start_time": SERVER_START_TIME.astimezone(ZoneInfo("America/Los_Angeles")).isoformat()
     })
@@ -781,7 +781,7 @@ def api_clear_notifications():
 @app.route("/notifications")
 def notifications_page():
     """Serve the notifications page."""
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
+    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S %p")
     return render_template("notifications.html", current_time=current_time)
 
 @app.errorhandler(404)

@@ -228,6 +228,13 @@ const BitcoinMinuteRefresh = (function () {
         border-bottom: 1px solid #f7931a;
         padding-bottom: 5px;
         margin-bottom: 8px;
+        cursor: pointer; /* Add pointer (hand) cursor on hover */
+      }
+
+      /* Apply grabbing cursor during active drag */
+      .terminal-header:active,
+      .bitcoin-terminal.dragging .terminal-header {
+        cursor: grabbing;
       }
       
       .terminal-title {

@@ -637,7 +637,7 @@ function initializeChart() {
             data: {
                 labels: [],
                 datasets: [{
-                    label: 'Hashrate Trend (TH/s)',
+                    label: 'HASHRATE TREND (TH/s)',
                     data: [],
                     borderWidth: 2,
                     borderColor: function (context) {
@@ -681,20 +681,39 @@ function initializeChart() {
                         ticks: {
                             maxTicksLimit: 8, // Limit number of x-axis labels
                             maxRotation: 0,   // Don't rotate labels
-                            autoSkip: true    // Automatically skip some labels
+                            autoSkip: true,   // Automatically skip some labels
+                            color: '#FFFFFF',
+                            font: {
+                                family: "'VT323', monospace", // Terminal font
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: '#333333',
+                            lineWidth: 0.5
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'HASHRATE (TH/S)' // Always display unit as TH/s since that's our normalized unit
+                            text: 'HASHRATE (TH/S)', // Already uppercase
+                            color: '#f7931a', // Bitcoin orange
+                            font: {
+                                family: "'VT323', monospace", // Terminal font
+                                size: 16,
+                                weight: 'bold'
+                            }
                         },
                         ticks: {
-                            color: 'white',
+                            color: '#FFFFFF',
                             maxTicksLimit: 6, // Limit total number of ticks
                             precision: 1,     // Control decimal precision
                             autoSkip: true,   // Skip labels to prevent overcrowding
                             autoSkipPadding: 10, // Padding between skipped labels
+                            font: {
+                                family: "'VT323', monospace", // Terminal font
+                                size: 14
+                            },
                             callback: function (value) {
                                 // For zero, just return 0
                                 if (value === 0) return '0';
@@ -722,10 +741,10 @@ function initializeChart() {
                             }
                         },
                         grid: {
-                            color: '#333',
+                            color: '#333333',
                             lineWidth: 0.5,
                             drawBorder: false,
-                            zeroLineColor: '#555',
+                            zeroLineColor: '#555555',
                             zeroLineWidth: 1,
                             drawTicks: false
                         }
@@ -733,11 +752,29 @@ function initializeChart() {
                 },
                 plugins: {
                     tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#f7931a',
+                        bodyColor: '#FFFFFF',
+                        titleFont: {
+                            family: "'VT323', monospace",
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            family: "'VT323', monospace",
+                            size: 14
+                        },
+                        padding: 10,
+                        cornerRadius: 0,
+                        displayColors: false,
                         callbacks: {
+                            title: function (tooltipItems) {
+                                return tooltipItems[0].label.toUpperCase();
+                            },
                             label: function (context) {
                                 // Format tooltip values with appropriate unit
                                 const value = context.raw;
-                                return 'Hashrate: ' + formatHashrateForDisplay(value);
+                                return 'HASHRATE: ' + formatHashrateForDisplay(value).toUpperCase();
                             }
                         }
                     },
@@ -748,10 +785,9 @@ function initializeChart() {
                                 type: 'line',
                                 yMin: 0,
                                 yMax: 0,
-                                borderColor: '#ffd700', // Changed to gold color for better contrast
-                                borderWidth: 3,         // Increased from 2 to 3
-                                borderDash: [8, 4],     // Modified dash pattern for distinction
-                                // Add shadow effect
+                                borderColor: '#ffd700', // Gold color
+                                borderWidth: 3,
+                                borderDash: [8, 4],
                                 shadowColor: 'rgba(255, 215, 0, 0.5)',
                                 shadowBlur: 8,
                                 shadowOffsetX: 0,
@@ -760,18 +796,15 @@ function initializeChart() {
                                     enabled: true,
                                     content: '24HR AVG: 0 TH/S',
                                     backgroundColor: 'rgba(0,0,0,0.8)',
-                                    color: '#ffd700',   // Changed to match the line color
+                                    color: '#ffd700',
                                     font: {
-                                        weight: 'bold',
-                                        size: 14,       // Increased from 13 to 14
-                                        family: 'var(--terminal-font)', // Use the terminal font
-                                        uppercase: true // Make label text uppercase
+                                        family: "'VT323', monospace",
+                                        size: 16,
+                                        weight: 'bold'
                                     },
                                     padding: { top: 4, bottom: 4, left: 8, right: 8 },
-                                    borderRadius: 2,
-                                    position: 'start',
-                                    // Add a subtle shadow to the label
-                                    textShadow: '0 0 5px rgba(255, 215, 0, 0.7)'
+                                    borderRadius: 0,
+                                    position: 'start'
                                 }
                             }
                         }

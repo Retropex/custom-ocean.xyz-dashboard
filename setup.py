@@ -43,7 +43,7 @@ except ImportError:
 DIRECTORIES = [
     'static/css',
     'static/js',
-    'static/img',
+    'static/js/min',  # For minified JS files
     'templates',
     'logs',
     'data'  # For temporary data storage
@@ -59,13 +59,14 @@ FILE_MAPPINGS = {
     'error.css': 'static/css/error.css',
     'retro-refresh.css': 'static/css/retro-refresh.css',
     'blocks.css': 'static/css/blocks.css',
+    'notifications.css': 'static/css/notifications.css',
     
     # JS files
     'main.js': 'static/js/main.js',
     'workers.js': 'static/js/workers.js',
     'blocks.js': 'static/js/blocks.js',
-    'block-animation.js': 'static/js/block-animation.js',
     'BitcoinProgressBar.js': 'static/js/BitcoinProgressBar.js',
+    'notifications.js': 'static/js/notifications.js',
     
     # Template files
     'base.html': 'templates/base.html',
@@ -74,6 +75,7 @@ FILE_MAPPINGS = {
     'boot.html': 'templates/boot.html',
     'error.html': 'templates/error.html',
     'blocks.html': 'templates/blocks.html',
+    'notifications.html': 'templates/notifications.html',
 }
 
 # Default configuration
@@ -93,6 +95,7 @@ def parse_arguments():
     parser.add_argument('--skip-checks', action='store_true', help='Skip dependency checks')
     parser.add_argument('--force', action='store_true', help='Force file overwrite')
     parser.add_argument('--config', type=str, help='Path to custom config.json')
+    parser.add_argument('--minify', action='store_true', help='Minify JavaScript files')
     return parser.parse_args()
 
 def create_directory_structure():
@@ -157,6 +160,52 @@ def move_files(force=False):
         logger.warning("⚠ Some files could not be moved")
     
     return success
+
+def minify_js_files():
+    """Minify JavaScript files."""
+    logger.info("Minifying JavaScript files...")
+    
+    try:
+        import jsmin
+    except ImportError:
+        logger.error("jsmin package not found. Installing...")
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "jsmin"], check=True)
+            import jsmin
+            logger.info("✓ jsmin package installed successfully")
+        except Exception as e:
+            logger.error(f"Failed to install jsmin: {str(e)}")
+            logger.error("Please run: pip install jsmin")
+            return False
+    
+    js_dir = 'static/js'
+    min_dir = os.path.join(js_dir, 'min')
+    os.makedirs(min_dir, exist_ok=True)
+    
+    minified_count = 0
+    for js_file in os.listdir(js_dir):
+        if js_file.endswith('.js') and not js_file.endswith('.min.js'):
+            input_path = os.path.join(js_dir, js_file)
+            output_path = os.path.join(min_dir, js_file.replace('.js', '.min.js'))
+            
+            try:
+                with open(input_path, 'r') as f:
+                    js_content = f.read()
+                
+                # Minify the content
+                minified = jsmin.jsmin(js_content)
+                
+                # Write minified content
+                with open(output_path, 'w') as f:
+                    f.write(minified)
+                
+                minified_count += 1
+                logger.debug(f"Minified {js_file}")
+            except Exception as e:
+                logger.error(f"Failed to minify {js_file}: {str(e)}")
+    
+    logger.info(f"✓ JavaScript minification completed: {minified_count} files processed")
+    return True
 
 def validate_wallet_address(wallet):
     """
@@ -422,6 +471,11 @@ def main():
     if not create_config(args):
         logger.error("Failed to create configuration file.")
         return 1
+    
+    # Minify JavaScript files if requested
+    if args.minify:
+        if not minify_js_files():
+            logger.warning("JavaScript minification failed, but continuing...")
     
     # Check Redis if available
     check_redis()

@@ -32,7 +32,7 @@ const consoleSettings = {
 
 // Cache for metrics data
 let cachedMetrics = null;
-const hashRateFluctuation = 0.1; // 10% fluctuation for realistic variance
+const hashRateFluctuation = 0.01; // 1% fluctuation for realistic variance
 
 // Initialize console
 document.addEventListener('DOMContentLoaded', function () {
@@ -209,23 +209,62 @@ function generateLog(type) {
 }
 
 /**
- * Generate a system status message
+ * Generate a system status message based on actual metrics
  */
 function generateSystemMessage() {
+    if (!cachedMetrics) return 'SYSTEM STATUS: AWAITING METRICS DATA...';
+
+    // Create an array of possible messages that use real metrics where available
     const systemMessages = [
-        `SYSTEM TEMPERATURE: ${randomInt(50, 75)}°C - WITHIN NORMAL PARAMETERS`,
-        `MEMORY USAGE: ${randomInt(30, 70)}% - ${randomInt(2048, 8192)}MB ALLOCATED`,
-        `CPU UTILIZATION: ${randomInt(20, 95)}% - PROCESSING MINING ALGORITHMS`,
-        `NETWORK LATENCY: ${randomInt(5, 200)}ms TO MINING POOL`,
-        `SYSTEM UPTIME: ${randomInt(1, 24)}h ${randomInt(0, 59)}m ${randomInt(0, 59)}s`,
-        `POWER CONSUMPTION: ${randomInt(800, 1500)}W - ${cachedMetrics.power_usage || 'N/A'}W RATED`,
-        `FAN SPEED: ${randomInt(30, 90)}% - COOLING SYSTEM OPERATIONAL`,
-        `STORAGE: ${randomInt(40, 90)}% USED - ${randomInt(20, 500)}GB FREE`,
-        `CHECKING BLOCKCHAIN SYNC STATUS... 100% SYNCHRONIZED`,
-        `MINING SOFTWARE VERSION: v${randomInt(1, 3)}.${randomInt(0, 9)}.${randomInt(0, 999)} RUNNING OPTIMALLY`,
-        `SYSTEM HEALTH CHECK: ALL COMPONENTS OPERATIONAL`
+        // Power consumption using actual configured power usage when available
+        `POWER CONSUMPTION: ${cachedMetrics.power_usage ? `${cachedMetrics.power_usage}W` : `${randomInt(800, 1500)}W`} - EFFICIENCY: ${cachedMetrics.power_cost ? `$${cachedMetrics.power_cost}/kWh` : 'CALCULATING...'}`,
+
+        // Use real worker count for system health reports
+        `SYSTEM HEALTH CHECK: ${cachedMetrics.workers_hashing || 0}/${cachedMetrics.workers_total || 0} WORKERS OPERATIONAL - ${Math.round(((cachedMetrics.workers_hashing || 0) / (cachedMetrics.workers_total || 1)) * 100)}% ONLINE`,
+
+        // Use actual hashrate
+        `PROCESSING CAPACITY: ${cachedMetrics.hashrate_60sec || cachedMetrics.hashrate_10min || cachedMetrics.hashrate_3hr || 0} ${cachedMetrics.hashrate_60sec_unit || cachedMetrics.hashrate_10min_unit || cachedMetrics.hashrate_3hr_unit || 'TH/s'} - ${cachedMetrics.workers_hashing ? 'OPTIMAL' : 'SUBOPTIMAL'} PERFORMANCE`,
+
+        // Network synchronization based on real block height
+        `BLOCKCHAIN SYNC STATUS: HEIGHT ${numberWithCommas(cachedMetrics.block_number || 0)} - 100% SYNCHRONIZED`,
+
+        // Earnings projection based on actual data
+        `REVENUE PROJECTION: ${cachedMetrics.daily_revenue ? `$${cachedMetrics.daily_revenue.toFixed(2)}/DAY` : 'CALCULATING...'} - ${cachedMetrics.daily_profit_usd ? `$${cachedMetrics.daily_profit_usd.toFixed(2)} PROFIT` : 'CALCULATING PROFIT...'}`,
+
+        // Time to payout/rewards
+        `PAYOUT ESTIMATION: ${cachedMetrics.est_time_to_payout || 'CALCULATING...'} - ${numberWithCommas(cachedMetrics.unpaid_earnings || 0)} SATS PENDING`,
+
+        // Real Bitcoin price
+        `MARKET CONDITIONS: BTC $${numberWithCommas(parseFloat(cachedMetrics.btc_price || 0).toFixed(2))} - MINING PROFITABILITY ${cachedMetrics.daily_profit_usd > 0 ? 'POSITIVE' : 'NEGATIVE'}`,
+
+        // Monthly projections
+        `MONTHLY PROJECTION: ${cachedMetrics.monthly_mined_sats ? `${numberWithCommas(cachedMetrics.monthly_mined_sats)} SATS` : 'CALCULATING...'} - ${cachedMetrics.monthly_profit_usd ? `$${numberWithCommas(cachedMetrics.monthly_profit_usd.toFixed(2))}` : 'CALCULATING...'}`,
+
+        // Network difficulty and mining pool statistics
+        `MINING DIFFICULTY: ${numberWithCommas(Math.round(cachedMetrics.difficulty || 0))} - POOL HASHRATE: ${cachedMetrics.pool_total_hashrate || 0} ${cachedMetrics.pool_total_hashrate_unit || 'TH/s'}`,
+
+        // System uptime (still random as we don't track this)
+        `SYSTEM UPTIME: ${randomInt(1, 24)}h ${randomInt(0, 59)}m ${randomInt(0, 59)}s - STABILITY: ${cachedMetrics.workers_hashing > 0 ? 'HIGH' : 'DEGRADED'}`
     ];
 
+    // Add some random but realistic messages to maintain variety
+    if (Math.random() < 0.3) {
+        systemMessages.push(`SYSTEM TEMPERATURE: ${randomInt(50, 75)}°C - ${randomInt(50, 70) > 65 ? 'WARNING: HIGH' : 'WITHIN NORMAL PARAMETERS'}`);
+        systemMessages.push(`MEMORY USAGE: ${randomInt(30, 70)}% - ${randomInt(2048, 8192)}MB ALLOCATED`);
+        systemMessages.push(`CPU UTILIZATION: ${randomInt(20, 95)}% - PROCESSING MINING ALGORITHMS`);
+        systemMessages.push(`NETWORK LATENCY: ${randomInt(5, 200)}ms TO MINING POOL - ${randomInt(5, 200) > 100 ? 'HIGH LATENCY' : 'OPTIMAL'}`);
+    }
+
+    // Special alerts based on metrics state
+    if (cachedMetrics.workers_total && cachedMetrics.workers_hashing < cachedMetrics.workers_total) {
+        systemMessages.push(`ALERT: ${cachedMetrics.workers_total - cachedMetrics.workers_hashing} WORKERS OFFLINE - MAINTENANCE REQUIRED`);
+    }
+
+    if (cachedMetrics.daily_profit_usd && cachedMetrics.daily_profit_usd < 0) {
+        systemMessages.push(`WARNING: NEGATIVE MINING PROFITABILITY - $${Math.abs(cachedMetrics.daily_profit_usd).toFixed(2)}/DAY LOSS`);
+    }
+
+    // Return a random message from the array
     return systemMessages[Math.floor(Math.random() * systemMessages.length)];
 }
 

@@ -1224,7 +1224,7 @@ function updateUI() {
         if (dailyProfitElement) {
             dailyProfitElement.textContent = "$" + numberWithCommas(dailyProfitUSD.toFixed(2));
             if (dailyProfitUSD < 0) {
-                dailyProfitElement.style.color = "#ff5555";
+                dailyProfitElement.style.color = "#ff5555 !important";
             } else {
                 dailyProfitElement.style.color = ""; // Reset to default color
             }
@@ -1236,7 +1236,7 @@ function updateUI() {
         if (monthlyProfitElement) {
             monthlyProfitElement.textContent = "$" + numberWithCommas(monthlyProfitUSD.toFixed(2));
             if (monthlyProfitUSD < 0) {
-                monthlyProfitElement.style.color = "#ff5555";
+                monthlyProfitElement.style.color = "#ff5555 !important";
             } else {
                 monthlyProfitElement.style.color = ""; // Reset to default color
             }

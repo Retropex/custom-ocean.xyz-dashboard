@@ -81,17 +81,15 @@ body {
     }
 }
 
-/* Update container to use specific heights rather than 100vh */
+/* Fix the console container to use the full viewport */
 .console-container {
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Keep this */
+    height: 100vh;
     width: 100%;
     max-width: 100%;
     background: transparent;
     animation: flicker 4s infinite;
-    /* Add this to ensure proper sizing */
-    box-sizing: border-box;
 }
 
 .console-header {
@@ -113,21 +111,18 @@ body {
     font-size: 18px;
 }
 
-/* Update the wrapper to have a controlled height */
+/* Fix the console wrapper to be a controlled height */
 .console-wrapper {
-    flex: 1;
+    flex: 0 1 auto; /* Don't allow this to grow arbitrarily */
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--console-text) var(--console-bg);
     padding: 10px;
-    max-width: 900px;
-    width: 100%; /* Add this */
-    margin: 0 auto; /* Uncomment this */
+    max-width: 100%;
+    width: 100%;
     position: relative;
-    /* Add these properties to control height */
-    max-height: calc(100vh - 150px); /* Adjust based on header + stats height */
-    min-height: 150px;
     box-sizing: border-box;
+    background-color: var(--console-bg);
 }
 
     .console-wrapper::-webkit-scrollbar {
@@ -144,18 +139,13 @@ body {
         box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
     }
 
-/* Fix the console output positioning */
+/* Update the console output */
 .console-output {
     font-size: 20px;
     white-space: pre-wrap;
     word-break: break-word;
-    /* Change from absolute to relative positioning */
-    position: relative;
-    bottom: auto;
+    position: relative; /* Change to relative positioning */
     width: 100%;
-    height: 100%;
-    /* Add this for better spacing */
-    padding-bottom: 10px;
     box-sizing: border-box;
 }
 
@@ -173,16 +163,17 @@ body {
         text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
     }
 
-/* Ensure the stats bar has a fixed height */
+/* Make the stats bar stay at the bottom */
 .console-stats {
     border-top: 1px solid var(--console-text);
     padding: 15px;
     box-shadow: 0 0 15px rgba(247, 147, 26, 0.5);
     background-color: var(--console-header);
-    /* Add this to ensure it has a consistent height */
-    height: auto;
-    min-height: 80px;
+    position: relative;
+    bottom: 0;
+    width: 100%;
     box-sizing: border-box;
+    margin-top: auto; /* Push to the bottom of flexbox */
 }
 
 .stats-container {

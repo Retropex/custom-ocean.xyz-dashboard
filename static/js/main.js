@@ -1225,7 +1225,7 @@ function updateUI() {
             dailyProfitElement.textContent = "$" + numberWithCommas(dailyProfitUSD.toFixed(2));
             if (dailyProfitUSD < 0) {
                 // Use setAttribute to properly set the style with !important
-                dailyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important;");
+                dailyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important; text-shadow: 0 0 6px rgba(255, 85, 85, 0.6) !important;");
             } else {
                 // Clear the style attribute completely instead of setting it to empty
                 dailyProfitElement.removeAttribute("style");
@@ -1239,7 +1239,7 @@ function updateUI() {
             monthlyProfitElement.textContent = "$" + numberWithCommas(monthlyProfitUSD.toFixed(2));
             if (monthlyProfitUSD < 0) {
                 // Use setAttribute to properly set the style with !important
-                monthlyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important;");
+                monthlyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important; text-shadow: 0 0 6px rgba(255, 85, 85, 0.6) !important;");
             } else {
                 // Clear the style attribute completely
                 monthlyProfitElement.removeAttribute("style");

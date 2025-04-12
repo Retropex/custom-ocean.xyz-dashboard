@@ -117,7 +117,7 @@ body {
     scrollbar-color: var(--console-text) var(--console-bg);
     padding: 10px;
     max-width: 900px;
-    margin: 0 auto;
+    /*margin: 0 auto;*/
     position: relative;
 }
 

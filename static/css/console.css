@@ -81,14 +81,17 @@ body {
     }
 }
 
+/* Update container to use specific heights rather than 100vh */
 .console-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100vh; /* Keep this */
     width: 100%;
     max-width: 100%;
     background: transparent;
     animation: flicker 4s infinite;
+    /* Add this to ensure proper sizing */
+    box-sizing: border-box;
 }
 
 .console-header {
@@ -110,6 +113,7 @@ body {
     font-size: 18px;
 }
 
+/* Update the wrapper to have a controlled height */
 .console-wrapper {
     flex: 1;
     overflow-y: auto;
@@ -117,8 +121,13 @@ body {
     scrollbar-color: var(--console-text) var(--console-bg);
     padding: 10px;
     max-width: 900px;
-    /*margin: 0 auto;*/
+    width: 100%; /* Add this */
+    margin: 0 auto; /* Uncomment this */
     position: relative;
+    /* Add these properties to control height */
+    max-height: calc(100vh - 150px); /* Adjust based on header + stats height */
+    min-height: 150px;
+    box-sizing: border-box;
 }
 
     .console-wrapper::-webkit-scrollbar {
@@ -135,13 +144,19 @@ body {
         box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
     }
 
+/* Fix the console output positioning */
 .console-output {
     font-size: 20px;
     white-space: pre-wrap;
     word-break: break-word;
-    position: absolute;
-    bottom: 0;
+    /* Change from absolute to relative positioning */
+    position: relative;
+    bottom: auto;
     width: 100%;
+    height: 100%;
+    /* Add this for better spacing */
+    padding-bottom: 10px;
+    box-sizing: border-box;
 }
 
 .console-line {
@@ -158,11 +173,16 @@ body {
         text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
     }
 
+/* Ensure the stats bar has a fixed height */
 .console-stats {
     border-top: 1px solid var(--console-text);
     padding: 15px;
     box-shadow: 0 0 15px rgba(247, 147, 26, 0.5);
     background-color: var(--console-header);
+    /* Add this to ensure it has a consistent height */
+    height: auto;
+    min-height: 80px;
+    box-sizing: border-box;
 }
 
 .stats-container {

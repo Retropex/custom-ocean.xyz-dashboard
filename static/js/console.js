@@ -473,35 +473,32 @@ function generateRandomHex(length) {
     return result;
 }
 
-// Add this function to your console.js file - this will fix the layout issue
+/**
+ * Adjust console layout to ensure proper proportions
+ */
 function adjustConsoleLayout() {
-    // Get the elements
     const container = document.querySelector('.console-container');
     const header = document.querySelector('.console-header');
     const stats = document.querySelector('.console-stats');
     const wrapper = document.querySelector('.console-wrapper');
-    const output = document.querySelector('.console-output');
 
-    if (container && header && stats && wrapper && output) {
-        // Calculate available height for the wrapper
-        const viewportHeight = window.innerHeight;
-        const headerHeight = header.offsetHeight;
-        const statsHeight = stats.offsetHeight;
-        const wrapperHeight = viewportHeight - headerHeight - statsHeight - 2; // 2px for borders
+    if (container && header && stats && wrapper) {
+        // Calculate the proper height for wrapper
+        const containerHeight = container.clientHeight;
+        const headerHeight = header.clientHeight;
+        const statsHeight = stats.clientHeight;
 
-        // Apply the calculated height to the wrapper
-        wrapper.style.height = `${wrapperHeight}px`;
-        wrapper.style.maxHeight = `${wrapperHeight}px`;
-        wrapper.style.position = 'relative';
-
-        // Make the output relative instead of absolute
-        output.style.position = 'relative';
-        output.style.bottom = 'auto';
+        // Set the wrapper height to fill the space between header and stats
+        const wrapperHeight = containerHeight - headerHeight - statsHeight;
+        wrapper.style.height = `${Math.max(wrapperHeight, 150)}px`; // Min height of 150px
     }
 }
 
-// Call the function on load and whenever the window is resized
+// Add this to your document.addEventListener('DOMContentLoaded',...) function
 document.addEventListener('DOMContentLoaded', function () {
+    // Existing code...
+
+    // Add layout adjustment
     adjustConsoleLayout();
     window.addEventListener('resize', adjustConsoleLayout);
 });

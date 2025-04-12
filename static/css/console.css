@@ -11,6 +11,7 @@
     --terminal-glow: 0 0 10px rgba(247, 147, 26, 0.4);
 }
 
+/* Adjust the height of the body to allow space for other elements */
 body {
     background: var(--console-bg-gradient);
     color: var(--console-text);
@@ -21,7 +22,8 @@ body {
     line-height: 1.4;
     overflow-x: hidden;
     text-shadow: var(--terminal-glow);
-    height: 100vh;
+    height: auto; /* Changed from 100vh to auto */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
@@ -81,15 +83,17 @@ body {
     }
 }
 
-/* Fix the console container to use the full viewport */
+/* Fix the console container to use a controlled height */
 .console-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 50vh; /* Change from 100vh to 50vh to make it half height */
     width: 100%;
     max-width: 100%;
     background: transparent;
     animation: flicker 4s infinite;
+    margin: 20px auto; /* Add some margin top and bottom */
+    max-height: 500px; /* Add a maximum height */
 }
 
 .console-header {
@@ -113,7 +117,7 @@ body {
 
 /* Fix the console wrapper to be a controlled height */
 .console-wrapper {
-    flex: 0 1 auto; /* Don't allow this to grow arbitrarily */
+    flex: 0 1 auto;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--console-text) var(--console-bg);
@@ -123,6 +127,9 @@ body {
     position: relative;
     box-sizing: border-box;
     background-color: var(--console-bg);
+    /* Control the height precisely */
+    height: calc(100% - 130px); /* Account for header and footer height */
+    min-height: 150px; /* Set a minimum height */
 }
 
     .console-wrapper::-webkit-scrollbar {

@@ -1211,10 +1211,37 @@ function updateUI() {
                 numberWithCommas(Math.round(data.network_hashrate)) + " EH/s");
         }
         updateElementText("difficulty", numberWithCommas(Math.round(data.difficulty)));
+
+        // Daily revenue
         updateElementText("daily_revenue", "$" + numberWithCommas(data.daily_revenue.toFixed(2)));
+
+        // Daily power cost
         updateElementText("daily_power_cost", "$" + numberWithCommas(data.daily_power_cost.toFixed(2)));
-        updateElementText("daily_profit_usd", "$" + numberWithCommas(data.daily_profit_usd.toFixed(2)));
-        updateElementText("monthly_profit_usd", "$" + numberWithCommas(data.monthly_profit_usd.toFixed(2)));
+
+        // Daily profit USD - Add red color if negative
+        const dailyProfitUSD = data.daily_profit_usd;
+        const dailyProfitElement = document.getElementById("daily_profit_usd");
+        if (dailyProfitElement) {
+            dailyProfitElement.textContent = "$" + numberWithCommas(dailyProfitUSD.toFixed(2));
+            if (dailyProfitUSD < 0) {
+                dailyProfitElement.style.color = "#ff5555";
+            } else {
+                dailyProfitElement.style.color = ""; // Reset to default color
+            }
+        }
+
+        // Monthly profit USD - Add red color if negative
+        const monthlyProfitUSD = data.monthly_profit_usd;
+        const monthlyProfitElement = document.getElementById("monthly_profit_usd");
+        if (monthlyProfitElement) {
+            monthlyProfitElement.textContent = "$" + numberWithCommas(monthlyProfitUSD.toFixed(2));
+            if (monthlyProfitUSD < 0) {
+                monthlyProfitElement.style.color = "#ff5555";
+            } else {
+                monthlyProfitElement.style.color = ""; // Reset to default color
+            }
+        }
+
         updateElementText("daily_mined_sats", numberWithCommas(data.daily_mined_sats) + " SATS");
         updateElementText("monthly_mined_sats", numberWithCommas(data.monthly_mined_sats) + " SATS");
 
@@ -1305,6 +1332,7 @@ function updateUI() {
         console.error("Error updating UI:", error);
     }
 }
+
 
 // Update unread notifications badge in navigation
 function updateNotificationBadge() {

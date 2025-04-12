@@ -29,7 +29,8 @@ let cachedMetrics = null;
 let previousMetrics = null;
 let lastBlockHeight = null;
 let lastUpdateTime = null;
-let metricUpdateQueue = [];
+let logUpdateQueue = []; // Queue to store log updates
+let logInterval = 2000; // Interval to process log updates (2 seconds)
 
 // Initialize console
 document.addEventListener('DOMContentLoaded', function () {
@@ -49,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(fetchMetrics, consoleSettings.refreshInterval);
 
     // Process queued metric updates regularly
-    setInterval(processMetricUpdateQueue, 2000);
+    setInterval(processLogQueue, logInterval);
 
     // Add layout adjustment
     adjustConsoleLayout();
@@ -163,7 +164,7 @@ function processMetricChanges(oldMetrics, newMetrics) {
     // Check for block height change (new block found)
     if (oldMetrics.block_number !== newMetrics.block_number) {
         const message = `BLOCKCHAIN UPDATE: NEW BLOCK #${numberWithCommas(newMetrics.block_number)} DETECTED`;
-        queueMetricUpdate(message, MSG_TYPE.BLOCK);
+        queueLogUpdate(message, MSG_TYPE.BLOCK);
         lastBlockHeight = newMetrics.block_number;
     }
 
@@ -173,11 +174,11 @@ function processMetricChanges(oldMetrics, newMetrics) {
         if (newMetrics.workers_hashing > oldMetrics.workers_hashing) {
             const diff = newMetrics.workers_hashing - oldMetrics.workers_hashing;
             message = `WORKER STATUS: ${diff} ADDITIONAL WORKER${diff > 1 ? 'S' : ''} CAME ONLINE - NOW ${newMetrics.workers_hashing} ACTIVE`;
-            queueMetricUpdate(message, MSG_TYPE.SUCCESS);
+            queueLogUpdate(message, MSG_TYPE.SUCCESS);
         } else {
             const diff = oldMetrics.workers_hashing - newMetrics.workers_hashing;
             message = `WORKER STATUS: ${diff} WORKER${diff > 1 ? 'S' : ''} WENT OFFLINE - NOW ${newMetrics.workers_hashing} ACTIVE`;
-            queueMetricUpdate(message, MSG_TYPE.WARNING);
+            queueLogUpdate(message, MSG_TYPE.WARNING);
         }
     }
 
@@ -190,7 +191,7 @@ function processMetricChanges(oldMetrics, newMetrics) {
         const pctChange = ((newHashrate - oldHashrate) / oldHashrate * 100).toFixed(1);
         const direction = newHashrate > oldHashrate ? 'INCREASE' : 'DECREASE';
         const message = `HASHRATE ${direction}: ${newHashrate.toFixed(2)} ${hashrateUnit} - ${Math.abs(pctChange)}% CHANGE`;
-        queueMetricUpdate(message, newHashrate > oldHashrate ? MSG_TYPE.SUCCESS : MSG_TYPE.INFO);
+        queueLogUpdate(message, newHashrate > oldHashrate ? MSG_TYPE.SUCCESS : MSG_TYPE.INFO);
     }
 
     // Check for BTC price changes
@@ -198,7 +199,7 @@ function processMetricChanges(oldMetrics, newMetrics) {
         const direction = newMetrics.btc_price > oldMetrics.btc_price ? 'UP' : 'DOWN';
         const pctChange = ((newMetrics.btc_price - oldMetrics.btc_price) / oldMetrics.btc_price * 100).toFixed(2);
         const message = `MARKET UPDATE: BTC ${direction} ${Math.abs(pctChange)}% - NOW $${numberWithCommas(newMetrics.btc_price.toFixed(2))}`;
-        queueMetricUpdate(message, newMetrics.btc_price > oldMetrics.btc_price ? MSG_TYPE.SUCCESS : MSG_TYPE.INFO);
+        queueLogUpdate(message, newMetrics.btc_price > oldMetrics.btc_price ? MSG_TYPE.SUCCESS : MSG_TYPE.INFO);
     }
 
     // Check mining profitability changes
@@ -208,7 +209,7 @@ function processMetricChanges(oldMetrics, newMetrics) {
             const message = newMetrics.daily_profit_usd >= 0
                 ? `PROFITABILITY ALERT: MINING NOW PROFITABLE AT $${newMetrics.daily_profit_usd.toFixed(2)}/DAY`
                 : `PROFITABILITY ALERT: MINING NOW UNPROFITABLE - LOSING $${Math.abs(newMetrics.daily_profit_usd).toFixed(2)}/DAY`;
-            queueMetricUpdate(message, newMetrics.daily_profit_usd >= 0 ? MSG_TYPE.SUCCESS : MSG_TYPE.WARNING);
+            queueLogUpdate(message, newMetrics.daily_profit_usd >= 0 ? MSG_TYPE.SUCCESS : MSG_TYPE.WARNING);
         }
     }
 
@@ -218,7 +219,7 @@ function processMetricChanges(oldMetrics, newMetrics) {
         const direction = newMetrics.difficulty > oldMetrics.difficulty ? 'INCREASED' : 'DECREASED';
         const pctChange = ((newMetrics.difficulty - oldMetrics.difficulty) / oldMetrics.difficulty * 100).toFixed(2);
         const message = `NETWORK DIFFICULTY ${direction} BY ${Math.abs(pctChange)}% - NOW ${numberWithCommas(Math.round(newMetrics.difficulty))}`;
-        queueMetricUpdate(message, MSG_TYPE.NETWORK);
+        queueLogUpdate(message, MSG_TYPE.NETWORK);
     }
 
     // Add periodic stats summary regardless of changes
@@ -228,27 +229,19 @@ function processMetricChanges(oldMetrics, newMetrics) {
 }
 
 /**
- * Queue a metric update to be shown (prevents flooding)
+ * Queue a log update to be shown (prevents flooding)
  */
-function queueMetricUpdate(message, type) {
-    metricUpdateQueue.push({ message, type, time: Date.now() });
-
-    // If queue getting too large, process immediately
-    if (metricUpdateQueue.length > 5) {
-        processMetricUpdateQueue();
-    }
+function queueLogUpdate(message, type = MSG_TYPE.INFO) {
+    logUpdateQueue.push({ message, type });
 }
 
 /**
- * Process queued metric updates
+ * Process queued log updates
  */
-function processMetricUpdateQueue() {
-    // Only process a few messages at a time to avoid flooding
-    const maxMessagesToProcess = 2;
-
-    for (let i = 0; i < Math.min(maxMessagesToProcess, metricUpdateQueue.length); i++) {
-        const update = metricUpdateQueue.shift();
-        addConsoleMessage(update.message, update.type);
+function processLogQueue() {
+    if (logUpdateQueue.length > 0) {
+        const update = logUpdateQueue.shift(); // Get the next update
+        addConsoleMessage(update.message, update.type); // Display it
     }
 }
 
@@ -284,7 +277,7 @@ function logCurrentStats(metrics) {
         case 3:
             // Power consumption and efficiency
             if (metrics.power_usage) {
-                const efficiency = metrics.power_usage > 0 ? ((hashrate / metrics.power_usage) * 1000).toFixed(2) : 'N/A';
+                const efficiency = metrics.power_usage > 0 ? ((metrics.hashrate_60sec || 0) / metrics.power_usage).toFixed(2) : 'N/A';
                 addConsoleMessage(`POWER CONSUMPTION: ${metrics.power_usage}W - EFFICIENCY: ${efficiency} TH/s/kW`, MSG_TYPE.SYSTEM);
             }
             break;

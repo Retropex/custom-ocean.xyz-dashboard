@@ -1,6 +1,6 @@
 ﻿/**
- * Bitcoin Mining Console Log Simulation
- * A retro-styled terminal/console log display showing real-time mining metrics
+ * Bitcoin Mining Console Log - Real-time Mining Data Display
+ * Displays actual mining metrics rather than simulated logs
  */
 
 // Message type constants
@@ -20,41 +20,43 @@ const MSG_TYPE = {
 const consoleSettings = {
     maxLines: 500,          // Maximum number of lines to keep in the console
     autoScroll: true,       // Auto-scroll to bottom on new messages
-    logFrequency: {         // Frequency of different message types (ms)
-        system: 5000,       // System messages every 5 seconds
-        hash: 2000,         // Hash updates every 2 seconds
-        share: 10000,       // Share submissions every 10 seconds
-        network: 30000,     // Network updates every 30 seconds
-        block: 600000       // Block updates roughly every 10 minutes (on average)
-    },
-    glitchProbability: 0.05 // 5% chance of text glitch effect on any message
+    refreshInterval: 15000, // Refresh metrics every 15 seconds
+    glitchProbability: 0.05 // 5% chance of text glitch effect for retro feel
 };
 
-// Cache for metrics data
+// Cache for metrics data and tracking changes
 let cachedMetrics = null;
-const hashRateFluctuation = 0.01; // 1% fluctuation for realistic variance
+let previousMetrics = null;
+let lastBlockHeight = null;
+let lastUpdateTime = null;
+let metricUpdateQueue = [];
 
 // Initialize console
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Console log initialized');
+    console.log('Bitcoin Mining Console initialized');
 
     // Update clock
     updateClock();
     setInterval(updateClock, 1000);
 
-    // Set up metrics fetch
+    // Fetch initial metrics
     fetchMetrics();
+
+    // Setup event source for real-time updates
     setupEventSource();
 
-    // Start log generators with slight delays to avoid all happening at once
-    setTimeout(() => startLogGenerator(MSG_TYPE.HASH), 1000);
-    setTimeout(() => startLogGenerator(MSG_TYPE.SHARE), 3000);
-    setTimeout(() => startLogGenerator(MSG_TYPE.SYSTEM), 5000);
-    setTimeout(() => startLogGenerator(MSG_TYPE.NETWORK), 7000);
-    setTimeout(() => startLogGenerator(MSG_TYPE.BLOCK), 9000);
+    // Periodic full refresh as backup
+    setInterval(fetchMetrics, consoleSettings.refreshInterval);
 
-    // Add random errors/warnings occasionally
-    setInterval(generateRandomEvent, 60000);
+    // Process queued metric updates regularly
+    setInterval(processMetricUpdateQueue, 2000);
+
+    // Add layout adjustment
+    adjustConsoleLayout();
+    window.addEventListener('resize', adjustConsoleLayout);
+
+    // Add initial system message
+    addConsoleMessage("BITCOIN MINING CONSOLE INITIALIZED - CONNECTING TO DATA SOURCES...", MSG_TYPE.SYSTEM);
 });
 
 /**
@@ -92,22 +94,33 @@ function setupEventSource() {
                 return; // Ignore ping and timeout messages
             }
 
+            // Store previous metrics for comparison
+            previousMetrics = cachedMetrics ? { ...cachedMetrics } : null;
+
             // Update cached metrics
             cachedMetrics = data;
+
+            // Check for significant changes and log them
+            processMetricChanges(previousMetrics, cachedMetrics);
 
             // Update dashboard stats
             updateDashboardStats(data);
 
         } catch (error) {
             console.error('Error processing SSE data:', error);
+            addConsoleMessage(`DATA STREAM ERROR: ${error.message}`, MSG_TYPE.ERROR);
         }
     };
 
     eventSource.onerror = function () {
         console.error('SSE connection error');
+        addConsoleMessage("CONNECTION ERROR: METRICS STREAM INTERRUPTED - ATTEMPTING RECONNECTION...", MSG_TYPE.ERROR);
         // Reconnect after 5 seconds
         setTimeout(setupEventSource, 5000);
     };
+
+    // Log successful connection
+    addConsoleMessage("REAL-TIME DATA STREAM ESTABLISHED", MSG_TYPE.SUCCESS);
 }
 
 /**
@@ -117,17 +130,179 @@ function fetchMetrics() {
     fetch('/api/metrics')
         .then(response => response.json())
         .then(data => {
+            // Store previous metrics for comparison
+            previousMetrics = cachedMetrics ? { ...cachedMetrics } : null;
+
+            // Update cached metrics
             cachedMetrics = data;
+            lastUpdateTime = new Date();
+
+            // Check for significant changes and log them
+            processMetricChanges(previousMetrics, cachedMetrics);
+
+            // Update dashboard stats
             updateDashboardStats(data);
+
+            // Log first connection
+            if (!previousMetrics) {
+                addConsoleMessage("CONNECTED TO MINING DATA SOURCE - MONITORING METRICS", MSG_TYPE.SUCCESS);
+            }
         })
         .catch(error => {
             console.error('Error fetching metrics:', error);
-            addConsoleMessage('ERROR FETCHING METRICS DATA. RETRYING...', MSG_TYPE.ERROR);
+            addConsoleMessage(`METRICS FETCH ERROR: ${error.message} - RETRYING...`, MSG_TYPE.ERROR);
         });
 }
 
 /**
- * Update the dashboard stats display
+ * Process changes between old and new metrics
+ */
+function processMetricChanges(oldMetrics, newMetrics) {
+    if (!oldMetrics || !newMetrics) return;
+
+    // Check for block height change (new block found)
+    if (oldMetrics.block_number !== newMetrics.block_number) {
+        const message = `BLOCKCHAIN UPDATE: NEW BLOCK #${numberWithCommas(newMetrics.block_number)} DETECTED`;
+        queueMetricUpdate(message, MSG_TYPE.BLOCK);
+        lastBlockHeight = newMetrics.block_number;
+    }
+
+    // Check for worker count changes
+    if (oldMetrics.workers_hashing !== newMetrics.workers_hashing) {
+        let message;
+        if (newMetrics.workers_hashing > oldMetrics.workers_hashing) {
+            const diff = newMetrics.workers_hashing - oldMetrics.workers_hashing;
+            message = `WORKER STATUS: ${diff} ADDITIONAL WORKER${diff > 1 ? 'S' : ''} CAME ONLINE - NOW ${newMetrics.workers_hashing} ACTIVE`;
+            queueMetricUpdate(message, MSG_TYPE.SUCCESS);
+        } else {
+            const diff = oldMetrics.workers_hashing - newMetrics.workers_hashing;
+            message = `WORKER STATUS: ${diff} WORKER${diff > 1 ? 'S' : ''} WENT OFFLINE - NOW ${newMetrics.workers_hashing} ACTIVE`;
+            queueMetricUpdate(message, MSG_TYPE.WARNING);
+        }
+    }
+
+    // Check for significant hashrate changes (>5%)
+    const oldHashrate = oldMetrics.hashrate_10min || oldMetrics.hashrate_3hr || 0;
+    const newHashrate = newMetrics.hashrate_10min || newMetrics.hashrate_3hr || 0;
+    const hashrateUnit = newMetrics.hashrate_10min_unit || newMetrics.hashrate_3hr_unit || 'TH/s';
+
+    if (oldHashrate > 0 && Math.abs((newHashrate - oldHashrate) / oldHashrate) > 0.05) {
+        const pctChange = ((newHashrate - oldHashrate) / oldHashrate * 100).toFixed(1);
+        const direction = newHashrate > oldHashrate ? 'INCREASE' : 'DECREASE';
+        const message = `HASHRATE ${direction}: ${newHashrate.toFixed(2)} ${hashrateUnit} - ${Math.abs(pctChange)}% CHANGE`;
+        queueMetricUpdate(message, newHashrate > oldHashrate ? MSG_TYPE.SUCCESS : MSG_TYPE.INFO);
+    }
+
+    // Check for BTC price changes
+    if (Math.abs((newMetrics.btc_price - oldMetrics.btc_price) / oldMetrics.btc_price) > 0.005) {
+        const direction = newMetrics.btc_price > oldMetrics.btc_price ? 'UP' : 'DOWN';
+        const pctChange = ((newMetrics.btc_price - oldMetrics.btc_price) / oldMetrics.btc_price * 100).toFixed(2);
+        const message = `MARKET UPDATE: BTC ${direction} ${Math.abs(pctChange)}% - NOW $${numberWithCommas(newMetrics.btc_price.toFixed(2))}`;
+        queueMetricUpdate(message, newMetrics.btc_price > oldMetrics.btc_price ? MSG_TYPE.SUCCESS : MSG_TYPE.INFO);
+    }
+
+    // Check mining profitability changes
+    if (newMetrics.daily_profit_usd !== oldMetrics.daily_profit_usd) {
+        if ((oldMetrics.daily_profit_usd < 0 && newMetrics.daily_profit_usd >= 0) ||
+            (oldMetrics.daily_profit_usd >= 0 && newMetrics.daily_profit_usd < 0)) {
+            const message = newMetrics.daily_profit_usd >= 0
+                ? `PROFITABILITY ALERT: MINING NOW PROFITABLE AT $${newMetrics.daily_profit_usd.toFixed(2)}/DAY`
+                : `PROFITABILITY ALERT: MINING NOW UNPROFITABLE - LOSING $${Math.abs(newMetrics.daily_profit_usd).toFixed(2)}/DAY`;
+            queueMetricUpdate(message, newMetrics.daily_profit_usd >= 0 ? MSG_TYPE.SUCCESS : MSG_TYPE.WARNING);
+        }
+    }
+
+    // Log difficulty changes
+    if (oldMetrics.difficulty && newMetrics.difficulty &&
+        Math.abs((newMetrics.difficulty - oldMetrics.difficulty) / oldMetrics.difficulty) > 0.001) {
+        const direction = newMetrics.difficulty > oldMetrics.difficulty ? 'INCREASED' : 'DECREASED';
+        const pctChange = ((newMetrics.difficulty - oldMetrics.difficulty) / oldMetrics.difficulty * 100).toFixed(2);
+        const message = `NETWORK DIFFICULTY ${direction} BY ${Math.abs(pctChange)}% - NOW ${numberWithCommas(Math.round(newMetrics.difficulty))}`;
+        queueMetricUpdate(message, MSG_TYPE.NETWORK);
+    }
+
+    // Add periodic stats summary regardless of changes
+    if (!lastUpdateTime || (new Date() - lastUpdateTime) > 60000) { // Every minute
+        logCurrentStats(newMetrics);
+    }
+}
+
+/**
+ * Queue a metric update to be shown (prevents flooding)
+ */
+function queueMetricUpdate(message, type) {
+    metricUpdateQueue.push({ message, type, time: Date.now() });
+
+    // If queue getting too large, process immediately
+    if (metricUpdateQueue.length > 5) {
+        processMetricUpdateQueue();
+    }
+}
+
+/**
+ * Process queued metric updates
+ */
+function processMetricUpdateQueue() {
+    // Only process a few messages at a time to avoid flooding
+    const maxMessagesToProcess = 2;
+
+    for (let i = 0; i < Math.min(maxMessagesToProcess, metricUpdateQueue.length); i++) {
+        const update = metricUpdateQueue.shift();
+        addConsoleMessage(update.message, update.type);
+    }
+}
+
+/**
+ * Log current mining stats
+ */
+function logCurrentStats(metrics) {
+    if (!metrics) return;
+
+    // Randomize which stat we log to avoid repetition
+    const statToLog = Math.floor(Math.random() * 5);
+
+    switch (statToLog) {
+        case 0:
+            // Hashrate stats
+            const hashrate = metrics.hashrate_60sec || metrics.hashrate_10min || metrics.hashrate_3hr || 0;
+            const hashrateUnit = metrics.hashrate_60sec_unit || metrics.hashrate_10min_unit || metrics.hashrate_3hr_unit || 'TH/s';
+            addConsoleMessage(`MINING PERFORMANCE: ${hashrate} ${hashrateUnit} - ${metrics.workers_hashing || 0} WORKERS ACTIVE`, MSG_TYPE.HASH);
+            break;
+
+        case 1:
+            // Earnings projection
+            if (metrics.daily_mined_sats) {
+                addConsoleMessage(`EARNINGS PROJECTION: ${numberWithCommas(metrics.daily_mined_sats)} SATS/DAY - ${metrics.daily_profit_usd > 0 ? 'PROFITABLE' : 'UNPROFITABLE'}`, MSG_TYPE.INFO);
+            }
+            break;
+
+        case 2:
+            // Network statistics
+            addConsoleMessage(`NETWORK STATUS: HASHRATE ${metrics.network_hashrate || 0} EH/s - BLOCKCHAIN HEIGHT ${numberWithCommas(metrics.block_number || 0)}`, MSG_TYPE.NETWORK);
+            break;
+
+        case 3:
+            // Power consumption and efficiency
+            if (metrics.power_usage) {
+                const efficiency = metrics.power_usage > 0 ? ((hashrate / metrics.power_usage) * 1000).toFixed(2) : 'N/A';
+                addConsoleMessage(`POWER CONSUMPTION: ${metrics.power_usage}W - EFFICIENCY: ${efficiency} TH/s/kW`, MSG_TYPE.SYSTEM);
+            }
+            break;
+
+        case 4:
+            // Unpaid balance
+            if (metrics.unpaid_earnings) {
+                addConsoleMessage(`PENDING BALANCE: ${numberWithCommas(metrics.unpaid_earnings)} SATS - EST. PAYOUT: ${metrics.est_time_to_payout || 'CALCULATING...'}`, MSG_TYPE.INFO);
+            }
+            break;
+    }
+
+    // Update last update time
+    lastUpdateTime = new Date();
+}
+
+/**
+ * Update the dashboard stats display in the footer
  */
 function updateDashboardStats(data) {
     if (!data) return;
@@ -152,260 +327,6 @@ function updateDashboardStats(data) {
  */
 function numberWithCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-/**
- * Start a specific log generator
- */
-function startLogGenerator(type) {
-    const interval = consoleSettings.logFrequency[type];
-    if (!interval) return;
-
-    setInterval(() => {
-        generateLog(type);
-    }, interval);
-}
-
-/**
- * Generate a log message based on type
- */
-function generateLog(type) {
-    if (!cachedMetrics) return;
-
-    let message = '';
-    let messageType = type;
-
-    switch (type) {
-        case MSG_TYPE.SYSTEM:
-            message = generateSystemMessage();
-            break;
-
-        case MSG_TYPE.HASH:
-            message = generateHashrateMessage();
-            break;
-
-        case MSG_TYPE.SHARE:
-            message = generateShareMessage();
-            break;
-
-        case MSG_TYPE.NETWORK:
-            message = generateNetworkMessage();
-            break;
-
-        case MSG_TYPE.BLOCK:
-            // Only generate block messages occasionally (simulating real mining)
-            if (Math.random() < 0.1) { // 10% chance each time this is called
-                message = generateBlockMessage();
-            } else {
-                return; // Skip this cycle
-            }
-            break;
-    }
-
-    // If we have a message, add it to console
-    if (message) {
-        addConsoleMessage(message, messageType);
-    }
-}
-
-/**
- * Generate a system status message based on actual metrics
- */
-function generateSystemMessage() {
-    if (!cachedMetrics) return 'SYSTEM STATUS: AWAITING METRICS DATA...';
-
-    // Create an array of possible messages that use real metrics where available
-    const systemMessages = [
-        // Power consumption using actual configured power usage when available
-        `POWER CONSUMPTION: ${cachedMetrics.power_usage ? `${cachedMetrics.power_usage}W` : `${randomInt(800, 1500)}W`} - EFFICIENCY: ${cachedMetrics.power_cost ? `$${cachedMetrics.power_cost}/kWh` : 'CALCULATING...'}`,
-
-        // Use real worker count for system health reports
-        `SYSTEM HEALTH CHECK: ${cachedMetrics.workers_hashing || 0}/${cachedMetrics.workers_total || 0} WORKERS OPERATIONAL - ${Math.round(((cachedMetrics.workers_hashing || 0) / (cachedMetrics.workers_total || 1)) * 100)}% ONLINE`,
-
-        // Use actual hashrate
-        `PROCESSING CAPACITY: ${cachedMetrics.hashrate_60sec || cachedMetrics.hashrate_10min || cachedMetrics.hashrate_3hr || 0} ${cachedMetrics.hashrate_60sec_unit || cachedMetrics.hashrate_10min_unit || cachedMetrics.hashrate_3hr_unit || 'TH/s'} - ${cachedMetrics.workers_hashing ? 'OPTIMAL' : 'SUBOPTIMAL'} PERFORMANCE`,
-
-        // Network synchronization based on real block height
-        `BLOCKCHAIN SYNC STATUS: HEIGHT ${numberWithCommas(cachedMetrics.block_number || 0)} - 100% SYNCHRONIZED`,
-
-        // Earnings projection based on actual data
-        `REVENUE PROJECTION: ${cachedMetrics.daily_revenue ? `$${cachedMetrics.daily_revenue.toFixed(2)}/DAY` : 'CALCULATING...'} - ${cachedMetrics.daily_profit_usd ? `$${cachedMetrics.daily_profit_usd.toFixed(2)} PROFIT` : 'CALCULATING PROFIT...'}`,
-
-        // Time to payout/rewards
-        `PAYOUT ESTIMATION: ${cachedMetrics.est_time_to_payout || 'CALCULATING...'} - ${numberWithCommas(cachedMetrics.unpaid_earnings || 0)} SATS PENDING`,
-
-        // Real Bitcoin price
-        `MARKET CONDITIONS: BTC $${numberWithCommas(parseFloat(cachedMetrics.btc_price || 0).toFixed(2))} - MINING PROFITABILITY ${cachedMetrics.daily_profit_usd > 0 ? 'POSITIVE' : 'NEGATIVE'}`,
-
-        // Monthly projections
-        `MONTHLY PROJECTION: ${cachedMetrics.monthly_mined_sats ? `${numberWithCommas(cachedMetrics.monthly_mined_sats)} SATS` : 'CALCULATING...'} - ${cachedMetrics.monthly_profit_usd ? `$${numberWithCommas(cachedMetrics.monthly_profit_usd.toFixed(2))}` : 'CALCULATING...'}`,
-
-        // Network difficulty and mining pool statistics
-        `MINING DIFFICULTY: ${numberWithCommas(Math.round(cachedMetrics.difficulty || 0))} - POOL HASHRATE: ${cachedMetrics.pool_total_hashrate || 0} ${cachedMetrics.pool_total_hashrate_unit || 'TH/s'}`,
-
-        // System uptime (still random as we don't track this)
-        `SYSTEM UPTIME: ${randomInt(1, 24)}h ${randomInt(0, 59)}m ${randomInt(0, 59)}s - STABILITY: ${cachedMetrics.workers_hashing > 0 ? 'HIGH' : 'DEGRADED'}`
-    ];
-
-    // Add some random but realistic messages to maintain variety
-    if (Math.random() < 0.3) {
-        systemMessages.push(`SYSTEM TEMPERATURE: ${randomInt(50, 75)}°C - ${randomInt(50, 70) > 65 ? 'WARNING: HIGH' : 'WITHIN NORMAL PARAMETERS'}`);
-        systemMessages.push(`MEMORY USAGE: ${randomInt(30, 70)}% - ${randomInt(2048, 8192)}MB ALLOCATED`);
-        systemMessages.push(`CPU UTILIZATION: ${randomInt(20, 95)}% - PROCESSING MINING ALGORITHMS`);
-        systemMessages.push(`NETWORK LATENCY: ${randomInt(5, 200)}ms TO MINING POOL - ${randomInt(5, 200) > 100 ? 'HIGH LATENCY' : 'OPTIMAL'}`);
-    }
-
-    // Special alerts based on metrics state
-    if (cachedMetrics.workers_total && cachedMetrics.workers_hashing < cachedMetrics.workers_total) {
-        systemMessages.push(`ALERT: ${cachedMetrics.workers_total - cachedMetrics.workers_hashing} WORKERS OFFLINE - MAINTENANCE REQUIRED`);
-    }
-
-    if (cachedMetrics.daily_profit_usd && cachedMetrics.daily_profit_usd < 0) {
-        systemMessages.push(`WARNING: NEGATIVE MINING PROFITABILITY - $${Math.abs(cachedMetrics.daily_profit_usd).toFixed(2)}/DAY LOSS`);
-    }
-
-    // Return a random message from the array
-    return systemMessages[Math.floor(Math.random() * systemMessages.length)];
-}
-
-/**
- * Generate a hashrate update message
- */
-function generateHashrateMessage() {
-    if (!cachedMetrics) return '';
-
-    // Get base hashrate from cached metrics
-    const baseHashrate = cachedMetrics.hashrate_60sec || cachedMetrics.hashrate_10min || cachedMetrics.hashrate_3hr || 1;
-    const hashrateUnit = (cachedMetrics.hashrate_60sec_unit || cachedMetrics.hashrate_10min_unit || cachedMetrics.hashrate_3hr_unit || 'TH/s').toUpperCase();
-
-    // Add some fluctuation for realism
-    const fluctuation = (Math.random() * 2 - 1) * hashRateFluctuation;
-    const currentHashrate = (baseHashrate * (1 + fluctuation)).toFixed(2);
-
-    const hashMessages = [
-        `HASHRATE UPDATE: ${currentHashrate} ${hashrateUnit} - ${fluctuation >= 0 ? 'INCREASE' : 'DECREASE'} OF ${Math.abs(fluctuation * 100).toFixed(2)}%`,
-        `MINING PERFORMANCE: ${currentHashrate} ${hashrateUnit} - ${randomInt(97, 100)}% EFFICIENCY`,
-        `HASH COMPUTATION RATE: ${currentHashrate} ${hashrateUnit} - ${fluctuation >= 0 ? 'OPTIMAL' : 'SUBOPTIMAL'} PERFORMANCE`,
-        `PROCESSING HASHES AT ${currentHashrate} ${hashrateUnit} - ${cachedMetrics.workers_hashing || 1} WORKERS ACTIVE`,
-        `CURRENT HASHING POWER: ${currentHashrate} ${hashrateUnit} - NETWORK CONTRIBUTION: ${(baseHashrate / (cachedMetrics.network_hashrate * 1000 || 1) * 100).toFixed(8)}%`
-    ];
-
-    return hashMessages[Math.floor(Math.random() * hashMessages.length)];
-}
-
-/**
- * Generate a share submission message
- */
-function generateShareMessage() {
-    if (!cachedMetrics) return '';
-
-    const difficulty = randomInt(8000, 12000) / 100;
-    const timeToSolve = randomInt(10, 990) / 10;
-    const accepted = Math.random() < 0.98; // 98% acceptance rate
-
-    if (accepted) {
-        const shareMessages = [
-            `SHARE ACCEPTED [${generateRandomHex(8)}] - DIFFICULTY ${difficulty} - SOLVED IN ${timeToSolve}s`,
-            `VALID SHARE SUBMITTED [${generateRandomHex(8)}] - POOL ACCEPTED - DIFFICULTY ${difficulty}`,
-            `SHARE SOLUTION FOUND [${generateRandomHex(8)}] - VERIFICATION SUCCESSFUL - EFFORT: ${randomInt(1, 200)}%`,
-            `MINING SHARE ACCEPTED BY POOL [${generateRandomHex(8)}] - ${timeToSolve}s SOLUTION TIME`,
-            `SHARE SUBMISSION SUCCESSFUL [${generateRandomHex(8)}] - YAY!!! ⚡`
-        ];
-        return shareMessages[Math.floor(Math.random() * shareMessages.length)];
-    } else {
-        const rejectReasons = ['LOW DIFFICULTY', 'STALE', 'DUPLICATE', 'INVALID NONCE', 'BAD TRANSACTION'];
-        const reason = rejectReasons[Math.floor(Math.random() * rejectReasons.length)];
-
-        return `SHARE REJECTED [${generateRandomHex(8)}] - REASON: ${reason} - DIFFICULTY ${difficulty}`;
-    }
-}
-
-/**
- * Generate a network update message
- */
-function generateNetworkMessage() {
-    if (!cachedMetrics) return '';
-
-    const networkHashrate = cachedMetrics.network_hashrate || 350;
-    const difficulty = cachedMetrics.difficulty || 60000000000000;
-    const btcPrice = cachedMetrics.btc_price || 75000;
-
-    const networkMessages = [
-        `NETWORK HASHRATE: ${networkHashrate} EH/s - GLOBAL MINING POWER`,
-        `NETWORK DIFFICULTY: ${numberWithCommas(Math.round(difficulty))} - NEXT ADJUSTMENT IN ${randomInt(1, 14)} DAYS`,
-        `BTC MARKET UPDATE: $${numberWithCommas(btcPrice)} - ${Math.random() < 0.7 ? 'UP' : 'DOWN'} ${randomInt(1, 500) / 100}% IN 24HR`,
-        `BLOCKCHAIN HEIGHT: ${numberWithCommas(cachedMetrics.block_number || 0)} - FULLY SYNCHRONIZED`,
-        `MEMPOOL STATUS: ${randomInt(5000, 50000)} TRANSACTIONS PENDING - ${randomInt(10, 100)} SAT/VBYTE`,
-        `ESTIMATED EARNINGS: ${cachedMetrics.daily_mined_sats || 0} SATS PER DAY AT CURRENT RATE`,
-        `TRANSACTION FEES: AVERAGE ${randomInt(1000, 10000)} SATS PER TRANSACTION`,
-        `POOL FEE: ${randomInt(0, 3)}% + ${randomInt(0, 2)}% MINING FEE = ${randomInt(1, 5)}% TOTAL DEDUCTION`
-    ];
-
-    return networkMessages[Math.floor(Math.random() * networkMessages.length)];
-}
-
-/**
- * Generate a block-related message
- */
-function generateBlockMessage() {
-    if (!cachedMetrics) return '';
-
-    const blockHeight = cachedMetrics.block_number || 0;
-    const nextBlockHeight = blockHeight + 1;
-
-    // Generate random transaction count for the block
-    const txCount = randomInt(1000, 4000);
-    const blockSize = randomInt(1, 4) + "." + randomInt(0, 9) + " MB";
-    const blockReward = "3.125 BTC + " + randomInt(0, 3) + "." + randomInt(0, 999) + " BTC FEES";
-
-    // Determine if this is a block found by the pool (rare event)
-    const isPoolBlock = Math.random() < 0.01; // 1% chance
-
-    if (isPoolBlock) {
-        // This is a special case - our pool found a block!
-        const blockMessages = [
-            `🎉 BLOCK FOUND BY POOL! 🎉 HEIGHT: ${blockHeight} - REWARD: ${blockReward}`,
-            `⚡⚡⚡ POOL SUCCESSFULLY MINED BLOCK ${blockHeight}! REWARD: ${blockReward} ⚡⚡⚡`,
-            `!!!CONGRATULATIONS!!! BLOCK ${blockHeight} MINED BY OUR POOL! ${txCount} TRANSACTIONS CONFIRMED`,
-            `$$$ BLOCK REWARD INCOMING $$$ - POOL MINED BLOCK ${blockHeight} - ${blockReward}`,
-            `NEW BLOCK ${blockHeight} MINED BY OUR POOL! SIZE: ${blockSize}, TXs: ${txCount}, REWARD: ${blockReward}`
-        ];
-        return blockMessages[Math.floor(Math.random() * blockMessages.length)];
-    } else {
-        // Regular block found by someone else
-        const blockMessages = [
-            `NEW BLOCK DETECTED: HEIGHT ${blockHeight} - ${txCount} TRANSACTIONS - SIZE: ${blockSize}`,
-            `BLOCKCHAIN UPDATE: BLOCK ${blockHeight} CONFIRMED - MINED BY EXTERNAL POOL`,
-            `BLOCK ${blockHeight} ADDED TO BLOCKCHAIN - DIFFICULTY TARGET: ${generateRandomHex(8)}...`,
-            `NETWORK: NEW BLOCK ${blockHeight} - REWARD: ${blockReward}`,
-            `BLOCK HEIGHT ${blockHeight} CONFIRMED - WORKING ON NEXT BLOCK: ${nextBlockHeight}`
-        ];
-        return blockMessages[Math.floor(Math.random() * blockMessages.length)];
-    }
-}
-
-/**
- * Generate random technical or error events
- */
-function generateRandomEvent() {
-    // Only 20% chance to generate a random event
-    if (Math.random() > 0.2) return;
-
-    const events = [
-        { message: "WARNING: EXCESSIVE TEMPERATURE DETECTED ON WORKER #" + randomInt(1, 5), type: MSG_TYPE.WARNING },
-        { message: "ERROR: INVALID MINING PARAMETER DETECTED - RECONFIGURING ALGORITHM", type: MSG_TYPE.ERROR },
-        { message: "NOTICE: OPTIMIZING MEMORY ALLOCATION FOR IMPROVED PERFORMANCE", type: MSG_TYPE.INFO },
-        { message: "ALERT: NETWORK DIFFICULTY INCREASED BY " + randomInt(1, 10) + "% - ADJUSTING PARAMETERS", type: MSG_TYPE.WARNING },
-        { message: "SYSTEM: DETECTED " + randomInt(2, 10) + " REJECTED SHARES IN LAST MINUTE - ANALYZING CAUSE", type: MSG_TYPE.WARNING },
-        { message: "ERROR: CONNECTION TO MINING POOL TIMED OUT - ATTEMPTING RECONNECTION...", type: MSG_TYPE.ERROR },
-        { message: "SUCCESS: CONNECTION RESTORED - RESUMING MINING OPERATIONS", type: MSG_TYPE.SUCCESS },
-        { message: "NOTICE: FIRMWARE UPDATE AVAILABLE FOR MINING HARDWARE", type: MSG_TYPE.INFO },
-        { message: "WARNING: POWER SUPPLY FLUCTUATION DETECTED - MONITORING VOLTAGE", type: MSG_TYPE.WARNING },
-        { message: "SYSTEM: RECALIBRATING HASH VERIFICATION ALGORITHM", type: MSG_TYPE.SYSTEM }
-    ];
-
-    const event = events[Math.floor(Math.random() * events.length)];
-    addConsoleMessage(event.message, event.type);
 }
 
 /**
@@ -455,25 +376,6 @@ function addConsoleMessage(message, type = MSG_TYPE.SYSTEM) {
 }
 
 /**
- * Generate a random integer between min and max (inclusive)
- */
-function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/**
- * Generate a random hexadecimal string of specified length
- */
-function generateRandomHex(length) {
-    const characters = '0123456789ABCDEF';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * 16));
-    }
-    return result;
-}
-
-/**
  * Adjust console layout to ensure proper proportions
  */
 function adjustConsoleLayout() {
@@ -493,12 +395,3 @@ function adjustConsoleLayout() {
         wrapper.style.height = `${Math.max(wrapperHeight, 150)}px`; // Min height of 150px
     }
 }
-
-// Add this to your document.addEventListener('DOMContentLoaded',...) function
-document.addEventListener('DOMContentLoaded', function () {
-    // Existing code...
-
-    // Add layout adjustment
-    adjustConsoleLayout();
-    window.addEventListener('resize', adjustConsoleLayout);
-});

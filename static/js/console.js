@@ -242,56 +242,48 @@ function processLogQueue() {
     if (logUpdateQueue.length > 0) {
         const update = logUpdateQueue.shift(); // Get the next update
         addConsoleMessage(update.message, update.type); // Display it
+    } else {
+        // If the queue is empty, log periodic stats
+        logCurrentStats(cachedMetrics);
     }
 }
 
 /**
- * Log current mining stats
+ * Log current mining stats periodically
  */
 function logCurrentStats(metrics) {
     if (!metrics) return;
 
-    // Randomize which stat we log to avoid repetition
-    const statToLog = Math.floor(Math.random() * 5);
+    // Define an array of possible log messages
+    const logMessages = [
+        `HASHRATE: ${metrics.hashrate_60sec || metrics.hashrate_10min || metrics.hashrate_3hr || 0} ${metrics.hashrate_60sec_unit || metrics.hashrate_10min_unit || metrics.hashrate_3hr_unit || 'TH/s'}`,
+        `BLOCK HEIGHT: ${numberWithCommas(metrics.block_number || 0)}`,
+        `WORKERS ONLINE: ${metrics.workers_hashing || 0}`,
+        `BTC PRICE: $${numberWithCommas(parseFloat(metrics.btc_price || 0).toFixed(2))}`,
+        `DAILY PROFIT: $${metrics.daily_profit_usd ? metrics.daily_profit_usd.toFixed(2) : 'CALCULATING...'}`,
+        `UNPAID EARNINGS: ${numberWithCommas(metrics.unpaid_earnings || 0)} SATS`,
+        `NETWORK DIFFICULTY: ${numberWithCommas(Math.round(metrics.difficulty || 0))}`,
+        `POWER CONSUMPTION: ${metrics.power_usage || 'N/A'}W`,
+    ];
 
-    switch (statToLog) {
-        case 0:
-            // Hashrate stats
-            const hashrate = metrics.hashrate_60sec || metrics.hashrate_10min || metrics.hashrate_3hr || 0;
-            const hashrateUnit = metrics.hashrate_60sec_unit || metrics.hashrate_10min_unit || metrics.hashrate_3hr_unit || 'TH/s';
-            addConsoleMessage(`MINING PERFORMANCE: ${hashrate} ${hashrateUnit} - ${metrics.workers_hashing || 0} WORKERS ACTIVE`, MSG_TYPE.HASH);
-            break;
+    // Randomize the order of log messages
+    shuffleArray(logMessages);
 
-        case 1:
-            // Earnings projection
-            if (metrics.daily_mined_sats) {
-                addConsoleMessage(`EARNINGS PROJECTION: ${numberWithCommas(metrics.daily_mined_sats)} SATS/DAY - ${metrics.daily_profit_usd > 0 ? 'PROFITABLE' : 'UNPROFITABLE'}`, MSG_TYPE.INFO);
-            }
-            break;
+    // Queue the first few messages for display
+    logMessages.slice(0, 3).forEach(message => queueLogUpdate(message, MSG_TYPE.INFO));
 
-        case 2:
-            // Network statistics
-            addConsoleMessage(`NETWORK STATUS: HASHRATE ${metrics.network_hashrate || 0} EH/s - BLOCKCHAIN HEIGHT ${numberWithCommas(metrics.block_number || 0)}`, MSG_TYPE.NETWORK);
-            break;
-
-        case 3:
-            // Power consumption and efficiency
-            if (metrics.power_usage) {
-                const efficiency = metrics.power_usage > 0 ? ((metrics.hashrate_60sec || 0) / metrics.power_usage).toFixed(2) : 'N/A';
-                addConsoleMessage(`POWER CONSUMPTION: ${metrics.power_usage}W - EFFICIENCY: ${efficiency} TH/s/kW`, MSG_TYPE.SYSTEM);
-            }
-            break;
-
-        case 4:
-            // Unpaid balance
-            if (metrics.unpaid_earnings) {
-                addConsoleMessage(`PENDING BALANCE: ${numberWithCommas(metrics.unpaid_earnings)} SATS - EST. PAYOUT: ${metrics.est_time_to_payout || 'CALCULATING...'}`, MSG_TYPE.INFO);
-            }
-            break;
-    }
-
-    // Update last update time
+    // Update the last update time
     lastUpdateTime = new Date();
+}
+
+/**
+ * Shuffle an array in place
+ */
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
 }
 
 /**

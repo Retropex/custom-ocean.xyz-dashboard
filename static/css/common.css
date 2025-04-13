@@ -109,9 +109,16 @@ h1 {
   right: 10px;
   color: grey;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.7rem; /* Decreased font size */
   text-shadow: 0 0 5px grey;
+  padding: 5px 10px; /* Add padding for a larger clickable area */
+  transition: background-color 0.3s ease; /* Optional: Add hover effect */
 }
+
+#topRightLink:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* Optional: Highlight on hover */
+}
+
 
 /* Card styles */
 .card,

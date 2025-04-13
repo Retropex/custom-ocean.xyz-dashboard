@@ -254,16 +254,18 @@ function processLogQueue() {
 function logCurrentStats(metrics) {
     if (!metrics) return;
 
-    // Define an array of possible log messages
+    // Define an array of possible log messages with corrected formatting
     const logMessages = [
         `HASHRATE: ${metrics.hashrate_60sec || metrics.hashrate_10min || metrics.hashrate_3hr || 0} ${metrics.hashrate_60sec_unit || metrics.hashrate_10min_unit || metrics.hashrate_3hr_unit || 'TH/s'}`,
         `BLOCK HEIGHT: ${numberWithCommas(metrics.block_number || 0)}`,
         `WORKERS ONLINE: ${metrics.workers_hashing || 0}`,
         `BTC PRICE: $${numberWithCommas(parseFloat(metrics.btc_price || 0).toFixed(2))}`,
-        `DAILY PROFIT: $${metrics.daily_profit_usd ? metrics.daily_profit_usd.toFixed(2) : 'CALCULATING...'}`,
-        `UNPAID EARNINGS: ${numberWithCommas(metrics.unpaid_earnings || 0)} SATS`,
+        `DAILY PROFIT: $${metrics.daily_profit_usd ? metrics.daily_profit_usd.toFixed(2) : '0.00'}`,
+        // Fix the unpaid earnings format to display as SATS correctly
+        `UNPAID EARNINGS: ${numberWithCommas(parseInt(metrics.unpaid_earnings || 0))} SATS`,
         `NETWORK DIFFICULTY: ${numberWithCommas(Math.round(metrics.difficulty || 0))}`,
-        `POWER CONSUMPTION: ${metrics.power_usage || 'N/A'}W`,
+        // Fix power consumption to show 0W instead of N/AW when not available
+        `POWER CONSUMPTION: ${metrics.power_usage || '0'} WATTS`,
     ];
 
     // Randomize the order of log messages

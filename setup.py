@@ -60,7 +60,6 @@ FILE_MAPPINGS = {
     'retro-refresh.css': 'static/css/retro-refresh.css',
     'blocks.css': 'static/css/blocks.css',
     'notifications.css': 'static/css/notifications.css',
-    'console.css': 'static/css/console.css',  # Added console.css
     
     # JS files
     'main.js': 'static/js/main.js',
@@ -68,7 +67,6 @@ FILE_MAPPINGS = {
     'blocks.js': 'static/js/blocks.js',
     'BitcoinProgressBar.js': 'static/js/BitcoinProgressBar.js',
     'notifications.js': 'static/js/notifications.js',
-    'console.js': 'static/js/console.js',  # Added console.js
     
     # Template files
     'base.html': 'templates/base.html',
@@ -78,7 +76,6 @@ FILE_MAPPINGS = {
     'error.html': 'templates/error.html',
     'blocks.html': 'templates/blocks.html',
     'notifications.html': 'templates/notifications.html',
-    'console.html': 'templates/console.html',  # Added console.html
 }
 
 # Default configuration

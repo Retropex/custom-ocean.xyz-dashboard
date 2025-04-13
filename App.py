@@ -807,12 +807,6 @@ class RobustMiddleware:
             logging.exception("Unhandled exception in WSGI app")
             start_response("500 Internal Server Error", [("Content-Type", "text/html")])
             return [b"<h1>Internal Server Error</h1>"]
-# Add Console page route
-@app.route("/console")
-def console_page():
-    """Serve the retro console log page."""
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S")
-    return render_template("console.html", current_time=current_time)
 
 # Add the middleware
 app.wsgi_app = RobustMiddleware(app.wsgi_app)

@@ -261,8 +261,8 @@ function logCurrentStats(metrics) {
         `WORKERS ONLINE: ${metrics.workers_hashing || 0}`,
         `BTC PRICE: $${numberWithCommas(parseFloat(metrics.btc_price || 0).toFixed(2))}`,
         `DAILY PROFIT: $${metrics.daily_profit_usd ? metrics.daily_profit_usd.toFixed(2) : '0.00'}`,
-        // Fix the unpaid earnings format to display as SATS correctly
-        `UNPAID EARNINGS: ${numberWithCommas(parseInt(metrics.unpaid_earnings || 0))} SATS`,
+        // Convert SATS to BTC (1 BTC = 100,000,000 SATS) and format with 8 decimal places
+        `UNPAID EARNINGS: ${(parseFloat(metrics.unpaid_earnings || 0) / 100000000).toFixed(8)} BTC`,
         `NETWORK DIFFICULTY: ${numberWithCommas(Math.round(metrics.difficulty || 0))}`,
         // Fix power consumption to show 0W instead of N/AW when not available
         `POWER CONSUMPTION: ${metrics.power_usage || '0'} WATTS`,

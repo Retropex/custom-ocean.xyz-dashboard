@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 // Global variables
 let currentStartHeight = null;
@@ -476,23 +476,23 @@ function addNavigationControls(blocks) {
 function showBlockDetails(block) {
     const modal = $("#block-modal");
     const blockDetails = $("#block-details");
-    
+
     // Clear the details
     blockDetails.empty();
-    
+
     // Format the timestamp
     const timestamp = formatTimestamp(block.timestamp);
-    
+
     // Create the block header section
     const headerSection = $("<div>", {
         class: "block-detail-section"
     });
-    
+
     headerSection.append($("<div>", {
         class: "block-detail-title",
         text: "Block #" + block.height
     }));
-    
+
     // Add block hash
     const hashItem = $("<div>", {
         class: "block-detail-item"
@@ -506,7 +506,43 @@ function showBlockDetails(block) {
         text: block.id
     }));
     headerSection.append(hashItem);
-    
+
+    // Add mempool.space link
+    const linkItem = $("<div>", {
+        class: "block-detail-item"
+    });
+    linkItem.append($("<div>", {
+        class: "block-detail-label",
+        text: "Explorer Link"
+    }));
+
+    const mempoolLink = $("<a>", {
+        href: `${mempoolBaseUrl}/block/${block.id}`,
+        target: "_blank",
+        class: "mempool-link",
+        text: "View on mempool.space",
+        css: {
+            color: "#f7931a",
+            textDecoration: "none"
+        }
+    });
+
+    // Add icon or indicator that it's an external link
+    mempoolLink.append($("<span>", {
+        html: " ↗",
+        css: {
+            fontSize: "14px"
+        }
+    }));
+
+    const linkContainer = $("<div>", {
+        class: "block-detail-value"
+    });
+    linkContainer.append(mempoolLink);
+    linkItem.append(linkContainer);
+
+    headerSection.append(linkItem);
+
     // Add timestamp
     const timeItem = $("<div>", {
         class: "block-detail-item"
@@ -520,7 +556,7 @@ function showBlockDetails(block) {
         text: timestamp
     }));
     headerSection.append(timeItem);
-    
+
     // Add merkle root
     const merkleItem = $("<div>", {
         class: "block-detail-item"
@@ -534,7 +570,7 @@ function showBlockDetails(block) {
         text: block.merkle_root
     }));
     headerSection.append(merkleItem);
-    
+
     // Add previous block hash
     const prevHashItem = $("<div>", {
         class: "block-detail-item"
@@ -548,19 +584,20 @@ function showBlockDetails(block) {
         text: block.previousblockhash
     }));
     headerSection.append(prevHashItem);
-    
+
     blockDetails.append(headerSection);
-    
+
+    // Rest of the function remains unchanged
     // Create the mining section
     const miningSection = $("<div>", {
         class: "block-detail-section"
     });
-    
+
     miningSection.append($("<div>", {
         class: "block-detail-title",
         text: "Mining Details"
     }));
-    
+
     // Add miner/pool
     const minerItem = $("<div>", {
         class: "block-detail-item"
@@ -575,7 +612,7 @@ function showBlockDetails(block) {
         text: poolName
     }));
     miningSection.append(minerItem);
-    
+
     // Add difficulty
     const difficultyItem = $("<div>", {
         class: "block-detail-item"
@@ -589,7 +626,7 @@ function showBlockDetails(block) {
         text: numberWithCommas(Math.round(block.difficulty))
     }));
     miningSection.append(difficultyItem);
-    
+
     // Add nonce
     const nonceItem = $("<div>", {
         class: "block-detail-item"
@@ -603,7 +640,7 @@ function showBlockDetails(block) {
         text: numberWithCommas(block.nonce)
     }));
     miningSection.append(nonceItem);
-    
+
     // Add bits
     const bitsItem = $("<div>", {
         class: "block-detail-item"
@@ -617,7 +654,7 @@ function showBlockDetails(block) {
         text: block.bits
     }));
     miningSection.append(bitsItem);
-    
+
     // Add version
     const versionItem = $("<div>", {
         class: "block-detail-item"
@@ -631,19 +668,19 @@ function showBlockDetails(block) {
         text: "0x" + block.version.toString(16)
     }));
     miningSection.append(versionItem);
-    
+
     blockDetails.append(miningSection);
-    
+
     // Create the transaction section
     const txSection = $("<div>", {
         class: "block-detail-section"
     });
-    
+
     txSection.append($("<div>", {
         class: "block-detail-title",
         text: "Transaction Details"
     }));
-    
+
     // Add transaction count
     const txCountItem = $("<div>", {
         class: "block-detail-item"
@@ -657,7 +694,7 @@ function showBlockDetails(block) {
         text: numberWithCommas(block.tx_count)
     }));
     txSection.append(txCountItem);
-    
+
     // Add size
     const sizeItem = $("<div>", {
         class: "block-detail-item"
@@ -671,7 +708,7 @@ function showBlockDetails(block) {
         text: formatFileSize(block.size)
     }));
     txSection.append(sizeItem);
-    
+
     // Add weight
     const weightItem = $("<div>", {
         class: "block-detail-item"
@@ -685,20 +722,20 @@ function showBlockDetails(block) {
         text: numberWithCommas(block.weight) + " WU"
     }));
     txSection.append(weightItem);
-    
+
     blockDetails.append(txSection);
-    
+
     // Create the fee section if available
     if (block.extras) {
         const feeSection = $("<div>", {
             class: "block-detail-section"
         });
-        
+
         feeSection.append($("<div>", {
             class: "block-detail-title",
             text: "Fee Details"
         }));
-        
+
         // Add total fees
         const totalFeesItem = $("<div>", {
             class: "block-detail-item"
@@ -713,7 +750,7 @@ function showBlockDetails(block) {
             text: totalFees + " BTC"
         }));
         feeSection.append(totalFeesItem);
-        
+
         // Add reward
         const rewardItem = $("<div>", {
             class: "block-detail-item"
@@ -728,7 +765,7 @@ function showBlockDetails(block) {
             text: reward + " BTC"
         }));
         feeSection.append(rewardItem);
-        
+
         // Add median fee
         const medianFeeItem = $("<div>", {
             class: "block-detail-item"
@@ -742,7 +779,7 @@ function showBlockDetails(block) {
             text: block.extras.medianFee + " sat/vB"
         }));
         feeSection.append(medianFeeItem);
-        
+
         // Add average fee
         const avgFeeItem = $("<div>", {
             class: "block-detail-item"
@@ -756,7 +793,7 @@ function showBlockDetails(block) {
             text: numberWithCommas(block.extras.avgFee) + " sat"
         }));
         feeSection.append(avgFeeItem);
-        
+
         // Add average fee rate
         const avgFeeRateItem = $("<div>", {
             class: "block-detail-item"
@@ -770,48 +807,48 @@ function showBlockDetails(block) {
             text: block.extras.avgFeeRate + " sat/vB"
         }));
         feeSection.append(avgFeeRateItem);
-        
+
         // Add fee range with visual representation
         if (block.extras.feeRange && block.extras.feeRange.length > 0) {
             const feeRangeItem = $("<div>", {
                 class: "block-detail-item transaction-data"
             });
-            
+
             feeRangeItem.append($("<div>", {
                 class: "block-detail-label",
                 text: "Fee Rate Percentiles (sat/vB)"
             }));
-            
+
             const feeRangeText = $("<div>", {
                 class: "block-detail-value",
                 text: block.extras.feeRange.join(", ")
             });
-            
+
             feeRangeItem.append(feeRangeText);
-            
+
             // Add visual fee bar
             const feeBarContainer = $("<div>", {
                 class: "fee-bar-container"
             });
-            
+
             const feeBar = $("<div>", {
                 class: "fee-bar"
             });
-            
+
             feeBarContainer.append(feeBar);
             feeRangeItem.append(feeBarContainer);
-            
+
             // Animate the fee bar
             setTimeout(() => {
                 feeBar.css("width", "100%");
             }, 100);
-            
+
             feeSection.append(feeRangeItem);
         }
-        
+
         blockDetails.append(feeSection);
     }
-    
+
     // Show the modal
     modal.css("display", "block");
 }

@@ -282,38 +282,34 @@ class NotificationService:
             return [error_notification]
     
     def _should_post_daily_stats(self):
-        """Check if it's time to post daily stats based on a time window approach."""
+        """Check if it's time to post daily stats (once per day at 12 PM)."""
         now = datetime.now()
     
-        # Target hours for daily stats
-        target_hours = [0, 6, 12, 18]
+        # Target time is 12 PM (noon)
+        target_hour = 12
         current_hour = now.hour
         current_minute = now.minute
     
         # If we have a last_daily_stats timestamp
         if self.last_daily_stats:
-            # Check time elapsed since last stats
-            time_since_last_stats = now - self.last_daily_stats
+            # Check if it's a different day
+            is_different_day = now.date() > self.last_daily_stats.date()
         
-            # Require at least 5 hours between posts (to prevent duplicates)
-            if time_since_last_stats.total_seconds() < 5 * 3600:
-                return False
-            
-            # Check if we're in a target hour and within the first 5 minutes of that hour
-            if current_hour in target_hours and current_minute < 5:
-                # Ensure we haven't already posted for this window
-                last_stats_hour = self.last_daily_stats.hour
-                if current_hour != last_stats_hour or (now.date() > self.last_daily_stats.date()):
-                    logging.info(f"Posting daily stats at {current_hour}:{current_minute}")
-                    self.last_daily_stats = now
-                    return True
+            # Only post if:
+            # 1. It's a different day AND
+            # 2. It's the target hour (12 PM) AND
+            # 3. It's within the first 5 minutes of that hour
+            if is_different_day and current_hour == target_hour and current_minute < 5:
+                logging.info(f"Posting daily stats at {current_hour}:{current_minute}")
+                self.last_daily_stats = now
+                return True
         else:
-            # First time - post if we're near one of our target hours
-            if current_hour in target_hours and current_minute < 5:
+            # First time - post if we're at the target hour
+            if current_hour == target_hour and current_minute < 5:
                 logging.info(f"First time posting daily stats at {current_hour}:{current_minute}")
                 self.last_daily_stats = now
                 return True
-            
+    
         return False
     
     def _generate_daily_stats(self, metrics):

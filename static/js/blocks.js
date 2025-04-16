@@ -155,6 +155,211 @@ function showToast(message) {
     }, 100);
 }
 
+// Pool color mapping function - add this after your existing helper functions
+function getPoolColor(poolName) {
+    // Normalize the pool name (lowercase and remove special characters)
+    const normalizedName = poolName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Define color mappings for common mining pools with Ocean pool featured prominently
+    const poolColors = {
+        // OCEAN pool with a distinctive bright cyan color for prominence
+        'ocean': '#00ffff',                // Bright Cyan for Ocean
+        'oceanpool': '#00ffff',            // Bright Cyan for Ocean
+        'oceanxyz': '#00ffff',             // Bright Cyan for Ocean
+        'ocean.xyz': '#00ffff',            // Bright Cyan for Ocean
+
+        // Other common mining pools with more muted colors
+        'f2pool': '#1a9eff',               // Blue
+        'antpool': '#ff7e33',              // Orange
+        'binancepool': '#f3ba2f',          // Binance gold
+        'foundryusa': '#b150e2',           // Purple
+        'viabtc': '#ff5c5c',               // Red
+        'luxor': '#2bae2b',                // Green
+        'slushpool': '#3355ff',            // Bright blue
+        'btccom': '#ff3355',               // Pink
+        'poolin': '#ffaa22',               // Amber
+        'sbicrypto': '#cc9933',            // Bronze
+        'mara': '#8844cc',                 // Violet
+        'ultimuspool': '#09c7be',          // Teal
+        'unknown': '#999999'               // Grey for unknown pools
+    };
+
+    // Check for partial matches in pool names (for variations like "F2Pool" vs "F2pool.com")
+    for (const [key, color] of Object.entries(poolColors)) {
+        if (normalizedName.includes(key)) {
+            return color;
+        }
+    }
+
+    // If no match is found, generate a consistent color based on the pool name
+    let hash = 0;
+    for (let i = 0; i < poolName.length; i++) {
+        hash = poolName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Generate HSL color with fixed saturation and lightness for readability
+    // Use the hash to vary the hue only (0-360)
+    const hue = Math.abs(hash % 360);
+    return `hsl(${hue}, 70%, 60%)`;
+}
+
+// Function to create a block card
+function createBlockCard(block) {
+    const timestamp = formatTimestamp(block.timestamp);
+    const formattedSize = formatFileSize(block.size);
+    const formattedTxCount = numberWithCommas(block.tx_count);
+
+    // Get the pool name or "Unknown"
+    const poolName = block.extras && block.extras.pool ? block.extras.pool.name : "Unknown";
+
+    // Get pool color
+    const poolColor = getPoolColor(poolName);
+
+    // Check if this is an Ocean pool block for special styling
+    const isOceanPool = poolName.toLowerCase().includes('ocean');
+
+    // Calculate total fees in BTC
+    const totalFees = block.extras ? (block.extras.totalFees / 100000000).toFixed(8) : "N/A";
+
+    // Create the block card
+    const blockCard = $("<div>", {
+        class: "block-card",
+        "data-height": block.height,
+        "data-hash": block.id
+    });
+
+    // Apply pool color border - with special emphasis for Ocean pool
+    if (isOceanPool) {
+        // Give Ocean pool blocks a more prominent styling
+        blockCard.css({
+            "border": `2px solid ${poolColor}`,
+            "box-shadow": `0 0 10px ${poolColor}`,
+            "background": `linear-gradient(to bottom, rgba(0, 255, 255, 0.1), rgba(0, 0, 0, 0))`
+        });
+    } else {
+        // Standard styling for other pools
+        blockCard.css({
+            "border-left": `4px solid ${poolColor}`,
+            "border-top": `1px solid ${poolColor}30`,
+            "border-right": `1px solid ${poolColor}30`,
+            "border-bottom": `1px solid ${poolColor}30`
+        });
+    }
+
+    // Create the block header
+    const blockHeader = $("<div>", {
+        class: "block-header"
+    });
+
+    blockHeader.append($("<div>", {
+        class: "block-height",
+        text: "#" + block.height
+    }));
+
+    blockHeader.append($("<div>", {
+        class: "block-time",
+        text: timestamp
+    }));
+
+    blockCard.append(blockHeader);
+
+    // Create the block info section
+    const blockInfo = $("<div>", {
+        class: "block-info"
+    });
+
+    // Add transaction count with conditional coloring based on count
+    const txCountItem = $("<div>", {
+        class: "block-info-item"
+    });
+    txCountItem.append($("<div>", {
+        class: "block-info-label",
+        text: "Transactions"
+    }));
+
+    // Determine transaction count color based on thresholds
+    let txCountClass = "green"; // Default for high transaction counts (2000+)
+    if (block.tx_count < 500) {
+        txCountClass = "red"; // Less than 500 transactions
+    } else if (block.tx_count < 2000) {
+        txCountClass = "yellow"; // Between 500 and 1999 transactions
+    }
+
+    txCountItem.append($("<div>", {
+        class: `block-info-value ${txCountClass}`,
+        text: formattedTxCount
+    }));
+    blockInfo.append(txCountItem);
+
+    // Add size
+    const sizeItem = $("<div>", {
+        class: "block-info-item"
+    });
+    sizeItem.append($("<div>", {
+        class: "block-info-label",
+        text: "Size"
+    }));
+    sizeItem.append($("<div>", {
+        class: "block-info-value white",
+        text: formattedSize
+    }));
+    blockInfo.append(sizeItem);
+
+    // Add miner/pool with custom color
+    const minerItem = $("<div>", {
+        class: "block-info-item"
+    });
+    minerItem.append($("<div>", {
+        class: "block-info-label",
+        text: "Miner"
+    }));
+
+    // Apply the custom pool color with special styling for Ocean pool
+    const minerValue = $("<div>", {
+        class: "block-info-value",
+        text: poolName,
+        css: {
+            color: poolColor,
+            textShadow: isOceanPool ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
+            fontWeight: isOceanPool ? "bold" : "normal"
+        }
+    });
+
+    // Add a special indicator icon for Ocean pool
+    if (isOceanPool) {
+        minerValue.prepend($("<span>", {
+            html: "★ ",
+            css: { color: poolColor }
+        }));
+    }
+
+    minerItem.append(minerValue);
+    blockInfo.append(minerItem);
+
+    // Add Avg Fee Rate
+    const feesItem = $("<div>", {
+        class: "block-info-item"
+    });
+    feesItem.append($("<div>", {
+        class: "block-info-label",
+        text: "Avg Fee Rate"
+    }));
+    feesItem.append($("<div>", {
+        class: "block-info-value yellow",
+        text: block.extras && block.extras.avgFeeRate ? block.extras.avgFeeRate + " sat/vB" : "N/A"
+    }));
+    blockInfo.append(feesItem);
+
+    blockCard.append(blockInfo);
+
+    // Add event listener for clicking on the block card
+    blockCard.on("click", function () {
+        showBlockDetails(block);
+    });
+
+    return blockCard;
+}
+
 // Function to load blocks from a specific height
 function loadBlocksFromHeight(height) {
     if (isLoading) return;
@@ -587,7 +792,6 @@ function showBlockDetails(block) {
 
     blockDetails.append(headerSection);
 
-    // Rest of the function remains unchanged
     // Create the mining section
     const miningSection = $("<div>", {
         class: "block-detail-section"
@@ -598,7 +802,7 @@ function showBlockDetails(block) {
         text: "Mining Details"
     }));
 
-    // Add miner/pool
+    // Add miner/pool with matching color
     const minerItem = $("<div>", {
         class: "block-detail-item"
     });
@@ -607,12 +811,42 @@ function showBlockDetails(block) {
         text: "Miner"
     }));
     const poolName = block.extras && block.extras.pool ? block.extras.pool.name : "Unknown";
-    minerItem.append($("<div>", {
+    const poolColor = getPoolColor(poolName);
+    const isOceanPool = poolName.toLowerCase().includes('ocean');
+
+    // Apply special styling for Ocean pool in the modal
+    const minerValue = $("<div>", {
         class: "block-detail-value",
-        text: poolName
-    }));
+        text: poolName,
+        css: {
+            color: poolColor,
+            textShadow: isOceanPool ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
+            fontWeight: isOceanPool ? "bold" : "normal"
+        }
+    });
+
+    // Add a special indicator icon for Ocean pool
+    if (isOceanPool) {
+        minerValue.prepend($("<span>", {
+            html: "★ ",
+            css: { color: poolColor }
+        }));
+
+        // Add a note for Ocean pool
+        minerValue.append($("<div>", {
+            text: "(Your Mining Pool)",
+            css: {
+                fontSize: "0.8em",
+                marginTop: "3px",
+                color: "#ffffffbb"
+            }
+        }));
+    }
+
+    minerItem.append(minerValue);
     miningSection.append(minerItem);
 
+    // Rest of the function remains unchanged
     // Add difficulty
     const difficultyItem = $("<div>", {
         class: "block-detail-item"

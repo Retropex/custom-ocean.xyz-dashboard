@@ -476,18 +476,58 @@ setInterval(function () {
 // Function to update the latest block stats section
 function updateLatestBlockStats(block) {
     if (!block) return;
-    
+
     $("#latest-height").text(block.height);
     $("#latest-time").text(formatTimestamp(block.timestamp));
     $("#latest-tx-count").text(numberWithCommas(block.tx_count));
     $("#latest-size").text(formatFileSize(block.size));
     $("#latest-difficulty").text(numberWithCommas(Math.round(block.difficulty)));
-    
-    // Pool info
-    if (block.extras && block.extras.pool) {
-        $("#latest-pool").text(block.extras.pool.name);
+
+    // Pool info with color coding
+    const poolName = block.extras && block.extras.pool ? block.extras.pool.name : "Unknown";
+    const poolColor = getPoolColor(poolName);
+    const isOceanPool = poolName.toLowerCase().includes('ocean');
+
+    // Clear previous content of the pool span
+    const poolSpan = $("#latest-pool");
+    poolSpan.empty();
+
+    // Create the pool name element with styling
+    const poolElement = $("<span>", {
+        text: poolName,
+        css: {
+            color: poolColor,
+            textShadow: isOceanPool ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
+            fontWeight: isOceanPool ? "bold" : "normal"
+        }
+    });
+
+    // Add star icon for Ocean pool
+    if (isOceanPool) {
+        poolElement.prepend($("<span>", {
+            html: "★ ",
+            css: { color: poolColor }
+        }));
+    }
+
+    // Add the styled element to the DOM
+    poolSpan.append(poolElement);
+
+    // If this is the latest block from Ocean pool, add a subtle highlight to the stats card
+    const statsCard = $(".latest-block-stats").closest(".card");
+    if (isOceanPool) {
+        statsCard.css({
+            "border": `2px solid ${poolColor}`,
+            "box-shadow": `0 0 10px ${poolColor}`,
+            "background": `linear-gradient(to bottom, rgba(0, 255, 255, 0.05), rgba(0, 0, 0, 0))`
+        });
     } else {
-        $("#latest-pool").text("Unknown");
+        // Reset to default styling if not Ocean pool
+        statsCard.css({
+            "border": "",
+            "box-shadow": "",
+            "background": ""
+        });
     }
 
     // Average Fee Rate

@@ -10,16 +10,18 @@ from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
 import requests
 from bs4 import BeautifulSoup
+from ocean_api_client import OceanAPIClient
 
 from models import OceanData, WorkerData, convert_to_ths
 
 class MiningDashboardService:
     """Service for fetching and processing mining dashboard data."""
     
+    # Modify the MiningDashboardService.__init__ method to initialize the API client
     def __init__(self, power_cost, power_usage, wallet):
         """
-        Initialize the mining dashboard service.
-        
+        Initialize the mining dashboard service with API integration.
+    
         Args:
             power_cost (float): Cost of power in $ per kWh
             power_usage (float): Power usage in watts
@@ -32,84 +34,9 @@ class MiningDashboardService:
         self.sats_per_btc = 100_000_000
         self.previous_values = {}
         self.session = requests.Session()
-        
-        # New Ocean.xyz Beta API base URL
-        self.ocean_api_base = "https://api.ocean.xyz/v1"
-        
-        # Test API connectivity
-        self.api_available = self._test_api_connectivity()
-        if self.api_available:
-            logging.info("Ocean.xyz Beta API is available")
-        else:
-            logging.warning("Ocean.xyz Beta API is not available, will use fallback methods")
-
-    def _test_api_connectivity(self):
-        """Test if the new Ocean.xyz Beta API is available."""
-        try:
-            # Add helpful headers to increase chances of successful connection
-            headers = {
-                'User-Agent': 'Mozilla/5.0 Mining Dashboard',
-                'Accept': 'application/json, text/plain, */*',
-                'Cache-Control': 'no-cache'
-            }
-            
-            # Try the wallet-specific ping endpoint first (this is what works)
-            wallet_ping_url = f"{self.ocean_api_base}/ping/{self.wallet}"
-            logging.info(f"Testing Ocean API connectivity: {wallet_ping_url}")
-            
-            response = self.session.get(wallet_ping_url, headers=headers, timeout=5)
-            if response.ok:
-                logging.info(f"Ocean.xyz Beta API is available through wallet-specific ping: {response.text[:30]}")
-                return True
-                
-            # Log the failed attempt details
-            logging.warning(f"Wallet-specific ping failed with status: {response.status_code}, response: {response.text[:100]}")
-            
-            # Try a different endpoint as backup
-            statsnap_url = f"{self.ocean_api_base}/statsnap/{self.wallet}"
-            logging.info(f"Trying alternate endpoint: {statsnap_url}")
-            
-            response = self.session.get(statsnap_url, headers=headers, timeout=5)
-            if response.ok:
-                logging.info("Ocean.xyz Beta API is available through statsnap endpoint")
-                return True
-            
-            # Log all failed attempts and return False
-            logging.error("All Ocean.xyz API connectivity tests failed")
-            logging.error(f"Last response status: {response.status_code}, text: {response.text[:200]}")
-            return False
-            
-        except Exception as e:
-            logging.error(f"Error testing Ocean.xyz Beta API connectivity: {e}")
-            return False
-
-    def _api_request_with_retry(self, endpoint, timeout=10, retries=3):
-        """Make an API request with retry logic."""
-        url = f"{self.ocean_api_base}/{endpoint}"
-        logging.info(f"API request: {url}")
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 Mining Dashboard',
-            'Accept': 'application/json, text/plain, */*',
-            'Cache-Control': 'no-cache'
-        }
-        
-        for attempt in range(retries):
-            try:
-                response = self.session.get(url, headers=headers, timeout=timeout)
-                if response.ok:
-                    return response
-                
-                logging.warning(f"API request failed (attempt {attempt+1}/{retries}): {url}, status: {response.status_code}")
-                if attempt < retries - 1:
-                    time.sleep(1)  # Wait before retry
-                    
-            except Exception as e:
-                logging.error(f"API request exception (attempt {attempt+1}/{retries}): {e}")
-                if attempt < retries - 1:
-                    time.sleep(1)  # Wait before retry
-        
-        return None
+    
+        # Initialize the API client
+        self.api_client = OceanAPIClient(wallet)
 
     def fetch_metrics(self):
         """
@@ -123,12 +50,7 @@ class MiningDashboardService:
         
         try:
             with ThreadPoolExecutor(max_workers=2) as executor:
-                # Use different methods based on API availability
-                if self.api_available:
-                    future_ocean = executor.submit(self.get_ocean_data_from_api)
-                else:
-                    future_ocean = executor.submit(self.get_ocean_data)
-                
+                future_ocean = executor.submit(self.get_ocean_data)
                 future_btc = executor.submit(self.get_bitcoin_stats)
                 try:
                     ocean_data = future_ocean.result(timeout=15)
@@ -235,219 +157,28 @@ class MiningDashboardService:
             logging.error(f"Unexpected error in fetch_metrics: {e}")
             return None
 
-    def get_ocean_data_from_api(self):
-        """
-        Get mining data from Ocean.xyz using the Beta API.
-        
-        Returns:
-            OceanData: Ocean.xyz mining data
-        """
-        data = OceanData()
-        
-        try:
-            # First test if API connectivity is still valid
-            if not self._test_api_connectivity():
-                logging.warning("API connectivity test failed during data fetch, falling back to scraping")
-                return self.get_ocean_data()
-            
-            # Fetch user hashrate data with retry logic
-            hashrate_resp = self._api_request_with_retry(f"user_hashrate/{self.wallet}")
-            if not hashrate_resp:
-                logging.error("Error fetching hashrate data from API, falling back to scraping")
-                return self.get_ocean_data()
-                
-            hashrate_data = hashrate_resp.json()
-            logging.debug(f"Hashrate API response: {str(hashrate_data)[:200]}...")
-            
-            # Convert and populate hashrates
-            if "hashrate_60s" in hashrate_data:
-                hashrate_60s = hashrate_data["hashrate_60s"]
-                data.hashrate_60sec = self._format_hashrate_value(hashrate_60s)[0]
-                data.hashrate_60sec_unit = self._format_hashrate_value(hashrate_60s)[1]
-            
-            if "hashrate_300s" in hashrate_data:  # 5 minutes
-                hashrate_300s = hashrate_data["hashrate_300s"]
-                data.hashrate_5min = self._format_hashrate_value(hashrate_300s)[0]
-                data.hashrate_5min_unit = self._format_hashrate_value(hashrate_300s)[1]
-            
-            if "hashrate_600s" in hashrate_data:  # 10 minutes
-                hashrate_600s = hashrate_data["hashrate_600s"]
-                data.hashrate_10min = self._format_hashrate_value(hashrate_600s)[0]
-                data.hashrate_10min_unit = self._format_hashrate_value(hashrate_600s)[1]
-            
-            if "hashrate_10800s" in hashrate_data:  # 3 hours
-                hashrate_3hr = hashrate_data["hashrate_10800s"]
-                data.hashrate_3hr = self._format_hashrate_value(hashrate_3hr)[0]
-                data.hashrate_3hr_unit = self._format_hashrate_value(hashrate_3hr)[1]
-            
-            if "hashrate_86400s" in hashrate_data:  # 24 hours
-                hashrate_24hr = hashrate_data["hashrate_86400s"]
-                data.hashrate_24hr = self._format_hashrate_value(hashrate_24hr)[0]
-                data.hashrate_24hr_unit = self._format_hashrate_value(hashrate_24hr)[1]
-            
-            # Fetch pool stats for pool hashrate
-            pool_resp = self._api_request_with_retry("pool_hashrate")
-            if pool_resp:
-                pool_data = pool_resp.json()
-                if "pool_300s" in pool_data:
-                    pool_hashrate = pool_data["pool_300s"]
-                    data.pool_total_hashrate = self._format_hashrate_value(pool_hashrate)[0]
-                    data.pool_total_hashrate_unit = self._format_hashrate_value(pool_hashrate)[1]
-            
-            # Fetch user's stats for earnings info
-            stats_resp = self._api_request_with_retry(f"statsnap/{self.wallet}")
-            if stats_resp:
-                stats_data = stats_resp.json()
-                logging.debug(f"Statsnap API response: {str(stats_data)[:200]}...")
-                
-                # Get unpaid earnings
-                if "unpaid" in stats_data:
-                    data.unpaid_earnings = stats_data["unpaid"] / 1e8  # Convert satoshis to BTC
-                
-                # Get estimated earnings for next block
-                if "estimated_earn_next_block" in stats_data:
-                    data.estimated_earnings_next_block = stats_data["estimated_earn_next_block"] / 1e8  # Convert satoshis to BTC
-                
-                # Get shares in window for estimated rewards
-                if "shares_in_tides" in stats_data:
-                    # This is an approximation - we'd need to calculate based on TIDES formula
-                    data.estimated_rewards_in_window = stats_data["estimated_earn_next_block"] / 1e8  # Convert satoshis to BTC
-                
-                # Get latest share time
-                if "lastest_share_ts" in stats_data:  # Note the typo in the API ("lastest" vs "latest")
-                    last_share_timestamp = stats_data["lastest_share_ts"]
-                    last_share_dt = datetime.fromtimestamp(last_share_timestamp, tz=ZoneInfo("UTC"))
-                    la_tz = ZoneInfo("America/Los_Angeles")
-                    la_dt = last_share_dt.astimezone(la_tz)
-                    data.total_last_share = la_dt.strftime("%Y-%m-%d %I:%M %p")
-            
-            # Fetch user_hashrate_full to count active workers
-            workers_resp = self._api_request_with_retry(f"user_hashrate_full/{self.wallet}")
-            if workers_resp:
-                workers_data = workers_resp.json()
-                if "workers" in workers_data:
-                    logging.info(f"Found {len(workers_data['workers'])} workers in API response")
-                    # Count non-zero hashrate workers as active
-                    data.workers_hashing = sum(1 for worker in workers_data["workers"] 
-                                               if worker.get("hashrate_300s", 0) > 0)
-                    logging.info(f"Workers currently hashing: {data.workers_hashing}")
-            
-            # Fetch latest block info
-            latest_block_resp = self._api_request_with_retry("latest_block")
-            if latest_block_resp:
-                latest_block_data = latest_block_resp.json()
-                if latest_block_data:
-                    # Get the first block in the response
-                    block = latest_block_data[0] if isinstance(latest_block_data, list) else latest_block_data
-                    
-                    if "height" in block:
-                        data.last_block_height = str(block["height"])
-                    
-                    if "ts" in block:
-                        # Convert timestamp to readable format
-                        try:
-                            block_time = datetime.fromisoformat(block["ts"].replace('Z', '+00:00'))
-                            la_tz = ZoneInfo("America/Los_Angeles")
-                            la_time = block_time.astimezone(la_tz)
-                            data.last_block_time = la_time.strftime("%Y-%m-%d %I:%M %p")
-                        except Exception as e:
-                            logging.error(f"Error converting block timestamp: {e}")
-            
-            # Fetch blocks for blocks found count
-            blocks_resp = self._api_request_with_retry("blocks")
-            if blocks_resp:
-                blocks_data = blocks_resp.json()
-                if isinstance(blocks_data, list):
-                    # Count blocks mined by this user
-                    user_blocks = [block for block in blocks_data 
-                                  if block.get("username") == self.wallet 
-                                  and block.get("legacy", False) is False]  # Exclude legacy blocks
-                    data.blocks_found = str(len(user_blocks))
-            
-            # Fetch earnpay for last block earnings
-            earnpay_resp = self._api_request_with_retry(f"earnpay/{self.wallet}")
-            if earnpay_resp:
-                earnpay_data = earnpay_resp.json()
-                if "earnings" in earnpay_data and earnpay_data["earnings"]:
-                    # Get the latest earning entry
-                    latest_earning = earnpay_data["earnings"][0]
-                    if "satoshis_net_earned" in latest_earning:
-                        data.last_block_earnings = str(latest_earning["satoshis_net_earned"])
-            
-            # Calculate estimated time to payout
-            # This requires more complex logic based on current unpaid amount and payout threshold
-            if data.unpaid_earnings:
-                payout_threshold = 0.001  # Example threshold in BTC
-                # Estimate days to payout based on daily earnings
-                if data.estimated_earnings_per_day and data.estimated_earnings_per_day > 0:
-                    remaining_btc = payout_threshold - data.unpaid_earnings
-                    if remaining_btc <= 0:
-                        data.est_time_to_payout = "next block"
-                    else:
-                        days_to_payout = remaining_btc / data.estimated_earnings_per_day
-                        if days_to_payout < 1:
-                            data.est_time_to_payout = "1 day"
-                        else:
-                            data.est_time_to_payout = f"{int(days_to_payout)} days"
-                else:
-                    data.est_time_to_payout = "unknown"
-            
-            # Calculate daily earnings estimate
-            # This can be derived from estimated_earnings_next_block and average blocks per day
-            if data.estimated_earnings_next_block:
-                # Rough estimate based on 144 blocks per day average
-                data.estimated_earnings_per_day = data.estimated_earnings_next_block * 144
-            
-            # Log successful API data retrieval
-            logging.info("Successfully retrieved Ocean data from API")
-            return data
-            
-        except Exception as e:
-            logging.error(f"Error fetching Ocean data from API: {e}")
-            # Fall back to scraping method
-            logging.info("Falling back to web scraping method")
-            return self.get_ocean_data()
-
-    def _format_hashrate_value(self, hashrate_h_per_sec):
-        """
-        Format hashrate from hashes/sec to appropriate unit.
-        
-        Args:
-            hashrate_h_per_sec (float): Hashrate in hashes per second
-            
-        Returns:
-            tuple: (formatted_value, unit)
-        """
-        # Define threshold values in hashes/sec
-        kh_threshold = 1_000
-        mh_threshold = 1_000_000
-        gh_threshold = 1_000_000_000
-        th_threshold = 1_000_000_000_000
-        ph_threshold = 1_000_000_000_000_000
-        eh_threshold = 1_000_000_000_000_000_000
-        
-        if hashrate_h_per_sec < kh_threshold:
-            return (hashrate_h_per_sec, "H/s")
-        elif hashrate_h_per_sec < mh_threshold:
-            return (hashrate_h_per_sec / kh_threshold, "KH/s")
-        elif hashrate_h_per_sec < gh_threshold:
-            return (hashrate_h_per_sec / mh_threshold, "MH/s")
-        elif hashrate_h_per_sec < th_threshold:
-            return (hashrate_h_per_sec / gh_threshold, "GH/s")
-        elif hashrate_h_per_sec < ph_threshold:
-            return (hashrate_h_per_sec / th_threshold, "TH/s")
-        elif hashrate_h_per_sec < eh_threshold:
-            return (hashrate_h_per_sec / ph_threshold, "PH/s")
-        else:
-            return (hashrate_h_per_sec / eh_threshold, "EH/s")
-
     def get_ocean_data(self):
         """
-        Get mining data from Ocean.xyz.
-        
+        Get mining data from Ocean.xyz API with fallback to web scraping.
+    
         Returns:
             OceanData: Ocean.xyz mining data
         """
+        # Try API first
+        try:
+            api_data = self.api_client.get_user_info()
+            if api_data:
+                ocean_data = self.api_client.convert_to_ocean_data(api_data)
+                if ocean_data:
+                    logging.info("Successfully retrieved data from Ocean.xyz API")
+                    return ocean_data
+        except Exception as e:
+            logging.error(f"Error using Ocean.xyz API: {e}")
+        
+        # Fallback to original web scraping method if API fails
+        logging.warning("API request failed, falling back to web scraping")
+    
+        # --- Original get_ocean_data implementation below ---
         base_url = "https://ocean.xyz"
         stats_url = f"{base_url}/stats/{self.wallet}"
         headers = {
@@ -762,187 +493,6 @@ class MiningDashboardService:
             
         return difficulty, network_hashrate, btc_price, block_count
 
-    def get_worker_data(self):
-        """
-        Get worker data from Ocean.xyz, trying the API endpoint first.
-        Falls back to the web scraping method if API isn't available.
-        
-        Returns:
-            dict: Worker data dictionary with stats and list of workers
-        """
-        if self.api_available:
-            result = self.get_worker_data_from_api()
-            if result and result.get('workers') and len(result['workers']) > 0:
-                logging.info(f"Successfully retrieved worker data from API: {len(result['workers'])} workers")
-                return result
-                
-        # Fall back to the original methods if API fails
-        logging.info("API worker data retrieval failed, falling back to web scraping methods")
-        result = self.get_worker_data_alternative()
-        
-        # Check if alternative method succeeded and found workers with valid names
-        if result and result.get('workers') and len(result['workers']) > 0:
-            # Validate workers - check for invalid names
-            has_valid_workers = False
-            for worker in result['workers']:
-                name = worker.get('name', '').lower()
-                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
-                    has_valid_workers = True
-                    break
-                    
-            if has_valid_workers:
-                logging.info(f"Alternative worker data method successful: {len(result['workers'])} workers with valid names")
-                return result
-            else:
-                logging.warning("Alternative method found workers but with invalid names")
-        
-        # If alternative method failed, try the original method
-        logging.info("Trying original worker data method")
-        result = self.get_worker_data_original()
-        
-        # Check if original method succeeded and found workers with valid names
-        if result and result.get('workers') and len(result['workers']) > 0:
-            # Validate workers - check for invalid names
-            has_valid_workers = False
-            for worker in result['workers']:
-                name = worker.get('name', '').lower()
-                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
-                    has_valid_workers = True
-                    break
-                    
-            if has_valid_workers:
-                logging.info(f"Original worker data method successful: {len(result['workers'])} workers with valid names")
-                return result
-            else:
-                logging.warning("Original method found workers but with invalid names")
-                
-        # If all methods failed, return None
-        logging.warning("All worker data fetch methods failed")
-        return None
-
-    def get_worker_data_from_api(self):
-        """
-        Get worker data from Ocean.xyz using the Beta API.
-        
-        Returns:
-            dict: Worker data dictionary with stats and list of workers
-        """
-        try:
-            # Fetch full worker hashrate information with retry
-            response = self._api_request_with_retry(f"user_hashrate_full/{self.wallet}", timeout=15)
-            if not response:
-                logging.error("Error fetching worker data from API")
-                return None
-                
-            data = response.json()
-            if not data or "workers" not in data:
-                logging.error("No worker data found in API response")
-                return None
-                
-            logging.debug(f"Worker API response: {str(data)[:200]}...")
-            workers = []
-            total_hashrate = 0
-            workers_online = 0
-            workers_offline = 0
-            
-            # Process each worker in the response
-            for worker_data in data["workers"]:
-                worker_name = worker_data.get("name", "Unknown")
-                hashrate_300s = worker_data.get("hashrate_300s", 0)  # 5-minute hashrate
-                hashrate_60s = worker_data.get("hashrate_60s", 0)    # 1-minute hashrate
-                hashrate_10800s = worker_data.get("hashrate_10800s", 0)  # 3-hour hashrate
-                
-                # Determine if worker is online based on recent hashrate
-                is_online = hashrate_300s > 0
-                status = "online" if is_online else "offline"
-                
-                # Update counters
-                if is_online:
-                    workers_online += 1
-                else:
-                    workers_offline += 1
-                
-                # Format hashrates with appropriate units
-                hr_60s_value, hr_60s_unit = self._format_hashrate_value(hashrate_60s)
-                hr_3hr_value, hr_3hr_unit = self._format_hashrate_value(hashrate_10800s)
-                
-                # Create worker object
-                worker = {
-                    "name": worker_name,
-                    "status": status,
-                    "type": "ASIC",  # Default type
-                    "model": "Unknown",
-                    "hashrate_60sec": hr_60s_value,
-                    "hashrate_60sec_unit": hr_60s_unit,
-                    "hashrate_3hr": hr_3hr_value,
-                    "hashrate_3hr_unit": hr_3hr_unit,
-                    "efficiency": 90.0,  # Default efficiency
-                    "last_share": "N/A",
-                    "earnings": 0,      # Would need separate API call
-                    "acceptance_rate": 99.0,  # Default acceptance rate
-                    "power_consumption": 0,
-                    "temperature": 0
-                }
-                
-                # Update worker last share time if available
-                if "latest_share_ts" in worker_data:
-                    try:
-                        share_ts = worker_data["latest_share_ts"]
-                        share_dt = datetime.fromtimestamp(share_ts, tz=ZoneInfo("UTC"))
-                        la_tz = ZoneInfo("America/Los_Angeles")
-                        la_share_time = share_dt.astimezone(la_tz)
-                        worker["last_share"] = la_share_time.strftime("%Y-%m-%d %I:%M %p")
-                    except Exception as e:
-                        logging.error(f"Error formatting worker last share time: {e}")
-                
-                # Set worker type based on name (if it can be inferred)
-                lower_name = worker["name"].lower()
-                if 'antminer' in lower_name:
-                    worker["type"] = 'ASIC'
-                    worker["model"] = 'Bitmain Antminer'
-                elif 'whatsminer' in lower_name:
-                    worker["type"] = 'ASIC'
-                    worker["model"] = 'MicroBT Whatsminer'
-                elif 'bitaxe' in lower_name or 'nerdqaxe' in lower_name:
-                    worker["type"] = 'Bitaxe'
-                    worker["model"] = 'BitAxe Gamma 601'
-                
-                # Add to total hashrate (using 3hr as more stable)
-                total_hashrate += convert_to_ths(hr_3hr_value, hr_3hr_unit)
-                
-                workers.append(worker)
-            
-            # Try to get earnings info from statsnap endpoint
-            earnings_resp = self._api_request_with_retry(f"statsnap/{self.wallet}", timeout=10)
-            daily_sats = 0
-            if earnings_resp:
-                stats_data = earnings_resp.json()
-                if "estimated_earn_next_block" in stats_data:
-                    # Approximately 144 blocks per day
-                    daily_sats = int(stats_data["estimated_earn_next_block"] * 144)
-            
-            # Build result dictionary
-            result = {
-                'workers': workers,
-                'total_hashrate': total_hashrate,
-                'hashrate_unit': 'TH/s',
-                'workers_total': len(workers),
-                'workers_online': workers_online,
-                'workers_offline': workers_offline,
-                'total_earnings': 0,  # Would need separate earnpay API call
-                'avg_acceptance_rate': 99.0,
-                'daily_sats': daily_sats,
-                'timestamp': datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
-            }
-            
-            return result
-            
-        except Exception as e:
-            logging.error(f"Error fetching worker data from API: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
-            return None
-
     def get_all_worker_rows(self):
         """
         Iterate through wpage parameter values to collect all worker table rows.
@@ -977,6 +527,78 @@ class MiningDashboardService:
 
         return all_rows
 
+    def get_worker_data(self):
+        """
+        Get worker data from Ocean.xyz API with fallback to web scraping.
+    
+        Returns:
+            dict: Worker data dictionary with stats and list of workers
+        """
+        # Try API first
+        try:
+            workers_data = self.api_client.get_workers_data()
+            if workers_data and workers_data.get('workers') and len(workers_data['workers']) > 0:
+                # Validate worker names
+                valid_names = False
+                for worker in workers_data['workers']:
+                    name = worker.get('name', '').lower()
+                    if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
+                        valid_names = True
+                        break
+            
+                if valid_names:
+                    logging.info("Successfully retrieved worker data from Ocean.xyz API")
+                    return workers_data
+        except Exception as e:
+            logging.error(f"Error getting worker data from API: {e}")
+    
+        # Fallback to original methods if API fails
+        logging.warning("API worker data request failed, falling back to web scraping")
+    
+        # Try the alternative method first as in the original code
+        result = self.get_worker_data_alternative()
+    
+        # Check if alternative method succeeded and found workers with valid names
+        if result and result.get('workers') and len(result['workers']) > 0:
+            # Validate workers - check for invalid names
+            has_valid_workers = False
+            for worker in result['workers']:
+                name = worker.get('name', '').lower()
+                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
+                    has_valid_workers = True
+                    break
+                
+            if has_valid_workers:
+                logging.info(f"Alternative worker data method successful: {len(result['workers'])} workers with valid names")
+                return result
+            else:
+                logging.warning("Alternative method found workers but with invalid names")
+    
+        # If alternative method failed or found workers with invalid names, try the original method
+        logging.info("Trying original worker data method")
+        result = self.get_worker_data_original()
+    
+        # Check if original method succeeded and found workers with valid names
+        if result and result.get('workers') and len(result['workers']) > 0:
+            # Validate workers - check for invalid names
+            has_valid_workers = False
+            for worker in result['workers']:
+                name = worker.get('name', '').lower()
+                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
+                    has_valid_workers = True
+                    break
+                
+            if has_valid_workers:
+                logging.info(f"Original worker data method successful: {len(result['workers'])} workers with valid names")
+                return result
+            else:
+                logging.warning("Original method found workers but with invalid names")
+            
+        # If both methods failed or found workers with invalid names, use fallback data
+        logging.warning("Both worker data fetch methods failed to get valid worker data, returning None")
+        return None
+
+    # Rename the original method to get_worker_data_original
     def get_worker_data_original(self):
         """
         Original implementation to get worker data from Ocean.xyz.

@@ -476,15 +476,18 @@ class MiningDashboardService:
     def get_all_worker_rows(self):
         """
         Iterate through wpage parameter values to collect all worker table rows.
+        Limited to 10 pages to balance between showing enough workers and maintaining performance.
 
         Returns:
             list: A list of BeautifulSoup row elements containing worker data.
         """
         all_rows = []
         page_num = 0
-        while True:
+        max_pages = 10  # Limit to 10 pages of worker data
+    
+        while page_num < max_pages:  # Only fetch up to max_pages
             url = f"https://ocean.xyz/stats/{self.wallet}?wpage={page_num}#workers-fulltable"
-            logging.info(f"Fetching worker data from: {url}")
+            logging.info(f"Fetching worker data from: {url} (page {page_num+1} of max {max_pages})")
             response = self.session.get(url, timeout=15)
             if not response.ok:
                 logging.error(f"Error fetching page {page_num}: status code {response.status_code}")
@@ -504,6 +507,11 @@ class MiningDashboardService:
             logging.info(f"Found {len(rows)} worker rows on page {page_num}")
             all_rows.extend(rows)
             page_num += 1
+
+        if page_num >= max_pages:
+            logging.info(f"Reached maximum page limit ({max_pages}). Collected {len(all_rows)} worker rows total.")
+        else:
+            logging.info(f"Completed fetching all available worker data. Collected {len(all_rows)} worker rows from {page_num} pages.")
 
         return all_rows
 

@@ -46,8 +46,49 @@ class MiningDashboardService:
     def _test_api_connectivity(self):
         """Test if the new Ocean.xyz Beta API is available."""
         try:
-            response = self.session.get(f"{self.ocean_api_base}/ping", timeout=5)
-            return response.ok and response.text.strip() == "PONG"
+            # Add helpful headers
+            headers = {
+                'User-Agent': 'Mozilla/5.0 Mining Dashboard',
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        
+            # Try wallet-specific ping endpoint first since you confirmed it works
+            wallet_ping_url = f"{self.ocean_api_base}/ping/{self.wallet}"
+            logging.info(f"Testing Ocean API connectivity with wallet-specific ping: {wallet_ping_url}")
+        
+            response = self.session.get(wallet_ping_url, headers=headers, timeout=5)
+            if response.ok:
+                logging.info("Ocean.xyz Beta API is available with wallet-specific ping endpoint")
+                return True
+            
+            # If wallet-specific ping fails, try standard ping
+            standard_ping_url = f"{self.ocean_api_base}/ping"
+            logging.info(f"Testing Ocean API with standard ping: {standard_ping_url}")
+        
+            response = self.session.get(standard_ping_url, headers=headers, timeout=5)
+            if response.ok and response.text.strip() == "PONG":
+                logging.info("Ocean.xyz Beta API is available with standard ping endpoint")
+                return True
+            
+            # If both pings fail, try a wallet-specific endpoint that should return data
+            statsnap_url = f"{self.ocean_api_base}/statsnap/{self.wallet}"
+            logging.info(f"Testing Ocean API with statsnap endpoint: {statsnap_url}")
+        
+            response = self.session.get(statsnap_url, headers=headers, timeout=5)
+            if response.ok:
+                logging.info("Ocean.xyz Beta API is available with statsnap endpoint")
+                return True
+            
+            # All attempts failed
+            logging.error("All Ocean.xyz Beta API connectivity tests failed")
+        
+            # Log the exact URL that you confirmed works for debugging
+            debug_url = f"https://api.ocean.xyz/v1/ping/{self.wallet}"
+            logging.info(f"Note: The URL {debug_url} should work according to user confirmation")
+        
+            return False
+        
         except Exception as e:
             logging.error(f"Error testing Ocean.xyz Beta API connectivity: {e}")
             return False

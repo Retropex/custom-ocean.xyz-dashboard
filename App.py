@@ -22,7 +22,6 @@ from config import load_config, save_config
 from data_service import MiningDashboardService
 from worker_service import WorkerService
 from state_manager import StateManager, arrow_history, metrics_log
-from ocean_api_client import OceanAPIClient
 
 # Initialize Flask app
 app = Flask(__name__)

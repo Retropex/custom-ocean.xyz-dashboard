@@ -1,5 +1,5 @@
 """
-Data service module for fetching and processing mining data.
+Modified data_service.py module for fetching and processing mining data.
 """
 import logging
 import re
@@ -10,18 +10,17 @@ from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
 import requests
 from bs4 import BeautifulSoup
-from ocean_api_client import OceanAPIClient
 
 from models import OceanData, WorkerData, convert_to_ths
+from ocean_scraper import OceanScraper  # Import the new scraper
 
 class MiningDashboardService:
     """Service for fetching and processing mining dashboard data."""
     
-    # Modify the MiningDashboardService.__init__ method to initialize the API client
     def __init__(self, power_cost, power_usage, wallet):
         """
-        Initialize the mining dashboard service with API integration.
-    
+        Initialize the mining dashboard service.
+        
         Args:
             power_cost (float): Cost of power in $ per kWh
             power_usage (float): Power usage in watts
@@ -34,9 +33,9 @@ class MiningDashboardService:
         self.sats_per_btc = 100_000_000
         self.previous_values = {}
         self.session = requests.Session()
-    
-        # Initialize the API client
-        self.api_client = OceanAPIClient(wallet)
+
+        # Initialize the Ocean scraper
+        self.ocean_scraper = OceanScraper(wallet)
 
     def fetch_metrics(self):
         """
@@ -135,6 +134,8 @@ class MiningDashboardService:
                 'blocks_found': ocean_data.blocks_found or "0",
                 'last_block_earnings': ocean_data.last_block_earnings
             }
+            
+            # Ensure estimated_earnings_per_day_sats is calculated correctly
             metrics['estimated_earnings_per_day_sats'] = int(round(estimated_earnings_per_day * self.sats_per_btc))
             metrics['estimated_earnings_next_block_sats'] = int(round(estimated_earnings_next_block * self.sats_per_btc))
             metrics['estimated_rewards_in_window_sats'] = int(round(estimated_rewards_in_window * self.sats_per_btc))
@@ -159,26 +160,42 @@ class MiningDashboardService:
 
     def get_ocean_data(self):
         """
-        Get mining data from Ocean.xyz API with fallback to web scraping.
-    
+        Get mining data from Ocean.xyz using the enhanced scraper.
+        
         Returns:
             OceanData: Ocean.xyz mining data
         """
-        # Try API first
         try:
-            api_data = self.api_client.get_user_info()
-            if api_data:
-                ocean_data = self.api_client.convert_to_ocean_data(api_data)
-                if ocean_data:
-                    logging.info("Successfully retrieved data from Ocean.xyz API")
-                    return ocean_data
+            # Use the new scraper to get all data
+            data = self.ocean_scraper.get_ocean_data()
+            if data:
+                logging.info("Successfully retrieved data using the enhanced scraper")
+                
+                # Validate critical fields
+                if data.last_block_height == "N/A" or not data.last_block_height:
+                    logging.warning("Last block height is missing")
+                if data.est_time_to_payout == "N/A" or not data.est_time_to_payout:
+                    logging.warning("Estimated time to payout is missing")
+                if data.blocks_found == "0" or not data.blocks_found:
+                    logging.warning("Blocks found is missing")
+                
+                return data
         except Exception as e:
-            logging.error(f"Error using Ocean.xyz API: {e}")
+            logging.error(f"Error using enhanced scraper: {e}")
         
-        # Fallback to original web scraping method if API fails
-        logging.warning("API request failed, falling back to web scraping")
-    
-        # --- Original get_ocean_data implementation below ---
+        # Fall back to the original method as a last resort
+        logging.warning("Enhanced scraper failed, falling back to original method")
+        return self.get_ocean_data_original()
+
+    # Keep the original web scraping method as fallback
+    def get_ocean_data_original(self):
+        """
+        Original method to get mining data from Ocean.xyz via web scraping.
+        Used as a final fallback.
+        
+        Returns:
+            OceanData: Ocean.xyz mining data
+        """
         base_url = "https://ocean.xyz"
         stats_url = f"{base_url}/stats/{self.wallet}"
         headers = {
@@ -380,58 +397,69 @@ class MiningDashboardService:
             logging.error(f"Error fetching Ocean data: {e}")
             return None
 
-    def debug_dump_table(self, table_element, max_rows=3):
+    def get_worker_data(self):
         """
-        Helper method to dump the structure of an HTML table for debugging.
+        Get worker data from Ocean.xyz using the enhanced scraper.
         
-        Args:
-            table_element: BeautifulSoup element representing the table
-            max_rows (int): Maximum number of rows to output
-        """
-        if not table_element:
-            logging.debug("Table element is None - cannot dump structure")
-            return
-            
-        try:
-            rows = table_element.find_all('tr', class_='table-row')
-            logging.debug(f"Found {len(rows)} rows in table")
-            
-            # Dump header row if present
-            header_row = table_element.find_parent('table').find('thead')
-            if header_row:
-                header_cells = header_row.find_all('th')
-                header_texts = [cell.get_text(strip=True) for cell in header_cells]
-                logging.debug(f"Header: {header_texts}")
-            
-            # Dump a sample of the data rows
-            for i, row in enumerate(rows[:max_rows]):
-                cells = row.find_all('td', class_='table-cell')
-                cell_texts = [cell.get_text(strip=True) for cell in cells]
-                logging.debug(f"Row {i}: {cell_texts}")
-                
-                # Also look at raw HTML for problematic cells
-                for j, cell in enumerate(cells):
-                    logging.debug(f"Row {i}, Cell {j} HTML: {cell}")
-                    
-        except Exception as e:
-            logging.error(f"Error dumping table structure: {e}")
-
-    def fetch_url(self, url: str, timeout: int = 5):
-        """
-        Fetch URL with error handling.
-        
-        Args:
-            url (str): URL to fetch
-            timeout (int): Timeout in seconds
-            
         Returns:
-            Response: Request response or None if failed
+            dict: Worker data dictionary with stats and list of workers
         """
         try:
-            return self.session.get(url, timeout=timeout)
+            # Use the new scraper to get worker data
+            workers_data = self.ocean_scraper.get_workers_data()
+            if workers_data:
+                logging.info("Successfully retrieved worker data using the enhanced scraper")
+                return workers_data
         except Exception as e:
-            logging.error(f"Error fetching {url}: {e}")
-            return None
+            logging.error(f"Error getting worker data using enhanced scraper: {e}")
+        
+        # Fall back to the original methods if the enhanced scraper fails
+        logging.warning("Enhanced worker data fetch failed, trying original methods")
+        
+        # Try the alternative method first as in the original code
+        result = self.get_worker_data_alternative()
+        
+        # Check if alternative method succeeded and found workers with valid names
+        if result and result.get('workers') and len(result['workers']) > 0:
+            # Validate workers - check for invalid names
+            has_valid_workers = False
+            for worker in result['workers']:
+                name = worker.get('name', '').lower()
+                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
+                    has_valid_workers = True
+                    break
+                    
+            if has_valid_workers:
+                logging.info(f"Alternative worker data method successful: {len(result['workers'])} workers with valid names")
+                return result
+            else:
+                logging.warning("Alternative method found workers but with invalid names")
+        
+        # If alternative method failed or found workers with invalid names, try the original method
+        logging.info("Trying original worker data method")
+        result = self.get_worker_data_original()
+        
+        # Check if original method succeeded and found workers with valid names
+        if result and result.get('workers') and len(result['workers']) > 0:
+            # Validate workers - check for invalid names
+            has_valid_workers = False
+            for worker in result['workers']:
+                name = worker.get('name', '').lower()
+                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
+                    has_valid_workers = True
+                    break
+                    
+            if has_valid_workers:
+                logging.info(f"Original worker data method successful: {len(result['workers'])} workers with valid names")
+                return result
+            else:
+                logging.warning("Original method found workers but with invalid names")
+                
+        # If both methods failed or found workers with invalid names, use fallback data
+        logging.warning("All worker data fetch methods failed, returning None")
+        return None
+
+    # Keep the existing worker data methods for fallback
 
     def get_bitcoin_stats(self):
         """
@@ -493,110 +521,22 @@ class MiningDashboardService:
             
         return difficulty, network_hashrate, btc_price, block_count
 
-    def get_all_worker_rows(self):
+    def fetch_url(self, url: str, timeout: int = 5):
         """
-        Iterate through wpage parameter values to collect all worker table rows.
-
+        Fetch URL with error handling.
+        
+        Args:
+            url (str): URL to fetch
+            timeout (int): Timeout in seconds
+            
         Returns:
-            list: A list of BeautifulSoup row elements containing worker data.
+            Response: Request response or None if failed
         """
-        all_rows = []
-        page_num = 0
-        while True:
-            url = f"https://ocean.xyz/stats/{self.wallet}?wpage={page_num}#workers-fulltable"
-            logging.info(f"Fetching worker data from: {url}")
-            response = self.session.get(url, timeout=15)
-            if not response.ok:
-                logging.error(f"Error fetching page {page_num}: status code {response.status_code}")
-                break
-
-            soup = BeautifulSoup(response.text, 'html.parser')
-            workers_table = soup.find('tbody', id='workers-tablerows')
-            if not workers_table:
-                logging.debug(f"No workers table found on page {page_num}")
-                break
-
-            rows = workers_table.find_all("tr", class_="table-row")
-            if not rows:
-                logging.debug(f"No worker rows found on page {page_num}, stopping pagination")
-                break
-
-            logging.info(f"Found {len(rows)} worker rows on page {page_num}")
-            all_rows.extend(rows)
-            page_num += 1
-
-        return all_rows
-
-    def get_worker_data(self):
-        """
-        Get worker data from Ocean.xyz API with fallback to web scraping.
-    
-        Returns:
-            dict: Worker data dictionary with stats and list of workers
-        """
-        # Try API first
         try:
-            workers_data = self.api_client.get_workers_data()
-            if workers_data and workers_data.get('workers') and len(workers_data['workers']) > 0:
-                # Validate worker names
-                valid_names = False
-                for worker in workers_data['workers']:
-                    name = worker.get('name', '').lower()
-                    if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
-                        valid_names = True
-                        break
-            
-                if valid_names:
-                    logging.info("Successfully retrieved worker data from Ocean.xyz API")
-                    return workers_data
+            return self.session.get(url, timeout=timeout)
         except Exception as e:
-            logging.error(f"Error getting worker data from API: {e}")
-    
-        # Fallback to original methods if API fails
-        logging.warning("API worker data request failed, falling back to web scraping")
-    
-        # Try the alternative method first as in the original code
-        result = self.get_worker_data_alternative()
-    
-        # Check if alternative method succeeded and found workers with valid names
-        if result and result.get('workers') and len(result['workers']) > 0:
-            # Validate workers - check for invalid names
-            has_valid_workers = False
-            for worker in result['workers']:
-                name = worker.get('name', '').lower()
-                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
-                    has_valid_workers = True
-                    break
-                
-            if has_valid_workers:
-                logging.info(f"Alternative worker data method successful: {len(result['workers'])} workers with valid names")
-                return result
-            else:
-                logging.warning("Alternative method found workers but with invalid names")
-    
-        # If alternative method failed or found workers with invalid names, try the original method
-        logging.info("Trying original worker data method")
-        result = self.get_worker_data_original()
-    
-        # Check if original method succeeded and found workers with valid names
-        if result and result.get('workers') and len(result['workers']) > 0:
-            # Validate workers - check for invalid names
-            has_valid_workers = False
-            for worker in result['workers']:
-                name = worker.get('name', '').lower()
-                if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
-                    has_valid_workers = True
-                    break
-                
-            if has_valid_workers:
-                logging.info(f"Original worker data method successful: {len(result['workers'])} workers with valid names")
-                return result
-            else:
-                logging.warning("Original method found workers but with invalid names")
-            
-        # If both methods failed or found workers with invalid names, use fallback data
-        logging.warning("Both worker data fetch methods failed to get valid worker data, returning None")
-        return None
+            logging.error(f"Error fetching {url}: {e}")
+            return None
 
     # Rename the original method to get_worker_data_original
     def get_worker_data_original(self):

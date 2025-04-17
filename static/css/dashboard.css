@@ -151,9 +151,10 @@
 #workers_hashing,
 #last_share,
 #blocks_found,
-#last_block_height {
-  color: #ffffff;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+#last_block_height,
+#pool_fees_percentage {
+    color: #ffffff;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
 }
 
 /* Blue metrics (time data) */

@@ -39,6 +39,17 @@
                     <strong>Last Share:</strong>
                     <span id="last_share" class="metric-value">{{ metrics.total_last_share or "N/A" }}</span>
                 </p>
+                <p>
+                    <strong>Pool Fees:</strong>
+                    <span id="pool_fees_percentage" class="metric-value">
+                        {% if metrics and metrics.pool_fees_percentage is defined %}
+                        {{ metrics.pool_fees_percentage }}%
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </span>
+                    <span id="indicator_pool_fees_percentage"></span>
+                </p>
             </div>
         </div>
     </div>

@@ -128,7 +128,8 @@ class MiningDashboardService:
                 'last_block_time': ocean_data.last_block_time,
                 'total_last_share': ocean_data.total_last_share,
                 'blocks_found': ocean_data.blocks_found or "0",
-                'last_block_earnings': ocean_data.last_block_earnings
+                'last_block_earnings': ocean_data.last_block_earnings,
+                'pool_fees_percentage': ocean_data.pool_fees_percentage,
             }
             metrics['estimated_earnings_per_day_sats'] = int(round(estimated_earnings_per_day * self.sats_per_btc))
             metrics['estimated_earnings_next_block_sats'] = int(round(estimated_earnings_next_block * self.sats_per_btc))
@@ -213,15 +214,28 @@ class MiningDashboardService:
                     latest_row = earnings_table.find('tr', class_='table-row')
                     if latest_row:
                         cells = latest_row.find_all('td', class_='table-cell')
-                        if len(cells) >= 3:
+                        if len(cells) >= 4:  # Ensure there are enough cells for earnings and pool fees
                             earnings_text = cells[2].get_text(strip=True)
+                            pool_fees_text = cells[3].get_text(strip=True)
+                
+                            # Parse earnings and pool fees
                             earnings_value = earnings_text.replace('BTC', '').strip()
+                            pool_fees_value = pool_fees_text.replace('BTC', '').strip()
+                
                             try:
+                                # Convert earnings to BTC and sats
                                 btc_earnings = float(earnings_value)
-                                sats = int(round(btc_earnings * 100000000))
+                                sats = int(round(btc_earnings * 100_000_000))
                                 data.last_block_earnings = str(sats)
-                            except Exception:
+                    
+                                # Calculate percentage lost to pool fees
+                                btc_pool_fees = float(pool_fees_value)
+                                percentage_lost = (btc_pool_fees / btc_earnings) * 100 if btc_earnings > 0 else 0
+                                data.pool_fees_percentage = round(percentage_lost, 2)
+                            except Exception as e:
+                                logging.error(f"Error converting earnings or calculating percentage: {e}")
                                 data.last_block_earnings = earnings_value
+                                data.pool_fees_percentage = None
             except Exception as e:
                 logging.error(f"Error parsing earnings data: {e}")
 

@@ -313,6 +313,27 @@ class ArrowIndicator {
 // Create the singleton instance
 const arrowIndicator = new ArrowIndicator();
 
+// Global timezone configuration
+let dashboardTimezone = 'America/Los_Angeles'; // Default
+window.dashboardTimezone = dashboardTimezone; // Make it globally accessible
+
+// Fetch the configured timezone when the page loads
+function fetchTimezoneConfig() {
+    fetch('/api/timezone')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.timezone) {
+                dashboardTimezone = data.timezone;
+                window.dashboardTimezone = dashboardTimezone; // Make it globally accessible
+                console.log(`Using configured timezone: ${dashboardTimezone}`);
+            }
+        })
+        .catch(error => console.error('Error fetching timezone config:', error));
+}
+
+// Call this on page load
+document.addEventListener('DOMContentLoaded', fetchTimezoneConfig);
+
 // Global variables
 let previousMetrics = {};
 let latestMetrics = null;
@@ -1006,7 +1027,7 @@ function updateChartWithNormalizedData(chart, data) {
                     // The options define Pacific Time and 12-hour format without AM/PM
                     try {
                         let formattedTime = timeDate.toLocaleTimeString('en-US', {
-                            timeZone: 'America/Los_Angeles',
+                            timeZone: dashboardTimezone,
                             hour: '2-digit',
                             minute: '2-digit',
                             hour12: true
@@ -1058,7 +1079,7 @@ function updateChartWithNormalizedData(chart, data) {
 
             try {
                 currentTime = now.toLocaleTimeString('en-US', {
-                    timeZone: 'America/Los_Angeles',
+                    timeZone: dashboardTimezone,
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: true
@@ -1307,17 +1328,43 @@ function updateUI() {
         updateElementText("estimated_rewards_in_window_sats", numberWithCommas(data.estimated_rewards_in_window_sats) + " SATS");
 
         // Update last updated timestamp
-        const now = new Date(Date.now() + serverTimeOffset);
-        const options = {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-        };
-        updateElementHTML("lastUpdated", "<strong>Last Updated:</strong> " + now.toLocaleString('en-US', options) + "<span id='terminal-cursor'></span>");
+        try {
+            // Get the configured timezone with fallback
+            const configuredTimezone = window.dashboardTimezone || 'America/Los_Angeles';
+
+            // Use server timestamp from metrics if available, otherwise use adjusted local time
+            const timestampToUse = latestMetrics && latestMetrics.server_timestamp ?
+                new Date(latestMetrics.server_timestamp) :
+                new Date(Date.now() + (serverTimeOffset || 0));
+
+            // Format with explicit timezone
+            const options = {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+                timeZone: configuredTimezone // Explicitly set timezone
+            };
+
+            // Update the lastUpdated element
+            updateElementHTML("lastUpdated",
+                "<strong>Last Updated:</strong> " +
+                timestampToUse.toLocaleString('en-US', options) +
+                "<span id='terminal-cursor'></span>");
+
+            console.log(`Last updated timestamp shown using timezone: ${configuredTimezone}`);
+        } catch (error) {
+            console.error("Error formatting last updated timestamp:", error);
+            // Fallback to basic timestamp if there's an error
+            const now = new Date();
+            updateElementHTML("lastUpdated",
+                "<strong>Last Updated:</strong> " +
+                now.toLocaleString() +
+                "<span id='terminal-cursor'></span>");
+        }
 
         // Update chart with normalized data if it exists
         if (trendChart) {
@@ -1386,7 +1433,7 @@ function resetDashboardChart() {
             // Get current time
             const now = new Date();
             let currentTime = now.toLocaleTimeString('en-US', {
-                timeZone: 'America/Los_Angeles',
+                timeZone: dashboardTimezone,
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
@@ -1433,6 +1480,40 @@ $(document).ready(function () {
             }
         }, 100);
     };
+
+    // Load timezone setting early
+    (function loadTimezoneEarly() {
+        // First try to get from localStorage for instant access
+        try {
+            const storedTimezone = localStorage.getItem('dashboardTimezone');
+            if (storedTimezone) {
+                window.dashboardTimezone = storedTimezone;
+                console.log(`Using cached timezone: ${storedTimezone}`);
+            }
+        } catch (e) {
+            console.error("Error reading timezone from localStorage:", e);
+        }
+
+        // Then fetch from server to ensure we have the latest setting
+        fetch('/api/timezone')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.timezone) {
+                    window.dashboardTimezone = data.timezone;
+                    console.log(`Set timezone from server: ${data.timezone}`);
+
+                    // Cache for future use
+                    try {
+                        localStorage.setItem('dashboardTimezone', data.timezone);
+                    } catch (e) {
+                        console.error("Error storing timezone in localStorage:", e);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching timezone:", error);
+            });
+    })();
 
     // Override the manualRefresh function to update the shared lastRefreshTime
     const originalManualRefresh = manualRefresh;

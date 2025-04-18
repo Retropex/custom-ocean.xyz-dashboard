@@ -10,6 +10,40 @@ let isLoading = false;
 $(document).ready(function() {
     console.log("Blocks page initialized");
 
+    // Load timezone setting early
+    (function loadTimezoneEarly() {
+        // First try to get from localStorage for instant access
+        try {
+            const storedTimezone = localStorage.getItem('dashboardTimezone');
+            if (storedTimezone) {
+                window.dashboardTimezone = storedTimezone;
+                console.log(`Using cached timezone: ${storedTimezone}`);
+            }
+        } catch (e) {
+            console.error("Error reading timezone from localStorage:", e);
+        }
+
+        // Then fetch from server to ensure we have the latest setting
+        fetch('/api/timezone')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.timezone) {
+                    window.dashboardTimezone = data.timezone;
+                    console.log(`Set timezone from server: ${data.timezone}`);
+
+                    // Cache for future use
+                    try {
+                        localStorage.setItem('dashboardTimezone', data.timezone);
+                    } catch (e) {
+                        console.error("Error storing timezone in localStorage:", e);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching timezone:", error);
+            });
+    })();
+
     // Initialize notification badge
     initNotificationBadge();
     
@@ -91,7 +125,8 @@ function formatTimestamp(timestamp) {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: window.dashboardTimezone || 'America/Los_Angeles' // Use global timezone setting
     };
     return date.toLocaleString('en-US', options);
 }

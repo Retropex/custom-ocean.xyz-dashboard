@@ -7,9 +7,16 @@ const pageSize = 20;
 let hasMoreNotifications = true;
 let isLoading = false;
 
+// Timezone configuration
+let dashboardTimezone = 'America/Los_Angeles'; // Default
+window.dashboardTimezone = dashboardTimezone; // Make it globally accessible
+
 // Initialize when document is ready
 $(document).ready(() => {
     console.log("Notification page initializing...");
+
+    // Fetch timezone configuration
+    fetchTimezoneConfig();
 
     // Set up filter buttons
     $('.filter-button').click(function () {
@@ -40,6 +47,34 @@ $(document).ready(() => {
     // Start periodic update of notification timestamps every 30 seconds
     setInterval(updateNotificationTimestamps, 30000);
 });
+
+// Fetch timezone configuration from server
+function fetchTimezoneConfig() {
+    return fetch('/api/timezone')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.timezone) {
+                dashboardTimezone = data.timezone;
+                window.dashboardTimezone = dashboardTimezone; // Make it globally accessible
+                console.log(`Notifications page using timezone: ${dashboardTimezone}`);
+
+                // Store in localStorage for future use
+                try {
+                    localStorage.setItem('dashboardTimezone', dashboardTimezone);
+                } catch (e) {
+                    console.error("Error storing timezone in localStorage:", e);
+                }
+
+                // Update all timestamps with the new timezone
+                updateNotificationTimestamps();
+                return dashboardTimezone;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching timezone config:', error);
+            return null;
+        });
+}
 
 // Load notifications with current filter
 function loadNotifications() {
@@ -104,14 +139,36 @@ function refreshNotifications() {
     }
 }
 
-// Update notification timestamps to relative time
+// This refreshes all timestamps on the page periodically
 function updateNotificationTimestamps() {
     $('.notification-item').each(function () {
         const timestampStr = $(this).attr('data-timestamp');
         if (timestampStr) {
-            const timestamp = new Date(timestampStr);
-            const relativeTime = formatTimestamp(timestamp);
-            $(this).find('.notification-time').text(relativeTime);
+            try {
+                const timestamp = new Date(timestampStr);
+
+                // Update relative time
+                $(this).find('.notification-time').text(formatTimestamp(timestamp));
+
+                // Update full timestamp with configured timezone
+                if ($(this).find('.full-timestamp').length) {
+                    const options = {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true,
+                        timeZone: window.dashboardTimezone || 'America/Los_Angeles'
+                    };
+
+                    const fullTimestamp = timestamp.toLocaleString('en-US', options);
+                    $(this).find('.full-timestamp').text(fullTimestamp);
+                }
+            } catch (e) {
+                console.error("Error updating timestamp:", e, timestampStr);
+            }
         }
     });
 }
@@ -190,14 +247,28 @@ function createNotificationElement(notification) {
             iconElement.addClass('fa-bell');
     }
 
-    // Append "Z" to indicate UTC if not present
-    let utcTimestampStr = notification.timestamp;
-    if (!utcTimestampStr.endsWith('Z')) {
-        utcTimestampStr += 'Z';
-    }
-    const utcDate = new Date(utcTimestampStr);
+    // Important: Do not append "Z" here, as that can cause timezone issues
+    // Create a date object from the notification timestamp
+    let notificationDate;
+    try {
+        // Parse the timestamp directly without modifications
+        notificationDate = new Date(notification.timestamp);
 
-    // Convert UTC date to Los Angeles time with a timezone name for clarity
+        // Validate the date object - if invalid, try alternative approach
+        if (isNaN(notificationDate.getTime())) {
+            console.warn("Invalid date from notification timestamp, trying alternative format");
+
+            // Try adding Z to make it explicit UTC if not already ISO format
+            if (!notification.timestamp.endsWith('Z') && !notification.timestamp.includes('+')) {
+                notificationDate = new Date(notification.timestamp + 'Z');
+            }
+        }
+    } catch (e) {
+        console.error("Error parsing notification date:", e);
+        notificationDate = new Date(); // Fallback to current date
+    }
+
+    // Format the timestamp using the configured timezone
     const options = {
         year: 'numeric',
         month: 'short',
@@ -205,16 +276,25 @@ function createNotificationElement(notification) {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: window.dashboardTimezone || 'America/Los_Angeles'
     };
-    const fullTimestamp = utcDate.toLocaleString('en-US', options);
 
-    // Append the full timestamp to the notification message
+    // Format full timestamp with configured timezone
+    let fullTimestamp;
+    try {
+        fullTimestamp = notificationDate.toLocaleString('en-US', options);
+    } catch (e) {
+        console.error("Error formatting timestamp with timezone:", e);
+        fullTimestamp = notificationDate.toLocaleString('en-US'); // Fallback without timezone
+    }
+
+    // Append the message and formatted timestamp
     const messageWithTimestamp = `${notification.message}<br><span class="full-timestamp">${fullTimestamp}</span>`;
     element.find('.notification-message').html(messageWithTimestamp);
 
     // Set metadata for relative time display
-    element.find('.notification-time').text(formatTimestamp(utcDate));
+    element.find('.notification-time').text(formatTimestamp(notificationDate));
     element.find('.notification-category').text(notification.category);
 
     // Set up action buttons
@@ -235,10 +315,21 @@ function createNotificationElement(notification) {
     return element;
 }
 
-// Format timestamp as relative time
 function formatTimestamp(timestamp) {
+    // Ensure we have a valid date object
+    let dateObj = timestamp;
+    if (!(timestamp instanceof Date) || isNaN(timestamp.getTime())) {
+        try {
+            dateObj = new Date(timestamp);
+        } catch (e) {
+            console.error("Invalid timestamp in formatTimestamp:", e);
+            return "unknown time";
+        }
+    }
+
+    // Calculate time difference in local timezone context
     const now = new Date();
-    const diffMs = now - timestamp;
+    const diffMs = now - dateObj;
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
     const diffHour = Math.floor(diffMin / 60);
@@ -253,17 +344,14 @@ function formatTimestamp(timestamp) {
     } else if (diffDay < 30) {
         return `${diffDay}d ago`;
     } else {
-        // Format as date for older notifications
+        // Format as date for older notifications using configured timezone
         const options = {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
+            timeZone: window.dashboardTimezone || 'America/Los_Angeles'
         };
-        return timestamp.toLocaleDateString('en-US', options);
+        return dateObj.toLocaleDateString('en-US', options);
     }
 }
 

@@ -92,6 +92,40 @@ $(document).ready(function () {
     });
 });
 
+// Load timezone setting early
+(function loadTimezoneEarly() {
+    // First try to get from localStorage for instant access
+    try {
+        const storedTimezone = localStorage.getItem('dashboardTimezone');
+        if (storedTimezone) {
+            window.dashboardTimezone = storedTimezone;
+            console.log(`Using cached timezone: ${storedTimezone}`);
+        }
+    } catch (e) {
+        console.error("Error reading timezone from localStorage:", e);
+    }
+
+    // Then fetch from server to ensure we have the latest setting
+    fetch('/api/timezone')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.timezone) {
+                window.dashboardTimezone = data.timezone;
+                console.log(`Set timezone from server: ${data.timezone}`);
+
+                // Cache for future use
+                try {
+                    localStorage.setItem('dashboardTimezone', data.timezone);
+                } catch (e) {
+                    console.error("Error storing timezone in localStorage:", e);
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching timezone:", error);
+        });
+})();
+
 // Initialize page elements
 function initializePage() {
     console.log("Initializing page elements...");
@@ -321,11 +355,35 @@ function createWorkerCard(worker) {
         </div>
     `);
 
+    // Format the last share using the proper method for timezone conversion
+    let formattedLastShare = 'N/A';
+    if (worker.last_share && typeof worker.last_share === 'string') {
+        // This is a more reliable method for timezone conversion
+        try {
+            // The worker.last_share is likely in format "YYYY-MM-DD HH:MM"
+            // We need to consider it as UTC and convert to the configured timezone
+
+            // Create a proper date object, ensuring UTC interpretation
+            const dateWithoutTZ = new Date(worker.last_share + 'Z'); // Adding Z to treat as UTC
+
+            // Format it according to the configured timezone
+            formattedLastShare = dateWithoutTZ.toLocaleString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: window.dashboardTimezone || 'America/Los_Angeles'
+            });
+        } catch (e) {
+            console.error("Error formatting last share time:", e, worker.last_share);
+            formattedLastShare = worker.last_share; // Fallback to original value
+        }
+    }
+
     card.append(`
         <div class="worker-stats">
             <div class="worker-stats-row">
                 <div class="worker-stats-label">Last Share:</div>
-                <div class="blue-glow">${typeof worker.last_share === 'string' ? worker.last_share.split(' ')[1] || worker.last_share : 'N/A'}</div>
+                <div class="blue-glow">${formattedLastShare}</div>
             </div>
             <div class="worker-stats-row">
                 <div class="worker-stats-label">Earnings:</div>

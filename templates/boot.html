@@ -167,6 +167,58 @@
             border: 1px solid #ff0000;
             color: #ff0000;
         }
+
+        /* Add these styles to match the timezone dropdown with your other inputs */
+        .form-group select {
+            width: 100%;
+            background-color: #111;
+            border: 1px solid #f7931a;
+            padding: 8px;
+            color: white;
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        /* Add a custom dropdown arrow */
+        .form-group select {
+            background-image: linear-gradient(45deg, transparent 50%, #f7931a 50%), linear-gradient(135deg, #f7931a 50%, transparent 50%);
+            background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+            padding-right: 25px; /* Space for the arrow */
+        }
+
+            .form-group select:focus {
+                outline: none;
+                box-shadow: 0 0 5px #f7931a;
+            }
+
+            /* Style the option groups */
+            .form-group select optgroup {
+                background-color: #111;
+                color: #f7931a;
+                font-family: 'VT323', monospace;
+            }
+
+            /* Style the options */
+            .form-group select option {
+                background-color: #222;
+                color: white;
+                padding: 8px;
+            }
+
+        /* Improve mobile appearance */
+        @media (max-width: 768px) {
+            .form-group select {
+                padding: 12px;
+                padding-right: 30px; /* More space for the dropdown arrow */
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -229,6 +281,30 @@
             <input type="number" id="power-usage" step="50" min="0" placeholder="13450" value="">
         </div>
         <div id="form-message"></div>
+        <div class="form-group">
+            <label for="timezone">
+                Timezone
+                <span class="tooltip">
+                    ?
+                    <span class="tooltip-text">Your local timezone for displaying time information</span>
+                </span>
+            </label>
+            <select id="timezone" class="form-control">
+                <optgroup label="Common Timezones">
+                    <option value="America/Los_Angeles">Los Angeles (Pacific Time)</option>
+                    <option value="America/Denver">Denver (Mountain Time)</option>
+                    <option value="America/Chicago">Chicago (Central Time)</option>
+                    <option value="America/New_York">New York (Eastern Time)</option>
+                    <option value="Europe/London">London (GMT/BST)</option>
+                    <option value="Europe/Paris">Paris (Central European Time)</option>
+                    <option value="Asia/Tokyo">Tokyo (Japan Standard Time)</option>
+                    <option value="Australia/Sydney">Sydney (Australian Eastern Time)</option>
+                </optgroup>
+                <optgroup label="Other Timezones" id="other-timezones">
+                    <!-- Will be populated by JavaScript -->
+                </optgroup>
+            </select>
+        </div>
         <div class="form-actions">
             <button class="btn btn-secondary" id="use-defaults">Use Defaults</button>
             <button class="btn" id="save-config">Save & Continue</button>
@@ -236,6 +312,106 @@
     </div>
 
     <script>
+        // Add a function to populate all available timezones
+        function populateTimezones() {
+            const otherTimezones = document.getElementById('other-timezones');
+
+            // Common timezone areas to include
+            const commonAreas = [
+                'Africa', 'America', 'Antarctica', 'Asia', 'Atlantic',
+                'Australia', 'Europe', 'Indian', 'Pacific'
+            ];
+
+            // Fetch the list of available timezones
+            fetch('/api/available_timezones')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.timezones || !Array.isArray(data.timezones)) {
+                        console.error('Invalid timezone data received');
+                        return;
+                    }
+
+                    // Sort timezones and filter to include only common areas
+                    const sortedTimezones = data.timezones
+                        .filter(tz => commonAreas.some(area => tz.startsWith(area + '/')))
+                        .sort();
+
+                    // Add options for each timezone (excluding those already in common list)
+                    const commonOptions = Array.from(document.querySelectorAll('#timezone optgroup:first-child option'))
+                        .map(opt => opt.value);
+
+                    sortedTimezones.forEach(tz => {
+                        if (!commonOptions.includes(tz)) {
+                            const option = document.createElement('option');
+                            option.value = tz;
+                            option.textContent = tz.replace('_', ' ');
+                            otherTimezones.appendChild(option);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching timezones:', error));
+        }
+
+        // Call this when the page loads
+        document.addEventListener('DOMContentLoaded', populateTimezones);
+
+        // Load the current timezone from configuration
+        function loadTimezoneFromConfig() {
+            if (currentConfig && currentConfig.timezone) {
+                const timezoneSelect = document.getElementById('timezone');
+
+                // First, check if the option exists
+                let optionExists = false;
+                for (let i = 0; i < timezoneSelect.options.length; i++) {
+                    if (timezoneSelect.options[i].value === currentConfig.timezone) {
+                        timezoneSelect.selectedIndex = i;
+                        optionExists = true;
+                        break;
+                    }
+                }
+
+                // If the option doesn't exist yet (might be in the 'other' group being loaded)
+                // set a data attribute to select it when options are loaded
+                if (!optionExists) {
+                    timezoneSelect.setAttribute('data-select-value', currentConfig.timezone);
+                }
+            }
+        }
+
+        // Call this after loading config
+        loadConfig().then(() => {
+            loadTimezoneFromConfig();
+        });
+
+        // Update the saveConfig function to include timezone
+        function saveConfig() {
+            const wallet = document.getElementById('wallet-address').value.trim();
+            const powerCost = parseFloat(document.getElementById('power-cost').value) || 0;
+            const powerUsage = parseFloat(document.getElementById('power-usage').value) || 0;
+            const timezone = document.getElementById('timezone').value;
+
+            const updatedConfig = {
+                wallet: wallet || currentConfig.wallet,
+                power_cost: powerCost,
+                power_usage: powerUsage,
+                timezone: timezone
+            };
+
+            return fetch('/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedConfig)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to save configuration');
+                    }
+                    return response.json();
+                });
+        }
+
         // Debug logging
         function updateDebug(message) {
             document.getElementById('debug-info').textContent = message;
@@ -271,38 +447,43 @@
 
         // Replace the current loadConfig function with this improved version
         function loadConfig() {
-            // Always make a fresh request to get the latest config
-            fetch('/api/config?nocache=' + new Date().getTime())  // Add cache-busting parameter
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to load configuration: ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Loaded configuration:", data);
-                    currentConfig = data;
+            // Return a promise that resolves when the config is loaded
+            return new Promise((resolve, reject) => {
+                // Always make a fresh request to get the latest config
+                fetch('/api/config?nocache=' + new Date().getTime())  // Add cache-busting parameter
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to load configuration: ' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Loaded configuration:", data);
+                        currentConfig = data;
 
-                    // After loading, always update the form fields with the latest values
-                    document.getElementById('wallet-address').value = currentConfig.wallet || "";
-                    document.getElementById('power-cost').value = currentConfig.power_cost || "";
-                    document.getElementById('power-usage').value = currentConfig.power_usage || "";
-                    configLoaded = true;
-                })
-                .catch(err => {
-                    console.error("Error loading config:", err);
-                    // Use default values if loading fails
-                    currentConfig = {
-                        wallet: "yourwallethere",
-                        power_cost: 0.0,
-                        power_usage: 0.0
-                    };
+                        // After loading, always update the form fields with the latest values
+                        document.getElementById('wallet-address').value = currentConfig.wallet || "";
+                        document.getElementById('power-cost').value = currentConfig.power_cost || "";
+                        document.getElementById('power-usage').value = currentConfig.power_usage || "";
+                        configLoaded = true;
+                        resolve(currentConfig); // Resolve the promise with the config data
+                    })
+                    .catch(err => {
+                        console.error("Error loading config:", err);
+                        // Use default values if loading fails
+                        currentConfig = {
+                            wallet: "yourwallethere",
+                            power_cost: 0.0,
+                            power_usage: 0.0
+                        };
 
-                    // Still update the form with default values
-                    document.getElementById('wallet-address').value = currentConfig.wallet || "";
-                    document.getElementById('power-cost').value = currentConfig.power_cost || "";
-                    document.getElementById('power-usage').value = currentConfig.power_usage || "";
-                });
+                        // Still update the form with default values
+                        document.getElementById('wallet-address').value = currentConfig.wallet || "";
+                        document.getElementById('power-cost').value = currentConfig.power_cost || "";
+                        document.getElementById('power-usage').value = currentConfig.power_usage || "";
+                        resolve(currentConfig); // Resolve the promise with the default config
+                    });
+            });
         }
 
         // Also update the save button event handler to reload the config after saving
@@ -333,11 +514,13 @@
             const wallet = document.getElementById('wallet-address').value.trim();
             const powerCost = parseFloat(document.getElementById('power-cost').value) || 0;
             const powerUsage = parseFloat(document.getElementById('power-usage').value) || 0;
+            const timezone = document.getElementById('timezone').value;
 
             const updatedConfig = {
-                wallet: wallet || currentConfig.wallet,
+                wallet: wallet || (currentConfig ? currentConfig.wallet : ""),
                 power_cost: powerCost,
-                power_usage: powerUsage
+                power_usage: powerUsage,
+                timezone: timezone
             };
 
             return fetch('/api/config', {

@@ -19,7 +19,8 @@ def load_config():
     default_config = {
         "power_cost": 0.0,
         "power_usage": 0.0,
-        "wallet": "yourwallethere"
+        "wallet": "yourwallethere",
+        "timezone": "America/Los_Angeles"  # Add default timezone
     }
     
     if os.path.exists(CONFIG_FILE):
@@ -34,6 +35,28 @@ def load_config():
         logging.warning(f"Config file {CONFIG_FILE} not found, using defaults")
         
     return default_config
+
+def get_timezone():
+    """
+    Get the configured timezone with fallback to default.
+    
+    Returns:
+        str: Timezone identifier
+    """
+    # First check environment variable (for Docker)
+    import os
+    env_timezone = os.environ.get("TIMEZONE")
+    if env_timezone:
+        return env_timezone
+    
+    # Then check config file
+    config = load_config()
+    timezone = config.get("timezone")
+    if timezone:
+        return timezone
+    
+    # Default to Los Angeles
+    return "America/Los_Angeles"
 
 def save_config(config):
     """

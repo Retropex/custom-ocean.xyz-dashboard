@@ -31,6 +31,7 @@ class OceanData:
     blocks_found: str = None
     total_last_share: str = "N/A"
     last_block_earnings: str = None
+    pool_fees_percentage: float = None  # Added missing attribute
 
 @dataclass
 class WorkerData:

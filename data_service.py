@@ -12,6 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from models import OceanData, WorkerData, convert_to_ths
+from config import get_timezone
 
 class MiningDashboardService:
     """Service for fetching and processing mining dashboard data."""
@@ -136,8 +137,8 @@ class MiningDashboardService:
             metrics['estimated_rewards_in_window_sats'] = int(round(estimated_rewards_in_window * self.sats_per_btc))
 
             # --- Add server timestamps to the response in Los Angeles Time ---
-            metrics["server_timestamp"] = datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
-            metrics["server_start_time"] = datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
+            metrics["server_timestamp"] = datetime.now(ZoneInfo(get_timezone())).isoformat()
+            metrics["server_start_time"] = datetime.now(ZoneInfo(get_timezone())).isoformat()
 
             # Log execution time
             execution_time = time.time() - start_time
@@ -360,7 +361,7 @@ class MiningDashboardService:
                             try:
                                 naive_dt = datetime.strptime(last_share_str, "%Y-%m-%d %H:%M")
                                 utc_dt = naive_dt.replace(tzinfo=ZoneInfo("UTC"))
-                                la_dt = utc_dt.astimezone(ZoneInfo("America/Los_Angeles"))
+                                la_dt = utc_dt.astimezone(ZoneInfo(get_timezone()))
                                 data.total_last_share = la_dt.strftime("%Y-%m-%d %I:%M %p")
                             except Exception as e:
                                 logging.error(f"Error converting last share time '{last_share_str}': {e}")
@@ -816,7 +817,7 @@ class MiningDashboardService:
                 'total_earnings': total_earnings,
                 'avg_acceptance_rate': avg_acceptance_rate,
                 'daily_sats': daily_sats,
-                'timestamp': datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
+                'timestamp': datetime.now(ZoneInfo(get_timezone())).isoformat()
             }
             
             logging.info(f"Successfully retrieved worker data: {len(workers)} workers")
@@ -963,7 +964,7 @@ class MiningDashboardService:
                 'workers_offline': workers_offline,
                 'total_earnings': total_earnings,
                 'avg_acceptance_rate': 99.0,
-                'timestamp': datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
+                'timestamp': datetime.now(ZoneInfo(get_timezone())).isoformat()
             }
             logging.info(f"Successfully retrieved {len(workers)} workers across multiple pages")
             return result

@@ -7,6 +7,7 @@ import time
 import gc
 import threading
 import redis
+from config import get_timezone
 
 # Global variables for arrow history, legacy hashrate history, and a log of full metrics snapshots.
 arrow_history = {}    # stored per second
@@ -327,7 +328,7 @@ class StateManager:
         from datetime import datetime
         from zoneinfo import ZoneInfo
         
-        current_second = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%H:%M:%S")
+        current_second = datetime.now(ZoneInfo(get_timezone())).strftime("%H:%M:%S")
         
         with state_lock:
             for key in arrow_keys:

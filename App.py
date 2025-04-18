@@ -22,6 +22,7 @@ from config import load_config, save_config
 from data_service import MiningDashboardService
 from worker_service import WorkerService
 from state_manager import StateManager, arrow_history, metrics_log
+from config import get_timezone
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -45,7 +46,7 @@ scheduler_recreate_lock = threading.Lock()
 scheduler = None
 
 # Global start time
-SERVER_START_TIME = datetime.now(ZoneInfo("America/Los_Angeles"))
+SERVER_START_TIME = datetime.now(ZoneInfo(get_timezone()))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -417,8 +418,8 @@ def dashboard():
         # If still None after our attempt, create default metrics
         if cached_metrics is None:
             default_metrics = {
-                "server_timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat(),
-                "server_start_time": SERVER_START_TIME.astimezone(ZoneInfo("America/Los_Angeles")).isoformat(),
+                "server_timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat(),
+                "server_start_time": SERVER_START_TIME.astimezone(ZoneInfo(get_timezone())).isoformat(),
                 "hashrate_24hr": None,
                 "hashrate_24hr_unit": "TH/s",
                 "hashrate_3hr": None,
@@ -453,12 +454,12 @@ def dashboard():
                 "arrow_history": {}
             }
             logging.warning("Rendering dashboard with default metrics - no data available yet")
-            current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S %p")
+            current_time = datetime.now(ZoneInfo(get_timezone())).strftime("%Y-%m-%d %H:%M:%S %p")
             return render_template("dashboard.html", metrics=default_metrics, current_time=current_time)
     
     # If we have metrics, use them
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M:%S %p")
-    return render_template("dashboard.html", metrics=cached_metrics, current_time=current_time)# api/time endpoint
+    current_time = datetime.now(ZoneInfo(get_timezone())).strftime("%Y-%m-%d %H:%M:%S %p")
+    return render_template("dashboard.html", metrics=cached_metrics, current_time=current_time)
 
 @app.route("/api/metrics")
 def api_metrics():
@@ -467,18 +468,30 @@ def api_metrics():
         update_metrics_job()
     return jsonify(cached_metrics)
 
+@app.route("/api/available_timezones")
+def available_timezones():
+    """Return a list of available timezones."""
+    from zoneinfo import available_timezones
+    return jsonify({"timezones": sorted(available_timezones())})
+
+@app.route('/api/timezone', methods=['GET'])
+def get_timezone_config():
+    from flask import jsonify
+    from config import get_timezone
+    return jsonify({"timezone": get_timezone()})
+
 # Add this new route to App.py
 @app.route("/blocks")
 def blocks_page():
     """Serve the blocks overview page."""
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%b %d, %Y, %I:%M:%S %p")
+    current_time = datetime.now(ZoneInfo(get_timezone())).strftime("%b %d, %Y, %I:%M:%S %p")
     return render_template("blocks.html", current_time=current_time)
 
 # --- Workers Dashboard Route and API ---
 @app.route("/workers")
 def workers_dashboard():
     """Serve the workers overview dashboard page."""
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d %I:%M:%S %p")
+    current_time = datetime.now(ZoneInfo(get_timezone())).strftime("%Y-%m-%d %I:%M:%S %p")
 
     # Only get minimal worker stats for initial page load
     # Client-side JS will fetch the full data via API
@@ -507,8 +520,8 @@ def api_workers():
 def api_time():
     """API endpoint for server time."""
     return jsonify({ # correct time
-        "server_timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat(),
-        "server_start_time": SERVER_START_TIME.astimezone(ZoneInfo("America/Los_Angeles")).isoformat()
+        "server_timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat(),
+        "server_start_time": SERVER_START_TIME.astimezone(ZoneInfo(get_timezone())).isoformat()
     })
 
 # --- New Config Endpoints ---
@@ -586,7 +599,7 @@ def update_config():
 def health_check():
     """Health check endpoint with enhanced system diagnostics."""
     # Calculate uptime
-    uptime_seconds = (datetime.now(ZoneInfo("America/Los_Angeles")) - SERVER_START_TIME).total_seconds()
+    uptime_seconds = (datetime.now(ZoneInfo(get_timezone())) - SERVER_START_TIME).total_seconds()
     
     # Get process memory usage
     try:
@@ -604,7 +617,7 @@ def health_check():
     if cached_metrics and cached_metrics.get("server_timestamp"):
         try:
             last_update = datetime.fromisoformat(cached_metrics["server_timestamp"])
-            data_age = (datetime.now(ZoneInfo("America/Los_Angeles")) - last_update).total_seconds()
+            data_age = (datetime.now(ZoneInfo(get_timezone())) - last_update).total_seconds()
         except Exception as e:
             logging.error(f"Error calculating data age: {e}")
     
@@ -637,7 +650,7 @@ def health_check():
         "redis": {
             "connected": state_manager.redis_client is not None
         },
-        "timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
+        "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
     }
     
     # Log health check if status is not healthy
@@ -781,7 +794,7 @@ def api_clear_notifications():
 @app.route("/notifications")
 def notifications_page():
     """Serve the notifications page."""
-    current_time = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%b %d, %Y, %I:%M:%S %p")
+    current_time = datetime.now(ZoneInfo(get_timezone())).strftime("%b %d, %Y, %I:%M:%S %p")
     return render_template("notifications.html", current_time=current_time)
 
 @app.errorhandler(404)

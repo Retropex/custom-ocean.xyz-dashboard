@@ -5,6 +5,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from config import get_timezone
 
 class WorkerService:
     """Service for retrieving and managing worker data."""
@@ -49,7 +50,7 @@ class WorkerService:
             "daily_sats": 0,
             "avg_acceptance_rate": 0.0,
             "hashrate_history": [],
-            "timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
+            "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
         }
 
     def get_workers_data(self, cached_metrics, force_refresh=False):
@@ -286,7 +287,7 @@ class WorkerService:
             dict: Default worker data
         """
         is_online = status == "online"
-        current_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        current_time = datetime.now(ZoneInfo(get_timezone()))
         
         # Generate some reasonable hashrate and other values
         hashrate = round(random.uniform(50, 100), 2) if is_online else 0
@@ -438,7 +439,7 @@ class WorkerService:
             "daily_sats": daily_sats,  # Fixed daily_sats value
             "avg_acceptance_rate": 98.8,  # Default value
             "hashrate_history": hashrate_history,
-            "timestamp": datetime.now(ZoneInfo("America/Los_Angeles")).isoformat()
+            "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
         }
         
         # Update cache
@@ -482,7 +483,7 @@ class WorkerService:
         avg_hashrate = max(0.5, total_hashrate / online_count if online_count > 0 else 0)
         
         workers = []
-        current_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        current_time = datetime.now(ZoneInfo(get_timezone()))
         
         # Default total unpaid earnings if not provided
         if total_unpaid_earnings is None or total_unpaid_earnings <= 0:
@@ -635,7 +636,7 @@ class WorkerService:
         avg_hashrate = max(0.5, total_hashrate / online_count if online_count > 0 else 0)
         
         workers = []
-        current_time = datetime.now(ZoneInfo("America/Los_Angeles"))
+        current_time = datetime.now(ZoneInfo(get_timezone()))
         
         # Default total unpaid earnings if not provided
         if total_unpaid_earnings is None or total_unpaid_earnings <= 0:

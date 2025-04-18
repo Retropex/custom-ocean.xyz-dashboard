@@ -23,6 +23,8 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Financial Calculations**: Automatically calculate revenue, power costs, and net profit
 - **Network Statistics**: Track current Bitcoin price, difficulty, and network hashrate
 - **Payout Monitoring**: View unpaid balance and estimated time to next payout
+- **Pool Fee Analysis**: Monitor pool fee percentages with visual indicator when optimal rates (0.9-1.3%) are detected
+
 
 ### Worker Management
 - **Fleet Overview**: Comprehensive view of all mining devices in one interface

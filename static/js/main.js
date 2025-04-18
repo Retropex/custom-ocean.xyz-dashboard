@@ -1412,43 +1412,34 @@ function initNotificationBadge() {
     setInterval(updateNotificationBadge, 60000);
 }
 
-// Function to reset dashboard chart data
+// Modify the resetDashboardChart function
 function resetDashboardChart() {
     console.log("Resetting dashboard chart data");
 
     if (trendChart) {
-        // Reset chart data arrays
+        // Reset chart data arrays first (always succeeds)
         trendChart.data.labels = [];
         trendChart.data.datasets[0].data = [];
-
-        // Update the chart with empty data
         trendChart.update('none');
 
-        // Show feedback to the user
-        showConnectionIssue("Chart data reset");
-        setTimeout(hideConnectionIssue, 2000);
+        // Show immediate feedback
+        showConnectionIssue("Resetting chart data...");
 
-        // If we have latest metrics, add the current point back
-        if (latestMetrics && latestMetrics.hashrate_60sec) {
-            // Get current time
-            const now = new Date();
-            let currentTime = now.toLocaleTimeString('en-US', {
-                timeZone: dashboardTimezone,
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            }).replace(/\s[AP]M$/i, '');
-
-            // Get current hashrate
-            const currentUnit = latestMetrics.hashrate_60sec_unit ?
-                latestMetrics.hashrate_60sec_unit.toLowerCase() : 'th/s';
-            const normalizedValue = normalizeHashrate(parseFloat(latestMetrics.hashrate_60sec) || 0, currentUnit);
-
-            // Add single point
-            trendChart.data.labels = [currentTime];
-            trendChart.data.datasets[0].data = [normalizedValue];
-            trendChart.update('none');
-        }
+        // Then call the API to clear underlying data
+        $.ajax({
+            url: '/api/reset-chart-data',
+            method: 'POST',
+            success: function (response) {
+                console.log("Server data reset:", response);
+                showConnectionIssue("Chart data reset successfully");
+                setTimeout(hideConnectionIssue, 3000);
+            },
+            error: function (xhr, status, error) {
+                console.error("Error resetting chart data:", error);
+                showConnectionIssue("Chart display reset (backend error: " + error + ")");
+                setTimeout(hideConnectionIssue, 5000);
+            }
+        });
     }
 }
 

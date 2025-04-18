@@ -821,6 +821,30 @@ class RobustMiddleware:
             start_response("500 Internal Server Error", [("Content-Type", "text/html")])
             return [b"<h1>Internal Server Error</h1>"]
 
+@app.route("/api/reset-chart-data", methods=["POST"])
+def reset_chart_data():
+    """API endpoint to reset chart data history."""
+    try:
+        global arrow_history, state_manager
+        
+        # Clear hashrate data from in-memory dictionary
+        hashrate_keys = ["hashrate_60sec", "hashrate_3hr", "hashrate_10min", "hashrate_24hr"]
+        for key in hashrate_keys:
+            if key in arrow_history:
+                arrow_history[key] = []
+        
+        # Force an immediate save to Redis if available
+        if state_manager and hasattr(state_manager, 'redis_client') and state_manager.redis_client:
+            # Force save by overriding the time check
+            state_manager.last_save_time = 0
+            state_manager.save_graph_state()
+            logging.info("Chart data reset saved to Redis immediately")
+        
+        return jsonify({"status": "success", "message": "Chart data reset successfully"})
+    except Exception as e:
+        logging.error(f"Error resetting chart data: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 # Add the middleware
 app.wsgi_app = RobustMiddleware(app.wsgi_app)
 

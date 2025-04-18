@@ -532,6 +532,11 @@ function updateLastUpdated() {
 
     try {
         const timestamp = new Date(workerData.timestamp);
+
+        // Get the configured timezone with a fallback
+        const configuredTimezone = window.dashboardTimezone || 'America/Los_Angeles';
+
+        // Format with the configured timezone
         const options = {
             year: 'numeric',
             month: 'short',
@@ -539,12 +544,22 @@ function updateLastUpdated() {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-            hour12: true
+            hour12: true,
+            timeZone: configuredTimezone  // Explicitly use the configured timezone
         };
+
+        // Format the timestamp and update the DOM
+        const formattedTime = timestamp.toLocaleString('en-US', options);
+
         $("#lastUpdated").html("<strong>Last Updated:</strong> " +
-            timestamp.toLocaleString('en-US', options) + "<span id='terminal-cursor'></span>");
+            formattedTime + "<span id='terminal-cursor'></span>");
+
+        console.log(`Last updated timestamp using timezone: ${configuredTimezone}`);
     } catch (e) {
         console.error("Error formatting timestamp:", e);
+        // Fallback to basic timestamp if there's an error
+        $("#lastUpdated").html("<strong>Last Updated:</strong> " +
+            new Date().toLocaleString() + "<span id='terminal-cursor'></span>");
     }
 }
 

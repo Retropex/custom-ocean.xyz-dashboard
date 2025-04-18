@@ -245,16 +245,16 @@ h1 {
 }
 
 .offline-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: red;
-  border-radius: 50%;
-  margin-left: 0.5em;
-  position: relative;
-  top: -1px;
-  animation: glow 3s infinite;
-  box-shadow: 0 0 10px red, 0 0 20px red;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: red;
+    border-radius: 50%;
+    margin-left: 0.5em;
+    position: relative;
+    top: -1px;
+    animation: glow 3s infinite;
+    box-shadow: 0 0 10px red, 0 0 20px red !important;
 }
 
 @keyframes glowRed {

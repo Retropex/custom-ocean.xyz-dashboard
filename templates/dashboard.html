@@ -40,18 +40,11 @@
                     <span id="last_share" class="metric-value">{{ metrics.total_last_share or "N/A" }}</span>
                 </p>
                 <p>
-                    <strong>Pool Fees:</strong>
-                    <span id="pool_fees_percentage" class="metric-value">
-                        {% if metrics and metrics.pool_fees_percentage is defined %}
-                        {{ metrics.pool_fees_percentage }}%
-                        {% if metrics.pool_fees_percentage >= 0.9 and metrics.pool_fees_percentage <= 1.3 %}
-                        <span class="fee-star">★</span> <span class="datum-label">DATUM</span>
-                        {% endif %}
-                        {% else %}
-                        N/A
-                        {% endif %}
+                    <strong>Blocks Found:</strong>
+                    <span id="blocks_found" class="metric-value white">
+                        {{ metrics.blocks_found if metrics and metrics.blocks_found else "0" }}
                     </span>
-                    <span id="indicator_pool_fees_percentage"></span>
+                    <span id="indicator_blocks_found"></span>
                 </p>
             </div>
         </div>
@@ -99,11 +92,18 @@
                     <span id="indicator_est_time_to_payout"></span>
                 </p>
                 <p>
-                    <strong>Blocks Found:</strong>
-                    <span id="blocks_found" class="metric-value white">
-                        {{ metrics.blocks_found if metrics and metrics.blocks_found else "0" }}
+                    <strong>Pool Fees:</strong>
+                    <span id="pool_fees_percentage" class="metric-value">
+                        {% if metrics and metrics.pool_fees_percentage is defined %}
+                        {{ metrics.pool_fees_percentage }}%
+                        {% if metrics.pool_fees_percentage >= 0.9 and metrics.pool_fees_percentage <= 1.3 %}
+                        <span class="fee-star">★</span> <span class="datum-label">DATUM</span>
+                        {% endif %}
+                        {% else %}
+                        N/A
+                        {% endif %}
                     </span>
-                    <span id="indicator_blocks_found"></span>
+                    <span id="indicator_pool_fees_percentage"></span>
                 </p>
             </div>
         </div>

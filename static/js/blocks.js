@@ -2,7 +2,7 @@
 
 // Global variables
 let currentStartHeight = null;
-const mempoolBaseUrl = "https://mempool.guide";
+const mempoolBaseUrl = "https://mempool.guide"; // Switched from mempool.space to mempool.guide - more aligned with Ocean.xyz ethos
 let blocksCache = {};
 let isLoading = false;
 

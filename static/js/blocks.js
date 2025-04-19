@@ -2,7 +2,7 @@
 
 // Global variables
 let currentStartHeight = null;
-const mempoolBaseUrl = "https://mempool.space";
+const mempoolBaseUrl = "https://mempool.guide";
 let blocksCache = {};
 let isLoading = false;
 
@@ -671,7 +671,7 @@ function showBlockDetails(block) {
     }));
     headerSection.append(hashItem);
 
-    // Add mempool.space link
+    // Add mempool.guide link
     const linkItem = $("<div>", {
         class: "block-detail-item"
     });
@@ -684,7 +684,7 @@ function showBlockDetails(block) {
         href: `${mempoolBaseUrl}/block/${block.id}`,
         target: "_blank",
         class: "mempool-link",
-        text: "View on mempool.space",
+        text: "View on mempool.guide",
         css: {
             color: "#f7931a",
             textDecoration: "none"

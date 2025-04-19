@@ -120,7 +120,7 @@ The application uses Jinja2 templates with a retro-themed design:
 Client-side functionality is organized into modular JavaScript files:
 - **main.js**: Dashboard functionality, real-time updates, and chart rendering
 - **workers.js**: Worker grid rendering, filtering, and mini-chart creation
-- **blocks.js**: Block explorer with data fetching from mempool.space
+- **blocks.js**: Block explorer with data fetching from mempool.guide
 - **block-animation.js**: Interactive block mining animation
 - **BitcoinProgressBar.js**: Floating system monitor with uptime and connection status
 
@@ -210,7 +210,7 @@ All hashrates are normalized to TH/s internally because:
 
 ```
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  Ocean.xyz API  │      │  blockchain.info │      │  mempool.space  │
+│  Ocean.xyz API  │      │  blockchain.info │      │  mempool.guide  │
 └────────┬────────┘      └────────┬────────┘      └────────┬────────┘
          │                        │                        │
          ▼                        ▼                        ▼

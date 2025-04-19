@@ -389,10 +389,6 @@ function createWorkerCard(worker) {
                 <div class="worker-stats-label">Earnings:</div>
                 <div class="green-glow">${worker.earnings.toFixed(8)}</div>
             </div>
-            <div class="worker-stats-row">
-                <div class="worker-stats-label">Accept Rate:</div>
-                <div class="white-glow">${worker.acceptance_rate}%</div>
-            </div>
         </div>
     `);
 
@@ -444,7 +440,6 @@ function updateSummaryStats() {
 
     $('#total-earnings').text(`${(workerData.total_earnings || 0).toFixed(8)} BTC`);
     $('#daily-sats').text(`${numberWithCommas(workerData.daily_sats || 0)} SATS`);
-    $('#avg-acceptance-rate').text(`${(workerData.avg_acceptance_rate || 0).toFixed(2)}%`);
 }
 
 // Initialize mini chart

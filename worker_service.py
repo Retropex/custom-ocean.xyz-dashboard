@@ -48,7 +48,6 @@ class WorkerService:
             "hashrate_unit": "TH/s",
             "total_earnings": 0.0,
             "daily_sats": 0,
-            "avg_acceptance_rate": 0.0,
             "hashrate_history": [],
             "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
         }
@@ -307,7 +306,6 @@ class WorkerService:
             "efficiency": round(random.uniform(80, 95), 1) if is_online else 0,
             "last_share": last_share,
             "earnings": round(random.uniform(0.0001, 0.001), 8),
-            "acceptance_rate": round(random.uniform(95, 99), 1),
             "power_consumption": round(random.uniform(2000, 3500)) if is_online else 0,
             "temperature": round(random.uniform(55, 75)) if is_online else 0
         }
@@ -437,7 +435,6 @@ class WorkerService:
             "hashrate_unit": hashrate_unit,
             "total_earnings": total_earnings,
             "daily_sats": daily_sats,  # Fixed daily_sats value
-            "avg_acceptance_rate": 98.8,  # Default value
             "hashrate_history": hashrate_history,
             "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
         }
@@ -510,10 +507,7 @@ class WorkerService:
             # Generate last share time (within last 5 minutes)
             minutes_ago = random.randint(0, 5)
             last_share = (current_time - timedelta(minutes=minutes_ago)).strftime("%Y-%m-%d %H:%M")
-            
-            # Generate acceptance rate (95-100%)
-            acceptance_rate = round(random.uniform(95, 100), 1)
-            
+           
             # Generate temperature (normal operating range)
             temperature = random.randint(55, 70) if model_info["type"] == "ASIC" else random.randint(45, 55)
             
@@ -532,7 +526,6 @@ class WorkerService:
                 "efficiency": round(random.uniform(65, 95), 1),
                 "last_share": last_share,
                 "earnings": 0,  # Will be set after all workers are generated
-                "acceptance_rate": acceptance_rate,
                 "power_consumption": model_info["power"],
                 "temperature": temperature
             })
@@ -571,7 +564,6 @@ class WorkerService:
                 "efficiency": 0,
                 "last_share": last_share,
                 "earnings": 0,  # Minimal earnings for offline workers
-                "acceptance_rate": round(random.uniform(95, 99), 1),
                 "power_consumption": 0,
                 "temperature": 0
             })
@@ -673,9 +665,6 @@ class WorkerService:
             minutes_ago = random.randint(0, 3)
             last_share = (current_time - timedelta(minutes=minutes_ago)).strftime("%Y-%m-%d %H:%M")
             
-            # Generate acceptance rate (95-100%)
-            acceptance_rate = round(random.uniform(95, 100), 1)
-            
             # Generate temperature (normal operating range)
             temperature = random.randint(55, 70) if model_info["type"] == "ASIC" else random.randint(45, 55)
             
@@ -701,7 +690,6 @@ class WorkerService:
                 "efficiency": round(random.uniform(65, 95), 1),
                 "last_share": last_share,
                 "earnings": 0,  # Will be set after all workers are generated
-                "acceptance_rate": acceptance_rate,
                 "power_consumption": model_info["power"],
                 "temperature": temperature
             })
@@ -747,7 +735,6 @@ class WorkerService:
                 "efficiency": 0,
                 "last_share": last_share,
                 "earnings": 0,  # Minimal earnings for offline workers
-                "acceptance_rate": round(random.uniform(95, 99), 1),
                 "power_consumption": 0,
                 "temperature": 0
             })

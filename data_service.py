@@ -639,7 +639,6 @@ class MiningDashboardService:
             # Find total worker counts
             workers_online = 0
             workers_offline = 0
-            avg_acceptance_rate = 95.0  # Default value
             
             # Iterate through worker rows in the table
             for row in workers_table.find_all('tr', class_='table-row'):
@@ -675,7 +674,6 @@ class MiningDashboardService:
                         "efficiency": 90.0,   # Default efficiency
                         "last_share": "N/A",
                         "earnings": 0,
-                        "acceptance_rate": 95.0,  # Default acceptance rate
                         "power_consumption": 0,
                         "temperature": 0
                     }
@@ -815,7 +813,6 @@ class MiningDashboardService:
                 'workers_online': workers_online,
                 'workers_offline': workers_offline,
                 'total_earnings': total_earnings,
-                'avg_acceptance_rate': avg_acceptance_rate,
                 'daily_sats': daily_sats,
                 'timestamp': datetime.now(ZoneInfo(get_timezone())).isoformat()
             }
@@ -876,7 +873,6 @@ class MiningDashboardService:
                         "efficiency": 90.0,
                         "last_share": "N/A",
                         "earnings": 0,
-                        "acceptance_rate": 95.0,
                         "power_consumption": 0,
                         "temperature": 0
                     }
@@ -963,7 +959,6 @@ class MiningDashboardService:
                 'workers_online': workers_online,
                 'workers_offline': workers_offline,
                 'total_earnings': total_earnings,
-                'avg_acceptance_rate': 99.0,
                 'timestamp': datetime.now(ZoneInfo(get_timezone())).isoformat()
             }
             logging.info(f"Successfully retrieved {len(workers)} workers across multiple pages")

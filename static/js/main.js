@@ -1364,7 +1364,7 @@ function updateUI() {
                 const probSpan = document.createElement("span");
                 probSpan.id = "block_odds_3hr";
                 probSpan.className = "metric-value yellow";
-                probSpan.style.marginLeft = "10px";
+                probSpan.style.marginLeft = "17px";
                 probSpan.style.fontSize = "0.75em"; // Slightly larger font size
                 probSpan.style.fontWeight = "Normal"; // Normal font
                 probSpan.textContent = blockProbability;

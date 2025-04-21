@@ -300,7 +300,7 @@ h1 {
 
 .yellow {
     color: #ffd700 !important;
-    text-shadow: 0 0 2px #ffd700, 0 0 2px #ffd700;
+    text-shadow: 0 0 2px #ffd700, 0 0 2px #ffd700 !important;
 }
 
 .white {

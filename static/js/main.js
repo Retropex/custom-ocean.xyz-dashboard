@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 /**
  * ArrowIndicator - A clean implementation for managing metric value change indicators
@@ -401,6 +401,113 @@ function formatHashrateForDisplay(value, unit) {
         return (normalizedValue * 1000).toFixed(2) + ' GH/s';
     } else { // MH/s range or smaller
         return (normalizedValue * 1000000).toFixed(2) + ' MH/s';
+    }
+}
+
+// Function to calculate block finding probability based on hashrate and network hashrate
+function calculateBlockProbability(yourHashrate, yourHashrateUnit, networkHashrate) {
+    // First normalize both hashrates to the same unit (TH/s)
+    const normalizedYourHashrate = normalizeHashrate(yourHashrate, yourHashrateUnit);
+
+    // Network hashrate is in EH/s, convert to TH/s (1 EH/s = 1,000,000 TH/s)
+    const networkHashrateInTH = networkHashrate * 1000000;
+
+    // Calculate probability as your_hashrate / network_hashrate
+    const probability = normalizedYourHashrate / networkHashrateInTH;
+
+    // Format the probability for display
+    return formatProbability(probability);
+}
+
+// Format probability for display
+function formatProbability(probability) {
+    // Format as 1 in X chance (more intuitive for small probabilities)
+    if (probability > 0) {
+        const oneInX = Math.round(1 / probability);
+        return `1 : ${numberWithCommas(oneInX)}`;
+    } else {
+        return "N/A";
+    }
+}
+
+// Calculate theoretical time to find a block based on hashrate
+function calculateBlockTime(yourHashrate, yourHashrateUnit, networkHashrate) {
+    // First normalize both hashrates to the same unit (TH/s)
+    const normalizedYourHashrate = normalizeHashrate(yourHashrate, yourHashrateUnit);
+
+    // Make sure network hashrate is a valid number
+    if (typeof networkHashrate !== 'number' || isNaN(networkHashrate) || networkHashrate <= 0) {
+        console.error("Invalid network hashrate:", networkHashrate);
+        return "N/A";
+    }
+
+    // Network hashrate is in EH/s, convert to TH/s (1 EH/s = 1,000,000 TH/s)
+    const networkHashrateInTH = networkHashrate * 1000000;
+
+    // Calculate the probability of finding a block per hash attempt
+    const probability = normalizedYourHashrate / networkHashrateInTH;
+
+    // Bitcoin produces a block every 10 minutes (600 seconds) on average
+    const secondsToFindBlock = 600 / probability;
+
+    // Log the calculation for debugging
+    console.log(`Block time calculation using network hashrate: ${networkHashrate} EH/s`);
+    console.log(`Your hashrate: ${yourHashrate} ${yourHashrateUnit} (normalized: ${normalizedYourHashrate} TH/s)`);
+    console.log(`Probability: ${normalizedYourHashrate} / (${networkHashrate} * 1,000,000) = ${probability}`);
+    console.log(`Time to find block: 600 seconds / ${probability} = ${secondsToFindBlock} seconds`);
+    console.log(`Estimated time: ${secondsToFindBlock / 86400} days (${secondsToFindBlock / 86400 / 365.25} years)`);
+
+    return formatTimeRemaining(secondsToFindBlock);
+}
+
+// Format time in seconds to a readable format (similar to est_time_to_payout)
+function formatTimeRemaining(seconds) {
+    if (!seconds || seconds <= 0 || !isFinite(seconds)) {
+        return "N/A";
+    }
+
+    // Extremely large values (over 100 years) are not useful
+    if (seconds > 3153600000) { // 100 years in seconds
+        return "Never (statistically)";
+    }
+
+    const minutes = seconds / 60;
+    const hours = minutes / 60;
+    const days = hours / 24;
+    const months = days / 30.44; // Average month length
+    const years = days / 365.25; // Account for leap years
+
+    if (years >= 1) {
+        // For very long timeframes, show years and months
+        const remainingMonths = Math.floor((years - Math.floor(years)) * 12);
+        if (remainingMonths > 0) {
+            return `${Math.floor(years)} year${Math.floor(years) !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
+        }
+        return `${Math.floor(years)} year${Math.floor(years) !== 1 ? 's' : ''}`;
+    } else if (months >= 1) {
+        // For months, show months and days
+        const remainingDays = Math.floor((months - Math.floor(months)) * 30.44);
+        if (remainingDays > 0) {
+            return `${Math.floor(months)} month${Math.floor(months) !== 1 ? 's' : ''}, ${remainingDays} day${remainingDays !== 1 ? 's' : ''}`;
+        }
+        return `${Math.floor(months)} month${Math.floor(months) !== 1 ? 's' : ''}`;
+    } else if (days >= 1) {
+        // For days, show days and hours
+        const remainingHours = Math.floor((days - Math.floor(days)) * 24);
+        if (remainingHours > 0) {
+            return `${Math.floor(days)} day${Math.floor(days) !== 1 ? 's' : ''}, ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
+        }
+        return `${Math.floor(days)} day${Math.floor(days) !== 1 ? 's' : ''}`;
+    } else if (hours >= 1) {
+        // For hours, show hours and minutes
+        const remainingMinutes = Math.floor((hours - Math.floor(hours)) * 60);
+        if (remainingMinutes > 0) {
+            return `${Math.floor(hours)} hour${Math.floor(hours) !== 1 ? 's' : ''}, ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+        }
+        return `${Math.floor(hours)} hour${Math.floor(hours) !== 1 ? 's' : ''}`;
+    } else {
+        // For minutes, just show minutes
+        return `${Math.ceil(minutes)} minute${Math.ceil(minutes) !== 1 ? 's' : ''}`;
     }
 }
 
@@ -1183,6 +1290,50 @@ function updateUI() {
         }
         updateElementText("hashrate_24hr", formatted24hrHashrate);
 
+        // Calculate and display theoretical block finding time
+        if (data.hashrate_24hr != null && data.network_hashrate != null) {
+            const blockTime = calculateBlockTime(
+                data.hashrate_24hr,
+                data.hashrate_24hr_unit || 'th/s',
+                data.network_hashrate
+            );
+
+            // Update the time element if it exists, or create it
+            const timeElement = document.getElementById("block_time");
+            if (timeElement) {
+                timeElement.textContent = blockTime;
+            } else {
+                // Find the hashrate_24hr element's parent paragraph
+                const hashratePara = document.getElementById("hashrate_24hr").parentNode;
+
+                // Create the time element inline with spacing
+                const timeSpan = document.createElement("span");
+                timeSpan.id = "block_time";
+                timeSpan.className = "metric-value yellow"; // Using yellow for time values
+                timeSpan.style.marginLeft = "10px";
+                timeSpan.style.fontSize = "0.75em"; // Slightly larger font size
+                timeSpan.style.fontWeight = "Normal"; // Normal font
+                timeSpan.textContent = blockTime;
+
+                // Create a small label for it
+                const timeLabel = document.createElement("span");
+                timeLabel.className = "metric-label";
+                timeLabel.style.fontSize = "0.65em";
+                timeLabel.style.opacity = "0.8";
+                timeLabel.style.marginLeft = "5px";
+                timeLabel.style.color = "white"; // White color for label"
+                timeLabel.style.fontWeight = "Normal"; // Normal font
+                timeLabel.textContent = "[Time to ₿]";
+
+                // Add both elements after the arrow indicator
+                const arrowIndicator = document.getElementById("indicator_hashrate_24hr");
+                if (arrowIndicator && hashratePara) {
+                    arrowIndicator.parentNode.insertBefore(timeSpan, arrowIndicator.nextSibling);
+                    arrowIndicator.parentNode.insertBefore(timeLabel, timeSpan.nextSibling);
+                }
+            }
+        }
+
         // 3hr Hashrate
         let formatted3hrHashrate = "N/A";
         if (data.hashrate_3hr != null) {
@@ -1192,6 +1343,50 @@ function updateUI() {
             );
         }
         updateElementText("hashrate_3hr", formatted3hrHashrate);
+
+        // Calculate and display block finding probability for 24hr hashrate instead of 3hr hashrate
+        if (data.hashrate_24hr != null && data.network_hashrate != null) {
+            const blockProbability = calculateBlockProbability(
+                data.hashrate_24hr,
+                data.hashrate_24hr_unit || 'th/s',
+                data.network_hashrate
+            );
+
+            // Update the block odds element
+            const probabilityElement = document.getElementById("block_odds_3hr");
+            if (probabilityElement) {
+                probabilityElement.textContent = blockProbability;
+            } else {
+                // Find the hashrate_3hr element's parent paragraph
+                const hashratePara = document.getElementById("hashrate_3hr").parentNode;
+
+                // Create the probability element inline with spacing
+                const probSpan = document.createElement("span");
+                probSpan.id = "block_odds_3hr";
+                probSpan.className = "metric-value yellow";
+                probSpan.style.marginLeft = "10px";
+                probSpan.style.fontSize = "0.75em"; // Slightly larger font size
+                probSpan.style.fontWeight = "Normal"; // Normal font
+                probSpan.textContent = blockProbability;
+
+                // Create a small label for it
+                const probLabel = document.createElement("span");
+                probLabel.className = "metric-label";
+                probLabel.style.fontSize = "0.65em";
+                probLabel.style.opacity = "0.8";
+                probLabel.style.marginLeft = "5px";
+                probLabel.style.color = "white";
+                probLabel.style.fontWeight = "Normal"; // Normal font
+                probLabel.textContent = "[₿ Odds]";
+
+                // Add both elements after the arrow indicator
+                const arrowIndicator = document.getElementById("indicator_hashrate_3hr");
+                if (arrowIndicator && hashratePara) {
+                    arrowIndicator.parentNode.insertBefore(probSpan, arrowIndicator.nextSibling);
+                    arrowIndicator.parentNode.insertBefore(probLabel, probSpan.nextSibling);
+                }
+            }
+        }
 
         // 10min Hashrate
         let formatted10minHashrate = "N/A";

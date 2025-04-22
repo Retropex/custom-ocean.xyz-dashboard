@@ -290,32 +290,33 @@ h1 {
 /* Basic color classes for backward compatibility */
 .green {
     color: #39ff14 !important;
-    text-shadow: 0 0 2px #39ff14, 0 0 2px #39ff14;
+    text-shadow: 0 0 10px #39ff14, 0 0 2px #39ff14;
 }
 
 .blue {
     color: #00dfff !important;
-    text-shadow: 0 0 2px #00dfff, 0 0 2px #00dfff;
+    text-shadow: 0 0 10px #00dfff, 0 0 2px #00dfff;
 }
 
 .yellow {
     color: #ffd700 !important;
-    text-shadow: 0 0 2px #ffd700, 0 0 2px #ffd700 !important;
+    text-shadow: 0 0 10px #ffd700, 0 0 2px #ffd700 !important;
+    font-weight: normal !important;
 }
 
 .white {
     color: #ffffff !important;
-    text-shadow: 0 0 2px #ffffff, 0 0 2px #ffffff;
+    text-shadow: 0 0 10px #ffffff, 0 0 2px #ffffff;
 }
 
 .red {
     color: #ff2d2d !important;
-    text-shadow: 0 0 2px #ff2d2d, 0 0 2px #ff2d2d;
+    text-shadow: 0 0 10px #ff2d2d, 0 0 2px #ff2d2d;
 }
 
 .magenta {
     color: #ff2d95 !important;
-    text-shadow: 0 0 2px #ff2d95, 0 0 2px #ff2d95;
+    text-shadow: 0 0 10px #ff2d95, 0 0 2px #ff2d95;
 }
 
 /* Bitcoin Progress Bar Styles */

@@ -166,7 +166,7 @@ class ArrowIndicator {
             "difficulty", "daily_revenue", "daily_power_cost", "daily_profit_usd",
             "monthly_profit_usd", "daily_mined_sats", "monthly_mined_sats", "unpaid_earnings",
             "estimated_earnings_per_day_sats", "estimated_earnings_next_block_sats",
-            "estimated_rewards_in_window_sats", "workers_hashing"
+            "estimated_rewards_in_window_sats", "workers_hashing", "pool_luck"
         ];
 
         // Clear all arrows if requested
@@ -509,6 +509,30 @@ function formatTimeRemaining(seconds) {
         // For minutes, just show minutes
         return `${Math.ceil(minutes)} minute${Math.ceil(minutes) !== 1 ? 's' : ''}`;
     }
+}
+
+// Calculate pool luck as a percentage
+function calculatePoolLuck(actualSats, estimatedSats) {
+    if (!actualSats || !estimatedSats || estimatedSats === 0) {
+        return null;
+    }
+
+    // Calculate luck as a percentage (actual/estimated * 100)
+    const luck = (actualSats / estimatedSats) * 100;
+    return luck;
+}
+
+// Format luck percentage for display with color coding
+function formatLuckPercentage(luckPercentage) {
+    if (luckPercentage === null) {
+        return "N/A";
+    }
+
+    const formattedLuck = luckPercentage.toFixed(1) + "%";
+
+    // Don't add classes here, just return the formatted value
+    // The styling will be applied separately based on the value
+    return formattedLuck;
 }
 
 // SSE Connection with Error Handling and Reconnection Logic
@@ -1253,6 +1277,97 @@ function updateChartWithNormalizedData(chart, data) {
 
 // Main UI update function with hashrate normalization
 function updateUI() {
+    function ensureElementStyles() {
+        // Create a style element if it doesn't exist
+        if (!document.getElementById('customMetricStyles')) {
+            const styleEl = document.createElement('style');
+            styleEl.id = 'customMetricStyles';
+            styleEl.textContent = `
+        /* Ensure rows have consistent layout */
+        .card-body p {
+            position: relative;
+            display: grid;
+            grid-template-columns: auto auto 1fr;
+            align-items: center;
+            margin: 0.25rem 0;
+            line-height: 1.2;
+            gap: 0.25rem;
+        }
+        
+        /* Label style */
+        .card-body strong {
+            grid-column: 1;
+        }
+        
+        /* Main metric container */
+        .main-metric {
+            grid-column: 2;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        
+        /* All dividers */
+        .metric-divider-container {
+            grid-column: 3;
+            justify-self: end;
+            display: flex;
+            align-items: center;
+        }
+        
+        .metric-divider {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 1rem;
+            padding-left: 0.75rem;
+            height: 1.5em;
+            white-space: nowrap;
+        }
+        
+        .metric-divider-value {
+            font-size: 0.85em;
+            font-weight: normal;
+            margin-right: 0.5rem;
+        }
+        
+        .metric-divider-note {
+            font-size: 0.75em;
+            opacity: 0.8;
+            color: white;
+            font-weight: normal;
+        }
+        
+        span[id^="indicator_"] {
+            margin-left: 0.25rem;
+            width: 1rem;
+            display: inline-flex;
+        }
+        `;
+            document.head.appendChild(styleEl);
+        }
+    }
+
+    // Helper function to create dividers with consistent horizontal alignment
+    function createDivider(valueId, valueText, labelText, valueClass = "yellow") {
+        const dividerContainer = document.createElement("span");
+        dividerContainer.className = "metric-divider";
+
+        // Value element
+        const valueSpan = document.createElement("span");
+        valueSpan.id = valueId;
+        valueSpan.className = `metric-value metric-divider-value ${valueClass}`;
+        valueSpan.textContent = valueText;
+        dividerContainer.appendChild(valueSpan);
+
+        // Label element
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "metric-divider-note";
+        labelSpan.textContent = labelText;
+        dividerContainer.appendChild(labelSpan);
+
+        return dividerContainer;
+    }
+
     if (!latestMetrics) {
         console.warn("No metrics data available");
         return;
@@ -1280,6 +1395,114 @@ function updateUI() {
         }
         updateElementText("pool_total_hashrate", formattedPoolHashrate);
 
+        // Add pool luck calculation right after pool_total_hashrate
+        if (data.daily_mined_sats && data.estimated_earnings_per_day_sats) {
+            const poolLuck = calculatePoolLuck(
+                parseFloat(data.daily_mined_sats),
+                parseFloat(data.estimated_earnings_per_day_sats)
+            );
+
+            // Add pool_luck to the metrics data for arrow indicators
+            if (poolLuck !== null) {
+                data.pool_luck = poolLuck;
+            }
+
+            const poolLuckValue = poolLuck !== null ? formatLuckPercentage(poolLuck) : "N/A";
+
+            // Get the pool_total_hashrate element's parent paragraph
+            const poolHashratePara = document.getElementById("pool_total_hashrate").parentNode;
+
+            // Ensure grid layout and structure
+            ensureElementStyles();
+
+            // Structure parent for proper grid layout (similar to the other metrics)
+            if (!poolHashratePara.querySelector('.main-metric')) {
+                const poolHashrate = document.getElementById("pool_total_hashrate");
+                const indicatorPoolHashrate = document.getElementById("indicator_pool_total_hashrate");
+
+                // Create the main metric container
+                const mainMetric = document.createElement("span");
+                mainMetric.className = "main-metric";
+
+                // Move the metric and its indicator inside the container
+                if (poolHashrate && indicatorPoolHashrate) {
+                    // Clear any existing text nodes between the elements
+                    let node = poolHashrate.nextSibling;
+                    while (node && node !== indicatorPoolHashrate) {
+                        const nextNode = node.nextSibling;
+                        if (node.nodeType === 3) { // Text node
+                            poolHashratePara.removeChild(node);
+                        }
+                        node = nextNode;
+                    }
+
+                    poolHashrate.parentNode.insertBefore(mainMetric, poolHashrate);
+                    mainMetric.appendChild(poolHashrate);
+                    mainMetric.appendChild(indicatorPoolHashrate);
+                }
+
+                // Create divider container for pool hashrate row
+                const dividerContainer = document.createElement("span");
+                dividerContainer.className = "metric-divider-container";
+                poolHashratePara.appendChild(dividerContainer);
+            }
+
+            // Get or create the divider container
+            let poolDividerContainer = poolHashratePara.querySelector('.metric-divider-container');
+            if (!poolDividerContainer) {
+                poolDividerContainer = document.createElement("span");
+                poolDividerContainer.className = "metric-divider-container";
+                poolHashratePara.appendChild(poolDividerContainer);
+            }
+
+            // Check if the "pool_luck" element already exists
+            const existingLuck = document.getElementById("pool_luck");
+            if (existingLuck) {
+                // Update existing element
+                existingLuck.textContent = poolLuckValue;
+
+                // Apply appropriate color class based on luck value
+                existingLuck.className = "metric-value metric-divider-value";
+                if (poolLuck !== null) {
+                    if (poolLuck > 110) {
+                        existingLuck.classList.add("very-lucky");
+                    } else if (poolLuck > 100) {
+                        existingLuck.classList.add("lucky");
+                    } else if (poolLuck >= 90) {
+                        existingLuck.classList.add("normal-luck");
+                    } else {
+                        existingLuck.classList.add("unlucky");
+                    }
+                }
+            } else {
+                // Create the divider if it doesn't exist
+                const poolLuckDiv = createDivider("pool_luck", poolLuckValue, "Earnings Efficiency");
+
+                // Apply appropriate color class
+                const valueSpan = poolLuckDiv.querySelector('#pool_luck');
+                if (valueSpan && poolLuck !== null) {
+                    if (poolLuck > 110) {
+                        valueSpan.classList.add("very-lucky");
+                    } else if (poolLuck > 100) {
+                        valueSpan.classList.add("lucky");
+                    } else if (poolLuck >= 90) {
+                        valueSpan.classList.add("normal-luck");
+                    } else {
+                        valueSpan.classList.add("unlucky");
+                    }
+                }
+
+                // Add the indicator after the value
+                const indicatorSpan = document.createElement("span");
+                indicatorSpan.id = "indicator_pool_luck";
+                indicatorSpan.style.marginLeft = "5px";
+                poolLuckDiv.appendChild(indicatorSpan);
+
+                // Add to divider container
+                poolDividerContainer.appendChild(poolLuckDiv);
+            }
+        }
+
         // 24hr Hashrate
         let formatted24hrHashrate = "N/A";
         if (data.hashrate_24hr != null) {
@@ -1290,48 +1513,77 @@ function updateUI() {
         }
         updateElementText("hashrate_24hr", formatted24hrHashrate);
 
-        // Calculate and display theoretical block finding time
+        // Update the block time section with consistent addition logic
+        let blockTime = "N/A"; // Default value
         if (data.hashrate_24hr != null && data.network_hashrate != null) {
-            const blockTime = calculateBlockTime(
+            blockTime = calculateBlockTime(
                 data.hashrate_24hr,
                 data.hashrate_24hr_unit || 'th/s',
                 data.network_hashrate
             );
+        }
 
-            // Update the time element if it exists, or create it
-            const timeElement = document.getElementById("block_time");
-            if (timeElement) {
-                timeElement.textContent = blockTime;
-            } else {
-                // Find the hashrate_24hr element's parent paragraph
-                const hashratePara = document.getElementById("hashrate_24hr").parentNode;
+        // Find the hashrate_24hr element's parent paragraph
+        const hashrate24hrPara = document.getElementById("hashrate_24hr").parentNode;
 
-                // Create the time element inline with spacing
-                const timeSpan = document.createElement("span");
-                timeSpan.id = "block_time";
-                timeSpan.className = "metric-value yellow"; // Using yellow for time values
-                timeSpan.style.marginLeft = "10px";
-                timeSpan.style.fontSize = "0.75em"; // Slightly larger font size
-                timeSpan.style.fontWeight = "Normal"; // Normal font
-                timeSpan.textContent = blockTime;
+        // Structure parent for proper grid layout
+        if (!hashrate24hrPara.querySelector('.main-metric')) {
+            const hashrate24hr = document.getElementById("hashrate_24hr");
+            const indicator24hr = document.getElementById("indicator_hashrate_24hr");
 
-                // Create a small label for it
-                const timeLabel = document.createElement("span");
-                timeLabel.className = "metric-label";
-                timeLabel.style.fontSize = "0.65em";
-                timeLabel.style.opacity = "0.8";
-                timeLabel.style.marginLeft = "5px";
-                timeLabel.style.color = "white"; // White color for label"
-                timeLabel.style.fontWeight = "Normal"; // Normal font
-                timeLabel.textContent = "[Time to ₿]";
+            // Create the main metric container
+            const mainMetric = document.createElement("span");
+            mainMetric.className = "main-metric";
 
-                // Add both elements after the arrow indicator
-                const arrowIndicator = document.getElementById("indicator_hashrate_24hr");
-                if (arrowIndicator && hashratePara) {
-                    arrowIndicator.parentNode.insertBefore(timeSpan, arrowIndicator.nextSibling);
-                    arrowIndicator.parentNode.insertBefore(timeLabel, timeSpan.nextSibling);
+            // Move the metric and its indicator inside the container
+            if (hashrate24hr && indicator24hr) {
+                // Clear any existing text nodes between the elements
+                let node = hashrate24hr.nextSibling;
+                while (node && node !== indicator24hr) {
+                    const nextNode = node.nextSibling;
+                    if (node.nodeType === 3) { // Text node
+                        hashrate24hrPara.removeChild(node);
+                    }
+                    node = nextNode;
                 }
+
+                hashrate24hr.parentNode.insertBefore(mainMetric, hashrate24hr);
+                mainMetric.appendChild(hashrate24hr);
+                mainMetric.appendChild(indicator24hr);
             }
+
+            // Create divider container
+            const dividerContainer = document.createElement("span");
+            dividerContainer.className = "metric-divider-container";
+            hashrate24hrPara.appendChild(dividerContainer);
+        }
+
+        // Get or create the divider container
+        let dividerContainer = hashrate24hrPara.querySelector('.metric-divider-container');
+        if (!dividerContainer) {
+            dividerContainer = document.createElement("span");
+            dividerContainer.className = "metric-divider-container";
+            hashrate24hrPara.appendChild(dividerContainer);
+        }
+
+        // Check if the "block_time" element already exists
+        const existingBlockTime = document.getElementById("block_time");
+        if (existingBlockTime) {
+            // Find the containing metric-divider
+            let dividerElement = existingBlockTime.closest('.metric-divider');
+            if (dividerElement) {
+                // Just update the text
+                existingBlockTime.textContent = blockTime;
+            } else {
+                // If structure is broken, recreate it
+                const blockTimeDiv = createDivider("block_time", blockTime, "[Time to ₿]");
+                dividerContainer.innerHTML = ''; // Clear container
+                dividerContainer.appendChild(blockTimeDiv);
+            }
+        } else {
+            // Create the "Time to ₿" divider
+            const blockTimeDiv = createDivider("block_time", blockTime, "[Time to ₿]");
+            dividerContainer.appendChild(blockTimeDiv);
         }
 
         // 3hr Hashrate
@@ -1344,7 +1596,50 @@ function updateUI() {
         }
         updateElementText("hashrate_3hr", formatted3hrHashrate);
 
-        // Calculate and display block finding probability for 24hr hashrate instead of 3hr hashrate
+        // Same for 3hr data with blockOdds
+        const hashrate3hrPara = document.getElementById("hashrate_3hr").parentNode;
+
+        // Structure parent for proper grid layout
+        if (!hashrate3hrPara.querySelector('.main-metric')) {
+            const hashrate3hr = document.getElementById("hashrate_3hr");
+            const indicator3hr = document.getElementById("indicator_hashrate_3hr");
+
+            // Create the main metric container
+            const mainMetric = document.createElement("span");
+            mainMetric.className = "main-metric";
+
+            // Move the metric and its indicator inside the container
+            if (hashrate3hr && indicator3hr) {
+                // Clear any existing text nodes between the elements
+                let node = hashrate3hr.nextSibling;
+                while (node && node !== indicator3hr) {
+                    const nextNode = node.nextSibling;
+                    if (node.nodeType === 3) { // Text node
+                        hashrate3hrPara.removeChild(node);
+                    }
+                    node = nextNode;
+                }
+
+                hashrate3hr.parentNode.insertBefore(mainMetric, hashrate3hr);
+                mainMetric.appendChild(hashrate3hr);
+                mainMetric.appendChild(indicator3hr);
+            }
+
+            // Create divider container
+            const dividerContainer = document.createElement("span");
+            dividerContainer.className = "metric-divider-container";
+            hashrate3hrPara.appendChild(dividerContainer);
+        }
+
+        // Get or create the divider container
+        let odds3hrContainer = hashrate3hrPara.querySelector('.metric-divider-container');
+        if (!odds3hrContainer) {
+            odds3hrContainer = document.createElement("span");
+            odds3hrContainer.className = "metric-divider-container";
+            hashrate3hrPara.appendChild(odds3hrContainer);
+        }
+
+        // Apply the same consistent approach for the block odds section
         if (data.hashrate_24hr != null && data.network_hashrate != null) {
             const blockProbability = calculateBlockProbability(
                 data.hashrate_24hr,
@@ -1352,39 +1647,14 @@ function updateUI() {
                 data.network_hashrate
             );
 
-            // Update the block odds element
-            const probabilityElement = document.getElementById("block_odds_3hr");
-            if (probabilityElement) {
-                probabilityElement.textContent = blockProbability;
+            // Update the element if it already exists
+            const existingProbability = document.getElementById("block_odds_3hr");
+            if (existingProbability) {
+                existingProbability.textContent = blockProbability;
             } else {
-                // Find the hashrate_3hr element's parent paragraph
-                const hashratePara = document.getElementById("hashrate_3hr").parentNode;
-
-                // Create the probability element inline with spacing
-                const probSpan = document.createElement("span");
-                probSpan.id = "block_odds_3hr";
-                probSpan.className = "metric-value yellow";
-                probSpan.style.marginLeft = "17px";
-                probSpan.style.fontSize = "0.75em"; // Slightly larger font size
-                probSpan.style.fontWeight = "Normal"; // Normal font
-                probSpan.textContent = blockProbability;
-
-                // Create a small label for it
-                const probLabel = document.createElement("span");
-                probLabel.className = "metric-label";
-                probLabel.style.fontSize = "0.65em";
-                probLabel.style.opacity = "0.8";
-                probLabel.style.marginLeft = "5px";
-                probLabel.style.color = "white";
-                probLabel.style.fontWeight = "Normal"; // Normal font
-                probLabel.textContent = "[₿ Odds]";
-
-                // Add both elements after the arrow indicator
-                const arrowIndicator = document.getElementById("indicator_hashrate_3hr");
-                if (arrowIndicator && hashratePara) {
-                    arrowIndicator.parentNode.insertBefore(probSpan, arrowIndicator.nextSibling);
-                    arrowIndicator.parentNode.insertBefore(probLabel, probSpan.nextSibling);
-                }
+                // For block odds after 3hr hashrate
+                const blockOddsDiv = createDivider("block_odds_3hr", blockProbability, "[₿ Odds]");
+                odds3hrContainer.appendChild(blockOddsDiv);
             }
         }
 
@@ -1476,7 +1746,7 @@ function updateUI() {
 
         // Check for "next block" in any case format
         if (payoutText && /next\s+block/i.test(payoutText)) {
-            $("#est_time_to_payout").attr("style", "color: #32CD32 !important; text-shadow: 0 0 6px rgba(50, 205, 50, 0.6) !important; animation: pulse 1s infinite !important; text-transform: uppercase !important;");
+            $("#est_time_to_payout").attr("style", "color: #32CD32 !important; text-shadow: 0 0 10px rgba(50, 205, 50, 0.6) !important; animation: pulse 1s infinite !important; text-transform: uppercase !important;");
         } else {
             // Trim any extra whitespace
             const cleanText = payoutText ? payoutText.trim() : "";
@@ -1666,6 +1936,45 @@ $(document).ready(function () {
             }
         }, 100);
     };
+
+    // Add this to your $(document).ready() function in main.js
+    function fixLastBlockLine() {
+        // Add the style to fix the Last Block line
+        $("<style>")
+            .prop("type", "text/css")
+            .html(`
+      /* Fix for Last Block line to keep all elements on one line */
+      .card-body p.last-block-line {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+      }
+      
+      .card-body p.last-block-line > strong {
+        flex-shrink: 0;
+      }
+      
+      .card-body p.last-block-line > span,
+      .card-body p.last-block-line > #indicator_last_block {
+        display: inline-block;
+        margin-right: 5px;
+      }
+    `)
+            .appendTo("head");
+
+        // Apply the class to the Last Block line
+        $("#payoutMiscCard .card-body p").each(function () {
+            const strongElem = $(this).find("strong");
+            if (strongElem.length && strongElem.text().includes("Last Block")) {
+                $(this).addClass("last-block-line");
+            }
+        });
+    }
+
+    // Call this function
+    fixLastBlockLine();
 
     // Load timezone setting early
     (function loadTimezoneEarly() {

@@ -117,7 +117,7 @@
             <div class="card-header">Pool Hashrates</div>
             <div class="card-body">
                 <p>
-                    <strong>Pool Total Hashrate:</strong>
+                    <strong>Pool Hashrate:</strong>
                     <span id="pool_total_hashrate" class="metric-value white">
                         {% if metrics and metrics.pool_total_hashrate and metrics.pool_total_hashrate_unit %}
                         {{ metrics.pool_total_hashrate }} {{ metrics.pool_total_hashrate_unit[:-2]|upper ~ metrics.pool_total_hashrate_unit[-2:] }}
@@ -256,7 +256,7 @@
             <div class="card-header">SATOSHI EARNINGS</div>
             <div class="card-body">
                 <p>
-                    <strong>Daily Mined (Net):</strong>
+                    <strong>Projected Daily (Net):</strong>
                     <span id="daily_mined_sats" class="metric-value yellow">
                         {% if metrics and metrics.daily_mined_sats %}
                         {{ metrics.daily_mined_sats|commafy }} SATS
@@ -267,7 +267,7 @@
                     <span id="indicator_daily_mined_sats"></span>
                 </p>
                 <p>
-                    <strong>Monthly Mined (Net):</strong>
+                    <strong>Projected Monthly (Net):</strong>
                     <span id="monthly_mined_sats" class="metric-value yellow">
                         {% if metrics and metrics.monthly_mined_sats %}
                         {{ metrics.monthly_mined_sats|commafy }} SATS

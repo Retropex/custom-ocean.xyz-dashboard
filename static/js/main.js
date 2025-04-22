@@ -166,7 +166,7 @@ class ArrowIndicator {
             "difficulty", "daily_revenue", "daily_power_cost", "daily_profit_usd",
             "monthly_profit_usd", "daily_mined_sats", "monthly_mined_sats", "unpaid_earnings",
             "estimated_earnings_per_day_sats", "estimated_earnings_next_block_sats",
-            "estimated_rewards_in_window_sats", "workers_hashing", "pool_luck"
+            "estimated_rewards_in_window_sats", "workers_hashing"
         ];
 
         // Clear all arrows if requested
@@ -1491,12 +1491,6 @@ function updateUI() {
                         valueSpan.classList.add("unlucky");
                     }
                 }
-
-                // Add the indicator after the value
-                const indicatorSpan = document.createElement("span");
-                indicatorSpan.id = "indicator_pool_luck";
-                indicatorSpan.style.marginLeft = "5px";
-                poolLuckDiv.appendChild(indicatorSpan);
 
                 // Add to divider container
                 poolDividerContainer.appendChild(poolLuckDiv);

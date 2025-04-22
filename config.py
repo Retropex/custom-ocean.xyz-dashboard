@@ -12,15 +12,13 @@ CONFIG_FILE = "config.json"
 def load_config():
     """
     Load configuration from file or return defaults if file doesn't exist.
-    
-    Returns:
-        dict: Configuration dictionary with settings
     """
     default_config = {
         "power_cost": 0.0,
         "power_usage": 0.0,
         "wallet": "yourwallethere",
-        "timezone": "America/Los_Angeles"  # Add default timezone
+        "timezone": "America/Los_Angeles",
+        "network_fee": 0.0  # Add default network fee
     }
     
     if os.path.exists(CONFIG_FILE):
@@ -28,6 +26,12 @@ def load_config():
             with open(CONFIG_FILE, "r") as f:
                 config = json.load(f)
             logging.info(f"Configuration loaded from {CONFIG_FILE}")
+            
+            # Ensure network_fee is present even in existing config files
+            if "network_fee" not in config:
+                config["network_fee"] = default_config["network_fee"]
+                logging.info("Added missing network_fee to config with default value")
+                
             return config
         except Exception as e:
             logging.error(f"Error loading config: {e}")

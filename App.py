@@ -850,12 +850,13 @@ app.wsgi_app = RobustMiddleware(app.wsgi_app)
 
 # Update this section in App.py to properly initialize services
 
-# Initialize the dashboard service and worker service
+# Initialize the dashboard service with network fee parameter
 config = load_config()
 dashboard_service = MiningDashboardService(
     config.get("power_cost", 0.0),
     config.get("power_usage", 0.0),
-    config.get("wallet")
+    config.get("wallet"),
+    network_fee=config.get("network_fee", 0.0)  # Add network fee parameter
 )
 worker_service = WorkerService()
 # Connect the services

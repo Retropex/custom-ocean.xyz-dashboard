@@ -17,18 +17,20 @@ from config import get_timezone
 class MiningDashboardService:
     """Service for fetching and processing mining dashboard data."""
     
-    def __init__(self, power_cost, power_usage, wallet):
+    def __init__(self, power_cost, power_usage, wallet, network_fee=0.0):
         """
         Initialize the mining dashboard service.
-        
+    
         Args:
             power_cost (float): Cost of power in $ per kWh
             power_usage (float): Power usage in watts
             wallet (str): Bitcoin wallet address for Ocean.xyz
+            network_fee (float): Additional network fee percentage
         """
         self.power_cost = power_cost
         self.power_usage = power_usage
         self.wallet = wallet
+        self.network_fee = network_fee
         self.cache = {}
         self.sats_per_btc = 100_000_000
         self.previous_values = {}
@@ -37,13 +39,13 @@ class MiningDashboardService:
     def fetch_metrics(self):
         """
         Fetch metrics from Ocean.xyz and other sources.
-        
+    
         Returns:
             dict: Mining metrics data
         """
         # Add execution time tracking
         start_time = time.time()
-        
+    
         try:
             with ThreadPoolExecutor(max_workers=2) as executor:
                 future_ocean = executor.submit(self.get_ocean_data)
@@ -60,12 +62,12 @@ class MiningDashboardService:
                 return None
                 
             difficulty, network_hashrate, btc_price, block_count = btc_stats
-            
+        
             # If we failed to get network hashrate, use a reasonable default to prevent division by zero
             if network_hashrate is None:
                 logging.warning("Using default network hashrate")
                 network_hashrate = 500e18  # ~500 EH/s as a reasonable fallback
-                
+            
             # If we failed to get BTC price, use a reasonable default
             if btc_price is None:
                 logging.warning("Using default BTC price")
@@ -80,7 +82,25 @@ class MiningDashboardService:
             block_reward = 3.125
             blocks_per_day = 86400 / 600
             daily_btc_gross = hash_proportion * block_reward * blocks_per_day
-            daily_btc_net = daily_btc_gross * (1 - 0.02 - 0.028)
+        
+            # Use actual pool fees instead of hardcoded values
+            # Get the pool fee percentage from ocean_data, default to 2.0% if not available
+            pool_fee_percent = ocean_data.pool_fees_percentage if ocean_data.pool_fees_percentage is not None else 2.0
+        
+            # Get the network fee from the configuration (default to 0.0% if not set)
+            from config import load_config
+            config = load_config()
+            network_fee_percent = config.get("network_fee", 0.0)
+        
+            # Calculate total fee percentage (converting from percentage to decimal)
+            total_fee_rate = (pool_fee_percent + network_fee_percent) / 100.0
+        
+            # Calculate net BTC accounting for actual fees
+            daily_btc_net = daily_btc_gross * (1 - total_fee_rate)
+        
+            # Log the fee calculations for transparency
+            logging.info(f"Earnings calculation using pool fee: {pool_fee_percent}% + network fee: {network_fee_percent}%")
+            logging.info(f"Total fee rate: {total_fee_rate}, Daily BTC gross: {daily_btc_gross}, Daily BTC net: {daily_btc_net}")
 
             daily_revenue = round(daily_btc_net * btc_price, 2) if btc_price is not None else None
             daily_power_cost = round((self.power_usage / 1000) * self.power_cost * 24, 2)
@@ -113,7 +133,11 @@ class MiningDashboardService:
                 'block_number': block_count,
                 'network_hashrate': (network_hashrate / 1e18) if network_hashrate else None,
                 'difficulty': difficulty,
+                'daily_btc_gross': daily_btc_gross,
                 'daily_btc_net': daily_btc_net,
+                'pool_fee_percent': pool_fee_percent,
+                'network_fee_percent': network_fee_percent, 
+                'total_fee_rate': total_fee_rate,
                 'estimated_earnings_per_day': estimated_earnings_per_day,
                 'daily_revenue': daily_revenue,
                 'daily_power_cost': daily_power_cost,

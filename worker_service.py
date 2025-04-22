@@ -314,10 +314,10 @@ class WorkerService:
         """
         Generate fallback worker data from cached metrics when real data can't be fetched.
         Try to preserve real worker names if available.
-        
+    
         Args:
             cached_metrics (dict): Cached metrics from the dashboard
-                
+            
         Returns:
             dict: Generated worker data
         """
@@ -325,12 +325,16 @@ class WorkerService:
         if not cached_metrics:
             logging.warning("No cached metrics available for worker fallback data")
             return self.generate_default_workers_data()
-                
+            
         # Check if we have workers_hashing information
-        workers_count = cached_metrics.get("workers_hashing", 0)
-        
+        workers_count = cached_metrics.get("workers_hashing")
+    
+        # Handle None value for workers_count
+        if workers_count is None:
+            logging.warning("No workers_hashing value in cached metrics, defaulting to 1 worker")
+            workers_count = 1
         # Force at least 1 worker if the count is 0
-        if workers_count <= 0:
+        elif workers_count <= 0:
             logging.warning("No workers reported in metrics, forcing 1 worker")
             workers_count = 1
                 

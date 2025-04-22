@@ -12,7 +12,7 @@ import threading
 # a previously patched value for ``CONFIG_FILE`` should be preserved.  Using
 # ``globals().get`` allows tests to monkeypatch ``CONFIG_FILE`` before
 # reloading the module and have that value persist across the reload.
-CONFIG_FILE = globals().get("CONFIG_FILE", "config.json")
+CONFIG_FILE = globals().get("CONFIG_FILE", "data/config.json")
 
 # Cached configuration and its modification time
 _cached_config = None

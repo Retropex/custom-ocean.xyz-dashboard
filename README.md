@@ -226,6 +226,7 @@ For optimal performance:
 3. Use the system monitor to verify connection status
 4. Access the health endpoint at `/api/health` for diagnostics
 5. For stale data issues, use the Force Refresh function
+6. Use hotkey Shift+R to clear chart and Redis data (as needed, not required)
 
 ## License
 

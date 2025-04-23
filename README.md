@@ -1,4 +1,4 @@
-# Ocean.xyz Bitcoin Mining Dashboard
+# DeepSea Mining Dashboard
 
 ## A Retro Mining Monitoring Solution
 

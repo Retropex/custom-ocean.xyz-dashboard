@@ -1,3 +1,6 @@
+﻿// Add this flag at the top of your file, outside the function
+let isApplyingTheme = false;
+
 // Bitcoin Orange theme (default)
 const BITCOIN_THEME = {
     PRIMARY: '#f2a900',
@@ -59,7 +62,7 @@ function applyDeepSeaTheme() {
     }
 
     // Set the guard flag
-    window.themeProcessing = true;
+    isApplyingTheme = true;
 
     try {
         console.log("Applying DeepSea theme...");
@@ -340,8 +343,8 @@ function applyDeepSeaTheme() {
 
         console.log("DeepSea theme applied with color adjustments");
     } finally {
-        // Always reset the guard flag when done, even if there's an error
-        window.themeProcessing = false;
+        // Reset the guard flag when done, even if there's an error
+        setTimeout(() => { isApplyingTheme = false; }, 100);
     }
 }
 
@@ -355,29 +358,43 @@ function toggleTheme() {
     // Save the new theme preference
     saveThemePreference(useDeepSea);
 
-    // Show a brief loading message to indicate theme change is happening
+    // Show a themed loading message
     const loadingMessage = document.createElement('div');
+    loadingMessage.id = 'theme-loader';
+
+    const icon = document.createElement('div');
+    icon.id = 'loader-icon';
+    icon.innerHTML = useDeepSea ? '🌊' : '₿';
+
+    const text = document.createElement('div');
+    text.id = 'loader-text';
+    text.textContent = 'Applying ' + (useDeepSea ? 'DeepSea' : 'Bitcoin') + ' Theme';
+
+    loadingMessage.appendChild(icon);
+    loadingMessage.appendChild(text);
+
+    // Apply immediate styling
     loadingMessage.style.position = 'fixed';
     loadingMessage.style.top = '0';
     loadingMessage.style.left = '0';
     loadingMessage.style.width = '100%';
     loadingMessage.style.height = '100%';
-    loadingMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    loadingMessage.style.backgroundColor = useDeepSea ? '#0c141a' : '#111111';
+    loadingMessage.style.color = useDeepSea ? '#0088cc' : '#f2a900';
     loadingMessage.style.display = 'flex';
+    loadingMessage.style.flexDirection = 'column';
     loadingMessage.style.justifyContent = 'center';
     loadingMessage.style.alignItems = 'center';
     loadingMessage.style.zIndex = '9999';
-    loadingMessage.style.color = useDeepSea ? '#0088cc' : '#f2a900';
     loadingMessage.style.fontFamily = "'VT323', monospace";
-    loadingMessage.style.fontSize = '24px';
-    loadingMessage.innerHTML = '<div style="background-color: rgba(0, 0, 0, 0.8); padding: 20px; border-radius: 5px;">APPLYING ' + (useDeepSea ? 'DEEPSEA' : 'BITCOIN') + ' THEME...</div>';
+
     document.body.appendChild(loadingMessage);
 
-    // Short delay before refreshing to allow the message to be seen
+    // Short delay before refreshing
     setTimeout(() => {
         // Hard reload the page
         window.location.reload();
-    }, 300);
+    }, 500);
 }
 
 // Set theme preference to localStorage

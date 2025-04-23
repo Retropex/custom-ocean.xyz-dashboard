@@ -1,7 +1,4 @@
-﻿// Add this flag at the top of your file, outside the function
-let isApplyingTheme = false;
-
-"use strict";
+﻿"use strict";
 
 /**
  * ArrowIndicator - A clean implementation for managing metric value change indicators

@@ -68,21 +68,12 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
    python setup.py
    ```
 
-4. Configure your mining settings in [config.json](https://github.com/Djobleezy/Deepsea-Dashboard/blob/main/config.json):
-   ```json
-   {
-     "power_cost": 0.12,
-     "power_usage": 3450,
-     "wallet": "yourwallethere"  <--- make sure to replace this value in all project files (boot.html, app.py, config.py, config.json, & setup.py)
-   }
-   ```
-
-5. Start the application:
+4. Start the application:
    ```
    python App.py
    ```
 
-6. Open your browser at `http://localhost:5000`
+5. Open your browser at `http://localhost:5000`
 
 For detailed deployment instructions with Redis persistence and Gunicorn configuration, see [deployment_steps.md](deployment_steps.md).
 

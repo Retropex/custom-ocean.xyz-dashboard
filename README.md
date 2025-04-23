@@ -10,9 +10,6 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 ![DeepSea Boot](https://github.com/user-attachments/assets/77222f13-1e95-48ee-a418-afd0e6b7a920)
 ![DeepSea Config](https://github.com/user-attachments/assets/48fcc2a6-f56e-48b9-ac61-b27e9b4a6e41)
 ![DeepSea Dashboard](https://github.com/user-attachments/assets/f8f3671e-907a-456a-b8c6-5d9ecd07946c)
-![workers](https://github.com/user-attachments/assets/2d26dbd0-64b7-4f77-921c-c48ad2cb6122)
-![blocks](https://github.com/user-attachments/assets/e38d6f17-5e89-4560-aeec-69a349fa12ba)
-![notifications](https://github.com/user-attachments/assets/2819b2d2-5e4a-45e8-8fa2-2d5daf285e27)
 
 ---
 

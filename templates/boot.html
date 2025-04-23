@@ -252,6 +252,11 @@
             position: relative;
             white-space: pre;
             font-family: monospace;
+            height: 130px; /* Set fixed height to match original logo */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
         }
 
         /* Update the DeepSea theme logo styling */
@@ -266,9 +271,9 @@
             body.deepsea-theme #bitcoin-logo::after {
                 content: " ____                 ____             \A|  _ \\  ___  ___ _ __/ ___|  ___  __ _ \A| | | |/ _ \\/ _ \\ '_ \\___ \\ / _ \\/ _` |\A| |_| |  __/  __/ |_) |__) |  __/ (_| |\A|____/ \\___|\\___|_.__/____/ \\___|\\__,_|\A|_|    ";
                 position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%); /* Center perfectly */
                 font-size: 100%; /* Full size */
                 font-weight: bold;
                 line-height: 1.2;

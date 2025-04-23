@@ -406,11 +406,42 @@ function saveThemePreference(useDeepSea) {
     }
 }
 
+// Check if this is the first startup by checking for the "firstStartup" flag
+function isFirstStartup() {
+    return localStorage.getItem('hasStartedBefore') !== 'true';
+}
+
+// Mark that the app has started before
+function markAppStarted() {
+    try {
+        localStorage.setItem('hasStartedBefore', 'true');
+    } catch (e) {
+        console.error("Error marking app as started:", e);
+    }
+}
+
+// Initialize DeepSea as default on first startup
+function initializeDefaultTheme() {
+    if (isFirstStartup()) {
+        console.log("First startup detected, setting DeepSea as default theme");
+        saveThemePreference(true); // Set DeepSea theme as default (true)
+        markAppStarted();
+        return true;
+    }
+    return false;
+}
+
 // Check for theme preference in localStorage
 function loadThemePreference() {
     try {
+        // Check if it's first startup - if so, set DeepSea as default
+        const isFirstTime = initializeDefaultTheme();
+
+        // Get theme preference from localStorage
         const themePreference = localStorage.getItem('useDeepSeaTheme');
-        if (themePreference === 'true') {
+
+        // Apply theme based on preference
+        if (themePreference === 'true' || isFirstTime) {
             applyDeepSeaTheme();
         } else {
             // Make sure the toggle button is styled correctly for Bitcoin theme

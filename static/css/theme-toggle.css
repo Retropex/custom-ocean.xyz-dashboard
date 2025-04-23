@@ -32,7 +32,7 @@
         /* Add theme icon for desktop view */
         #themeToggle:before,
         .theme-toggle-btn:before {
-            content: "₿|🌊";
+            content: " ₿|🌊";
             margin-right: 5px;
             font-size: 14px;
         }
@@ -51,7 +51,7 @@
     .theme-toggle-btn {
         padding: 6px;
         font-size: 12px;
-        border-radius: 50%;
+        border-radius: 3px;
         width: 35px;
         height: 35px;
     }
@@ -59,7 +59,7 @@
         /* Use just icon for mobile to save space */
         #themeToggle:before,
         .theme-toggle-btn:before {
-            content: "₿|🌊";
+            content: " ₿|🌊";
             margin-right: 0;
             font-size: 14px;
         }

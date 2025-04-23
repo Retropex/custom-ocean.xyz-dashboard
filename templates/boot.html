@@ -246,6 +246,53 @@
             background-repeat: no-repeat;
             padding-right: 30px;
         }
+
+        /* Base styling for the Bitcoin logo */
+        #bitcoin-logo {
+            position: relative;
+            white-space: pre;
+            font-family: monospace;
+        }
+
+        /* Update the DeepSea theme logo styling */
+        body.deepsea-theme #bitcoin-logo {
+            color: transparent; /* Hide original logo */
+            position: relative;
+            text-shadow: none;
+            min-height: 120px; /* Ensure enough height for the new logo */
+        }
+
+            /* Add the new DeepSea ASCII art */
+            body.deepsea-theme #bitcoin-logo::after {
+                content: " ____                 ____             \A|  _ \\  ___  ___ _ __/ ___|  ___  __ _ \A| | | |/ _ \\/ _ \\ '_ \\___ \\ / _ \\/ _` |\A| |_| |  __/  __/ |_) |__) |  __/ (_| |\A|____/ \\___|\\___|_.__/____/ \\___|\\__,_|\A|_|    ";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                font-size: 100%; /* Full size */
+                font-weight: bold;
+                line-height: 1.2;
+                color: #0088cc;
+                white-space: pre;
+                display: block;
+                text-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
+                font-family: monospace;
+                z-index: 1;
+                padding: 10px 0;
+            }
+
+            /* Add "DeepSea" version info */
+            body.deepsea-theme #bitcoin-logo::before {
+                content: "DeepSea v.21";
+                position: absolute;
+                bottom: 0;
+                right: 10px;
+                color: #0088cc;
+                font-size: 16px;
+                text-shadow: 0 0 5px rgba(0, 136, 204, 0.5);
+                font-family: 'VT323', monospace;
+                z-index: 2; /* Ensure version displays on top */
+            }
     </style>
 </head>
 <body>

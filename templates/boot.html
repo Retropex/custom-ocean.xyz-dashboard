@@ -675,7 +675,7 @@ v.21
         // Update Use Defaults button handler
         document.getElementById('use-defaults').addEventListener('click', function () {
             // Set default values including network fee
-            document.getElementById('wallet-address').value = "bc1py5zmrtssheq3shd8cptpl5l5m3txxr5afynyg2gyvam6w78s4dlqqnt4v9";
+            document.getElementById('wallet-address').value = "35eS5Lsqw8NCjFJ8zhp9JaEmyvLDwg6XtS";
             document.getElementById('power-cost').value = 0.0;
             document.getElementById('power-usage').value = 0.0;
             document.getElementById('network-fee').value = 0.0;
@@ -776,10 +776,14 @@ v.21
                     }
                     setTimeout(processNextMessage, 500);
                 } else {
-                    // If user selects 'N', just redirect to dashboard
+                    // If user selects 'N', show configuration form directly without boot messages
                     outputElement.innerHTML += "N\n\nDASHBOARD INITIALIZATION ABORTED.\n";
-                    outputElement.innerHTML += "\nUsing default configuration values.\n";
-                    setTimeout(redirectToDashboard, 2000);
+                    outputElement.innerHTML += "\nPlease configure your mining setup:\n";
+
+                    // Short pause and then show the configuration form
+                    setTimeout(function () {
+                        document.getElementById('config-form').style.display = 'block';
+                    }, 1000);
                 }
             } catch (err) {
                 setTimeout(redirectToDashboard, 1000);
@@ -876,7 +880,7 @@ v.21
         // Fallback messages (used immediately)
         function setupFallbackMessages() {
             bootMessages = [
-                { text: "BITCOIN OS - MINING SYSTEM - v21.000.000\n", speed: 25, delay: 300 },
+                { text: "BITCOIN OS - MINING CONTROL SYSTEM - v21.000.000\n", speed: 25, delay: 300 },
                 { text: "Copyright (c) 2009-2025 Satoshi Nakamoto\n", speed: 20, delay: 250 },
                 { text: "All rights reserved.\n\n", speed: 25, delay: 300 },
                 { text: "INITIALIZING SYSTEM...\n", speed: 25, delay: 300 },

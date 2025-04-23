@@ -16,7 +16,7 @@ services:
       - "5000:5000"
     environment:
       - REDIS_URL=redis://redis:6379
-      - WALLET=bc1py5zmrtssheq3shd8cptpl5l5m3txxr5afynyg2gyvam6w78s4dlqqnt4v9
+      - WALLET=35eS5Lsqw8NCjFJ8zhp9JaEmyvLDwg6XtS
       - POWER_COST=0
       - POWER_USAGE=0
       - LOG_LEVEL=INFO

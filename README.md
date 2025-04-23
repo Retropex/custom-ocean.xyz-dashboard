@@ -69,7 +69,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
    python setup.py
    ```
 
-4. Configure your mining settings in [config.json](https://github.com/Djobleezy/Custom-Ocean.xyz-Dashboard/blob/main/config.json):
+4. Configure your mining settings in [config.json](https://github.com/Djobleezy/Deepsea-Dashboard/blob/main/config.json):
    ```json
    {
      "power_cost": 0.12,

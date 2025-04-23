@@ -60,6 +60,7 @@ FILE_MAPPINGS = {
     'retro-refresh.css': 'static/css/retro-refresh.css',
     'blocks.css': 'static/css/blocks.css',
     'notifications.css': 'static/css/notifications.css',
+    'theme-toggle.css': 'static/css/theme-toggle.css',  # Added theme-toggle.css
     
     # JS files
     'main.js': 'static/js/main.js',
@@ -67,6 +68,7 @@ FILE_MAPPINGS = {
     'blocks.js': 'static/js/blocks.js',
     'BitcoinProgressBar.js': 'static/js/BitcoinProgressBar.js',
     'notifications.js': 'static/js/notifications.js',
+    'theme.js': 'static/js/theme.js',  # Added theme.js
     
     # Template files
     'base.html': 'templates/base.html',
@@ -82,7 +84,9 @@ FILE_MAPPINGS = {
 DEFAULT_CONFIG = {
     "power_cost": 0.0,
     "power_usage": 0.0,
-    "wallet": "yourwallethere"
+    "wallet": "yourwallethere",
+    "timezone": "America/Los_Angeles",  # Added default timezone
+    "network_fee": 0.0  # Added default network fee
 }
 
 def parse_arguments():
@@ -92,10 +96,13 @@ def parse_arguments():
     parser.add_argument('--wallet', type=str, help='Set your Ocean.xyz wallet address')
     parser.add_argument('--power-cost', type=float, help='Set your electricity cost per kWh')
     parser.add_argument('--power-usage', type=float, help='Set your power consumption in watts')
+    parser.add_argument('--network-fee', type=float, help='Set your network fee percentage')  # Added network fee parameter
+    parser.add_argument('--timezone', type=str, help='Set your timezone (e.g., America/Los_Angeles)')  # Added timezone parameter
     parser.add_argument('--skip-checks', action='store_true', help='Skip dependency checks')
     parser.add_argument('--force', action='store_true', help='Force file overwrite')
     parser.add_argument('--config', type=str, help='Path to custom config.json')
     parser.add_argument('--minify', action='store_true', help='Minify JavaScript files')
+    parser.add_argument('--theme', choices=['bitcoin', 'deepsea'], help='Set the default UI theme')  # Added theme parameter
     return parser.parse_args()
 
 def create_directory_structure():
@@ -275,6 +282,19 @@ def create_config(args):
         else:
             logger.warning("Power usage cannot be negative, using default or existing value")
     
+    # Update config from command line arguments
+    if args.timezone:
+        config["timezone"] = args.timezone
+
+    if args.network_fee is not None:
+        if args.network_fee >= 0:
+            config["network_fee"] = args.network_fee
+        else:
+            logger.warning("Network fee cannot be negative, using default or existing value")
+
+    if args.theme:
+        config["theme"] = args.theme
+
     # Save the configuration
     try:
         with open(config_file, 'w') as f:
@@ -288,7 +308,9 @@ def create_config(args):
     logger.info("Current configuration:")
     logger.info(f"  ├── Wallet address: {config['wallet']}")
     logger.info(f"  ├── Power cost: ${config['power_cost']} per kWh")
-    logger.info(f"  └── Power usage: {config['power_usage']} watts")
+    logger.info(f"  ├── Power usage: {config['power_usage']} watts")
+    logger.info(f"  ├── Network fee: {config['network_fee']}%")
+    logger.info(f"  └── Timezone: {config['timezone']}")
     
     return True
 

@@ -55,7 +55,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 
 1. Clone the repository
    ```
-   git clone https://github.com/Djobleezy/Custom-Ocean.xyz-Dashboard.git
+   git clone https://github.com/Djobleezy/DeepSea-Dashboard.git
    cd Custom-Ocean.xyz-Dashboard
    ```
 

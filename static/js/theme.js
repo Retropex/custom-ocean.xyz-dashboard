@@ -68,23 +68,17 @@ function applyDeepSeaTheme() {
         const styleElement = document.createElement('style');
         styleElement.id = 'deepSeaThemeStyles'; // Give it an ID so we can check if it exists
 
-        // Enhanced CSS with your requested changes
+        // Enhanced CSS with clean, organized structure
         styleElement.textContent = `
             /* Base theme variables */
             :root {
-                --primary-color: #0088cc !important;
-                --bitcoin-orange: #0088cc !important; 
-                --bitcoin-orange-rgb: 0, 136, 204 !important;
-                --bg-gradient: linear-gradient(135deg, #0a0a0a, #131b20) !important;
-                --accent-color: #00b3ff !important;
-                --header-bg: linear-gradient(to right, #0088cc, #005580) !important;
-                --card-header-bg: linear-gradient(to right, #0088cc, #006699) !important;
-                --progress-bar-color: #0088cc !important;
-                --link-color: #0088cc !important;
-                --link-hover-color: #00b3ff !important;
-            
+                --primary-color: #0088cc;
+                --primary-color-rgb: 0, 136, 204;
+                --accent-color: #00b3ff;
+                --bg-gradient: linear-gradient(135deg, #0a0a0a, #131b20);
+                
                 /* Standardized text shadow values */
-                --blue-text-shadow: 0 0 10px rgba(0, 136, 204, 0.8), 0 0 5px rgba(0, 136, 204, 0.5);
+                --blue-text-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.8), 0 0 5px rgba(var(--primary-color-rgb), 0.5);
                 --yellow-text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 5px rgba(255, 215, 0, 0.5);
                 --green-text-shadow: 0 0 10px rgba(50, 205, 50, 0.8), 0 0 5px rgba(50, 205, 50, 0.5);
                 --red-text-shadow: 0 0 10px rgba(255, 85, 85, 0.8), 0 0 5px rgba(255, 85, 85, 0.5);
@@ -92,233 +86,191 @@ function applyDeepSeaTheme() {
                 --cyan-text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 5px rgba(0, 255, 255, 0.5);
             }
         
-            /* Blue elements - main theme elements */
-            .card-header, .card > .card-header,
-            .container-fluid .card > .card-header {
-                background: linear-gradient(to right, #0088cc, #006699) !important;
-                border-bottom: 1px solid #0088cc !important;
-                text-shadow: var(--blue-text-shadow) !important;
-                color: #fff !important;
-            }
-        
+            /* Card styling */
             .card {
-                border: 1px solid #0088cc !important;
-                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
+                border: 1px solid var(--primary-color) !important;
+                box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3) !important;
             }
-        
-            /* Navigation and interface elements */
-            .nav-link {
-                border: 1px solid #0088cc !important;
-                color: #0088cc !important;
-            }
-        
-            .nav-link:hover, .nav-link.active {
-                background-color: #0088cc !important;
+            
+            .card-header, .card > .card-header {
+                background: linear-gradient(to right, var(--primary-color), #006699) !important;
+                border-bottom: 1px solid var(--primary-color) !important;
+                text-shadow: var(--blue-text-shadow) !important;
                 color: #fff !important;
-                box-shadow: 0 0 10px rgba(0, 136, 204, 0.5) !important;
             }
-        
+            
+            /* Navigation */
+            .nav-link {
+                border: 1px solid var(--primary-color) !important;
+                color: var(--primary-color) !important;
+            }
+            
+            .nav-link:hover, .nav-link.active {
+                background-color: var(--primary-color) !important;
+                color: #fff !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5) !important;
+            }
+            
+            /* Interface elements */
             #terminal-cursor {
-                background-color: #0088cc !important;
-                box-shadow: 0 0 5px rgba(0, 136, 204, 0.8) !important;
+                background-color: var(--primary-color) !important;
+                box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.8) !important;
             }
-        
+            
             #lastUpdated {
-                color: #0088cc !important;
+                color: var(--primary-color) !important;
             }
-        
-            /* Chart and progress elements */
-            .bitcoin-progress-inner {
-                background: linear-gradient(90deg, #0088cc, #00b3ff) !important;
-            }
-        
-            .bitcoin-progress-container {
-                border: 1px solid #0088cc !important;
-                box-shadow: 0 0 8px rgba(0, 136, 204, 0.5) !important;
-            }
-        
+            
             h1, .text-center h1 {
-                color: #0088cc !important;
+                color: var(--primary-color) !important;
                 text-shadow: var(--blue-text-shadow) !important;
             }
-        
+            
             .nav-badge {
-                background-color: #0088cc !important;
+                background-color: var(--primary-color) !important;
+            }
+            
+            /* Bitcoin progress elements */
+            .bitcoin-progress-inner {
+                background: linear-gradient(90deg, var(--primary-color), var(--accent-color)) !important;
+            }
+            
+            .bitcoin-progress-container {
+                border: 1px solid var(--primary-color) !important;
+                box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5) !important;
             }
             
             /* Theme toggle button styling */
-            #themeToggle, 
-            button.theme-toggle, 
-            .toggle-theme-btn {
+            #themeToggle, button.theme-toggle, .toggle-theme-btn {
                 background: transparent !important;
-                border: 1px solid #0088cc !important;
-                color: #0088cc !important;
+                border: 1px solid var(--primary-color) !important;
+                color: var(--primary-color) !important;
                 transition: all 0.3s ease !important;
             }
-
-            #themeToggle:hover, 
-            button.theme-toggle:hover, 
-            .toggle-theme-btn:hover {
-                background-color: rgba(0, 136, 204, 0.1) !important;
-                box-shadow: 0 0 10px rgba(0, 136, 204, 0.3) !important;
+            
+            #themeToggle:hover, button.theme-toggle:hover, .toggle-theme-btn:hover {
+                background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3) !important;
             }
             
-            /* FIX 1: Make pool hashrate value text white - with more specific selectors */
-            #pool_hashrate, 
-            #pool_total_hashrate, 
-            span#pool_total_hashrate, 
-            span#pool_hashrate, 
-            .card-body p #pool_total_hashrate, 
-            .card-body p span#pool_hashrate,
-            .metric-value#pool_total_hashrate,
-            .metric-value#pool_hashrate,
-            div[class*="col"] span#pool_total_hashrate,
-            div[class*="col"] span#pool_hashrate,
-            .card-body span#pool_total_hashrate.metric-value,
-            .card-body span#pool_hashrate.metric-value {
+            /* ===== SPECIAL CASE FIXES ===== */
+            
+            /* Pool hashrate - always white */
+            [id^="pool_"] {
                 color: #ffffff !important;
                 text-shadow: var(--white-text-shadow) !important;
             }
             
-            /* FIX 2: Make .stat-item strong blue in blocks page */
-            .stat-item strong {
-                color: #0088cc !important;
+            /* Block page elements */
+            .stat-item strong,
+            .block-height,
+            .block-detail-title {
+                color: var(--primary-color) !important;
                 text-shadow: var(--blue-text-shadow) !important;
             }
             
-            /* FIX 3: Make .filter-button.active box shadow blue in notifications page */
-            .filter-button.active {
-                background-color: var(--primary-color) !important;
-                color: var(--bg-color) !important;
-                box-shadow: 0 0 10px rgba(0, 136, 204, 0.5) !important;
-            }
-            /* FIX 4: Update filter-button hover effect in notifications page to match DeepSea theme */
-            .filter-button:hover {
-                background-color: rgba(0, 136, 204, 0.2) !important; /* DeepSea blue with transparency */
-                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
-            }
-
-            /* Also update action buttons in notifications page */
-            .action-button:hover:not(.danger) {
-                background-color: rgba(0, 136, 204, 0.2) !important;
-                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
-            }
-
-            /* And load more button */
-            .load-more-button:hover {
-                background-color: rgba(0, 136, 204, 0.2) !important;
-                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
-            }
-
-            /* FIX 5: Update block card hover effect to match DeepSea theme */
-            .block-card:hover {
-                box-shadow: 0 0 15px rgba(0, 136, 204, 0.5) !important; /* DeepSea blue glow */
-                transform: translateY(-2px);
-            }
-
-            /* Update block-height color in blocks page */
-            .block-height {
-                color: var(--primary-color) !important;
-                text-shadow: var(--blue-text-shadow) !important;
-            }
-
-            /* Also update block inputs and button hover styles */
+            /* Block inputs and button styles */
             .block-input:focus {
                 outline: none !important;
-                box-shadow: 0 0 8px rgba(0, 136, 204, 0.5) !important;
+                box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5) !important;
             }
-
+            
             .block-button:hover {
-                background-color: #0088cc !important;
-                color: var(--bg-color) !important;
-                box-shadow: 0 0 10px rgba(0, 136, 204, 0.5) !important;
+                background-color: var(--primary-color) !important;
+                color: #000 !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5) !important;
             }
-
-            /* Update block modal styling */
+            
+            /* Notification page elements */
+            .filter-button.active {
+                background-color: var(--primary-color) !important;
+                color: #000 !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5) !important;
+            }
+            
+            .filter-button:hover,
+            .action-button:hover:not(.danger),
+            .load-more-button:hover {
+                background-color: rgba(var(--primary-color-rgb), 0.2) !important;
+                box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3) !important;
+            }
+            
+            /* Block cards and modals */
+            .block-card:hover {
+                box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.5) !important;
+                transform: translateY(-2px);
+            }
+            
             .block-modal-content {
-                box-shadow: 0 0 20px rgba(0, 136, 204, 0.5) !important;
+                box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.5) !important;
             }
-
+            
             .block-modal-header {
-                text-shadow: 0 0 5px #0088cc !important;
+                text-shadow: 0 0 5px var(--primary-color) !important;
             }
-
+            
             .block-modal-close:hover,
             .block-modal-close:focus {
-                color: #00b3ff !important;
+                color: var(--accent-color) !important;
                 text-shadow: 0 0 10px rgba(0, 179, 255, 0.8) !important;
             }
-
-            .block-detail-title {
-                color: var(--primary-color) !important;
-                text-shadow: 0 0 5px rgba(0, 136, 204, 0.5) !important;
-            }
-
-            /* ===== COLOR SPECIFIC STYLING ===== */
-        
+            
+            /* ===== COLOR CATEGORIES ===== */
+            
             /* YELLOW - SATOSHI EARNINGS & BTC PRICE */
-            /* All Satoshi earnings in yellow with consistent text shadow */
-            #daily_mined_sats,
-            #monthly_mined_sats,
-            #estimated_earnings_per_day_sats,
-            #estimated_earnings_next_block_sats,
-            #estimated_rewards_in_window_sats,
-            #btc_price, /* BTC Price in yellow */
-            .card:contains('SATOSHI EARNINGS') span.metric-value {
-                color: #ffd700 !important; /* Bitcoin gold/yellow */
-                text-shadow: var(--yellow-text-shadow) !important;
-            }
-        
-            /* More specific selectors for Satoshi values */
-            span.metric-value[id$="_sats"] {
-                color: #ffd700 !important;
-                text-shadow: var(--yellow-text-shadow) !important;
-            }
-        
-            /* Retaining original yellow for specific elements */
+            [id$="_sats"],
+            #btc_price,
+            .metric-value[id$="_sats"],
             .est_time_to_payout:not(.green):not(.red) {
                 color: #ffd700 !important;
-                text-shadow: var(--yellow-text-shadow) !important;
             }
-        
+            
             /* GREEN - POSITIVE USD VALUES */
-            /* USD earnings that are positive should be green */
             .metric-value.green,
             span.green,
             #daily_revenue:not([style*="color: #ff"]),
             #monthly_profit_usd:not([style*="color: #ff"]),
-            #daily_profit_usd:not([style*="color: #ff"]) {
-                color: #32CD32 !important; /* Lime green */
-                text-shadow: var(--green-text-shadow) !important;
-            }
-        
-            /* Status indicators remain green */
-            .status-green {
+            #daily_profit_usd:not([style*="color: #ff"]),
+            .status-green,
+            #pool_luck.very-lucky,
+            #pool_luck.lucky {
                 color: #32CD32 !important;
                 text-shadow: var(--green-text-shadow) !important;
             }
-        
+            
             .online-dot {
                 background: #32CD32 !important;
                 box-shadow: 0 0 10px #32CD32, 0 0 20px #32CD32 !important;
             }
-        
-            /* RED - NEGATIVE USD VALUES & WARNINGS */
-            /* Red for negative values and warnings */
+            
+            /* Light green for "lucky" status */
+            #pool_luck.lucky {
+                color: #90EE90 !important;
+                text-shadow: 0 0 10px rgba(144, 238, 144, 0.8), 0 0 5px rgba(144, 238, 144, 0.5) !important;
+            }
+            
+            /* NORMAL LUCK - KHAKI */
+            #pool_luck.normal-luck {
+                color: #F0E68C !important;
+                text-shadow: 0 0 10px rgba(240, 230, 140, 0.8), 0 0 5px rgba(240, 230, 140, 0.5) !important;
+            }
+            
+            /* RED - NEGATIVE VALUES & WARNINGS */
             .metric-value.red,
             span.red,
             .status-red,
-            #daily_power_cost {
+            #daily_power_cost,
+            #pool_luck.unlucky {
                 color: #ff5555 !important;
                 text-shadow: var(--red-text-shadow) !important;
             }
-        
+            
             .offline-dot {
                 background: #ff5555 !important;
                 box-shadow: 0 0 10px #ff5555, 0 0 20px #ff5555 !important;
             }
-        
-            /* WHITE - Network stats and worker data */
+            
+            /* WHITE - NETWORK STATS & WORKER DATA */
             #block_number,
             #difficulty,
             #network_hashrate,
@@ -326,74 +278,36 @@ function applyDeepSeaTheme() {
             #workers_hashing,
             #last_share,
             #blocks_found,
-            #last_block_height {
-                color: #ffffff !important;
-                text-shadow: var(--white-text-shadow) !important;
-            }
-        
-            /* CYAN - Time ago in last block */
-            #last_block_time {
-                color: #00ffff !important; /* Cyan */
-                text-shadow: var(--cyan-text-shadow) !important;
-            }
-        
-            /* BLUE - Pool statistics - OVERRIDE TO WHITE */
-            #pool_total_hashrate {
-                color: #ffffff !important;
-                text-shadow: var(--white-text-shadow) !important;
-            }
-        
-            /* Hashrate values are white */
+            #last_block_height,
             #hashrate_24hr,
             #hashrate_3hr,
             #hashrate_10min,
             #hashrate_60sec {
-                color: white !important;
+                color: #ffffff !important;
                 text-shadow: var(--white-text-shadow) !important;
             }
-        
-            /* Pool luck/efficiency colors - PRESERVE EXISTING */
-            #pool_luck.very-lucky {
-                color: #32CD32 !important; /* Very lucky - bright green */
-                text-shadow: var(--green-text-shadow) !important;
+            
+            /* CYAN - TIME AGO IN LAST BLOCK */
+            #last_block_time {
+                color: #00ffff !important;
+                text-shadow: var(--cyan-text-shadow) !important;
             }
-        
-            #pool_luck.lucky {
-                color: #90EE90 !important; /* Lucky - light green */
-                text-shadow: 0 0 10px rgba(144, 238, 144, 0.8), 0 0 5px rgba(144, 238, 144, 0.5) !important;
-            }
-        
-            #pool_luck.normal-luck {
-                color: #F0E68C !important; /* Normal - khaki */
-                text-shadow: 0 0 10px rgba(240, 230, 140, 0.8), 0 0 5px rgba(240, 230, 140, 0.5) !important;
-            }
-        
-            #pool_luck.unlucky {
-                color: #ff5555 !important; /* Unlucky - red */
-                text-shadow: var(--red-text-shadow) !important;
-            }
-        
-            /* Congrats message */
+            
+            /* CONGRATULATIONS MESSAGE */
             #congratsMessage {
-                background: #0088cc !important;
-                box-shadow: 0 0 15px rgba(0, 136, 204, 0.7) !important;
+                background: var(--primary-color) !important;
+                box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.7) !important;
             }
-        
-            /* Animations */
+            
+            /* ANIMATIONS */
             @keyframes waitingPulse {
-                0%, 100% { box-shadow: 0 0 10px #0088cc, 0 0 15px #0088cc !important; opacity: 0.8; }
-                50% { box-shadow: 0 0 20px #0088cc, 0 0 35px #0088cc !important; opacity: 1; }
+                0%, 100% { box-shadow: 0 0 10px var(--primary-color), 0 0 15px var(--primary-color) !important; opacity: 0.8; }
+                50% { box-shadow: 0 0 20px var(--primary-color), 0 0 35px var(--primary-color) !important; opacity: 1; }
             }
-        
+            
             @keyframes glow {
-                0%, 100% { box-shadow: 0 0 10px #0088cc, 0 0 15px #0088cc !important; }
-                50% { box-shadow: 0 0 15px #0088cc, 0 0 25px #0088cc !important; }
-            }
-
-            /* Final important overrides to ensure theme consistency */
-            .card-body p strong + span#pool_total_hashrate.metric-value.white {
-                color: #ffffff !important;
-                text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5) !important;
+                0%, 100% { box-shadow: 0 0 10px var(--primary-color), 0 0 15px var(--primary-color) !important; }
+                50% { box-shadow: 0 0 15px var(--primary-color), 0 0 25px var(--primary-color) !important; }
             }
         `;
 
@@ -423,16 +337,6 @@ function applyDeepSeaTheme() {
             themeToggle.style.borderColor = '#0088cc';
             themeToggle.style.color = '#0088cc';
         }
-
-        // Add direct style application to pool hashrate elements
-        setTimeout(() => {
-            // Direct DOM manipulation as a fallback to ensure the pool hashrate is white
-            const poolHashrateElements = document.querySelectorAll('#pool_total_hashrate, #pool_hashrate');
-            poolHashrateElements.forEach(el => {
-                el.style.setProperty('color', '#ffffff', 'important');
-                el.style.setProperty('text-shadow', '0 0 10px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5)', 'important');
-            });
-        }, 100);
 
         console.log("DeepSea theme applied with color adjustments");
     } finally {

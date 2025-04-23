@@ -36,21 +36,12 @@ This guide provides comprehensive instructions for deploying the Bitcoin Mining 
    python setup.py
    ```
 
-5. Configure your mining parameters in `config.json`:
-   ```json
-   {
-     "power_cost": 0.12,     // Cost of electricity per kWh
-     "power_usage": 3450,    // Power consumption in watts
-     "wallet": "your-wallet-address"  // Your Ocean.xyz wallet
-   }
-   ```
-
-6. Start the application:
+5. Start the application:
    ```bash
    python App.py
    ```
 
-7. Access the dashboard at `http://localhost:5000`
+6. Access the dashboard at `http://localhost:5000`
 
 ### Option 2: Production Deployment with Gunicorn
 

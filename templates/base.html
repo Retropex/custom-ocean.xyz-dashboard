@@ -17,8 +17,25 @@
     <!-- Common CSS -->
     <link rel="stylesheet" href="/static/css/common.css">
 
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/theme-toggle.css">
+
+    <!-- Theme JS (added to ensure consistent application of theme) -->
+    <script src="/static/js/theme.js"></script>
+
     <!-- Page-specific CSS -->
     {% block css %}{% endblock %}
+
+    <style>
+        .footer {
+            margin-top: 30px;
+            padding: 10px 0;
+            color: grey;
+            font-size: 0.9rem;
+            text-shadow: 0 0 5px rgba(100, 100, 100, 0.3);
+            border-top: 1px solid rgba(128, 128, 128, 0.2);
+        }
+    </style>
 </head>
 <body>
     <div class="container-fluid">
@@ -33,6 +50,11 @@
 
         <!-- Top right link -->
         <a href="https://x.com/DJObleezy" id="topRightLink" target="_blank" rel="noopener noreferrer">MADE BY @DJO₿LEEZY</a>
+
+        <!-- Theme toggle button (new) -->
+        <button id="themeToggle" class="theme-toggle-btn">
+            <span>Toggle Theme</span>
+        </button>
 
         {% block last_updated %}
         <p class="text-center" id="lastUpdated" style="color: #f7931a; text-transform: uppercase;"><strong>LAST UPDATED:</strong> {{ current_time }}<span id="terminal-cursor"></span></p>
@@ -57,12 +79,43 @@
         {% block congrats_message %}
         <div id="congratsMessage" style="display:none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #f7931a; color: #000; padding: 10px; border-radius: 5px; box-shadow: 0 0 15px rgba(247, 147, 26, 0.7);"></div>
         {% endblock %}
+
+        <!-- Footer -->
+        <footer class="footer text-center">
+            <p>Not affiliated with Ocean.xyz</p>
+        </footer>
     </div>
 
     <!-- External JavaScript libraries -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
+
+    <!-- Theme toggle initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize theme toggle button based on current theme
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                // Check current theme
+                const isDeepSea = localStorage.getItem('useDeepSeaTheme') === 'true';
+
+                // Update button style based on theme
+                if (isDeepSea) {
+                    themeToggle.style.borderColor = '#0088cc';
+                    themeToggle.style.color = '#0088cc';
+                } else {
+                    themeToggle.style.borderColor = '#f2a900';
+                    themeToggle.style.color = '#f2a900';
+                }
+
+                // Add click event listener
+                themeToggle.addEventListener('click', function () {
+                    toggleTheme(); // This will now trigger a page refresh
+                });
+            }
+        });
+    </script>
 
     <!-- Page-specific JavaScript -->
     {% block javascript %}{% endblock %}

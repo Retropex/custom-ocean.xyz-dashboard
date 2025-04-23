@@ -6,25 +6,122 @@
     <title>Ocean.xyz Pool Miner - Initializing...</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/boot.css">
+    <link rel="stylesheet" href="/static/css/theme-toggle.css">
+    <!-- Add Theme JS -->
+    <script src="/static/js/theme.js"></script>
     <style>
-        /* Added styles for configuration form */
+        /* Config form styling - fixed width and hidden by default */
         #config-form {
             display: none;
-            margin-top: 20px;
-            background-color: rgba(0, 0, 0, 0.7);
+            width: 500px;
+            max-width: 90%;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #0d0d0d;
             border: 1px solid #f7931a;
-            padding: 15px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
             box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+            border-radius: 4px;
         }
 
-        .config-title {
+        /* Boot text color - updated with theme toggling */
+        body:not(.deepsea-theme) #terminal,
+        body:not(.deepsea-theme) #output,
+        body:not(.deepsea-theme) #prompt-container,
+        body:not(.deepsea-theme) #prompt-text,
+        body:not(.deepsea-theme) #user-input,
+        body:not(.deepsea-theme) #loading-message {
             color: #f7931a;
-            font-size: 22px;
+            text-shadow: 0 0 5px rgba(247, 147, 26, 0.4);
+        }
+
+        /* DeepSea theme text color */
+        body.deepsea-theme #terminal,
+        body.deepsea-theme #output,
+        body.deepsea-theme #prompt-container,
+        body.deepsea-theme #prompt-text,
+        body.deepsea-theme #user-input,
+        body.deepsea-theme #loading-message {
+            color: #0088cc;
+            text-shadow: 0 0 5px rgba(0, 136, 204, 0.4);
+        }
+
+        /* DeepSea cursor color */
+        body.deepsea-theme .cursor,
+        body.deepsea-theme .prompt-cursor {
+            background-color: #0088cc;
+            box-shadow: 0 0 5px rgba(0, 136, 204, 0.8);
+        }
+
+        /* Boot-specific DeepSea theme adjustments */
+        body.deepsea-theme #bitcoin-logo {
+            color: #0088cc;
+            border-color: #0088cc;
+            text-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
+            box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
+        }
+
+        body.deepsea-theme #config-form {
+            border: 1px solid #0088cc;
+            box-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
+        }
+
+        body.deepsea-theme .config-title {
+            color: #0088cc;
+            text-shadow: 0 0 8px rgba(0, 136, 204, 0.8);
+        }
+
+        body.deepsea-theme .form-group label {
+            color: #0088cc;
+        }
+
+        body.deepsea-theme .form-group input,
+        body.deepsea-theme .form-group select {
+            border: 1px solid #0088cc;
+        }
+
+            body.deepsea-theme .form-group input:focus,
+            body.deepsea-theme .form-group select:focus {
+                box-shadow: 0 0 5px #0088cc;
+            }
+
+        body.deepsea-theme .btn {
+            background-color: #0088cc;
+        }
+
+            body.deepsea-theme .btn:hover {
+                background-color: #00b3ff;
+            }
+
+        body.deepsea-theme .btn-secondary {
+            background-color: #333;
+            color: #0088cc;
+        }
+
+        body.deepsea-theme .tooltip .tooltip-text {
+            border: 1px solid #0088cc;
+        }
+
+        body.deepsea-theme .form-group select {
+            background-image: linear-gradient(45deg, transparent 50%, #0088cc 50%), linear-gradient(135deg, #0088cc 50%, transparent 50%);
+        }
+
+        /* DeepSea skip button */
+        body.deepsea-theme #skip-button {
+            background-color: #0088cc;
+            box-shadow: 0 0 8px rgba(0, 136, 204, 0.5);
+        }
+
+            body.deepsea-theme #skip-button:hover {
+                background-color: #00b3ff;
+                box-shadow: 0 0 12px rgba(0, 136, 204, 0.7);
+            }
+
+        /* Original Bitcoin styling preserved by default */
+        .config-title {
+            font-size: 24px;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            color: #f7931a;
             text-shadow: 0 0 8px rgba(247, 147, 26, 0.8);
         }
 
@@ -38,17 +135,19 @@
                 color: #f7931a;
             }
 
-            .form-group input {
+            .form-group input,
+            .form-group select {
                 width: 100%;
-                background-color: #111;
-                border: 1px solid #f7931a;
                 padding: 8px;
-                color: white;
+                background-color: #0d0d0d;
+                border: 1px solid #f7931a;
+                color: #fff;
                 font-family: 'VT323', monospace;
                 font-size: 18px;
             }
 
-                .form-group input:focus {
+                .form-group input:focus,
+                .form-group select:focus {
                     outline: none;
                     box-shadow: 0 0 5px #f7931a;
                 }
@@ -60,19 +159,17 @@
         }
 
         .btn {
+            padding: 8px 16px;
             background-color: #f7931a;
+            color: #000;
             border: none;
-            color: black;
-            padding: 8px 15px;
+            cursor: pointer;
             font-family: 'VT323', monospace;
             font-size: 18px;
-            cursor: pointer;
-            min-width: 120px;
-            text-align: center;
         }
 
             .btn:hover {
-                background-color: #ffa642;
+                background-color: #ffa32e;
             }
 
         .btn-secondary {
@@ -80,79 +177,10 @@
             color: #f7931a;
         }
 
-            .btn-secondary:hover {
-                background-color: #444;
-            }
-
-        /* Make skip button more mobile-friendly */
-        #skip-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            padding: 12px 20px;
-            font-size: 18px;
-            border-radius: 8px;
-        }
-
-        @media (max-width: 768px) {
-            #skip-button {
-                bottom: 10px;
-                right: 10px;
-                padding: 15px 25px;
-                font-size: 20px; /* Larger font size for better tap targets */
-                border-radius: 10px;
-                width: auto;
-            }
-
-            .form-actions {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .btn {
-                width: 100%;
-                padding: 12px;
-                font-size: 20px;
-            }
-        }
-
-        /* Tooltip styles */
-        .tooltip {
-            position: relative;
-            display: inline-block;
-            margin-left: 5px;
-            cursor: help;
-        }
-
-            .tooltip .tooltip-text {
-                visibility: hidden;
-                width: 200px;
-                background-color: #000;
-                color: #fff;
-                text-align: center;
-                border: 1px solid #f7931a;
-                padding: 5px;
-                position: absolute;
-                z-index: 1;
-                bottom: 125%;
-                left: 50%;
-                margin-left: -100px;
-                opacity: 0;
-                transition: opacity 0.3s;
-                font-size: 14px;
-            }
-
-            .tooltip:hover .tooltip-text {
-                visibility: visible;
-                opacity: 1;
-            }
-
-        /* Form success/error message */
         #form-message {
-            margin-top: 10px;
-            padding: 8px;
-            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 3px;
             display: none;
         }
 
@@ -168,60 +196,63 @@
             color: #ff0000;
         }
 
-        /* Add these styles to match the timezone dropdown with your other inputs */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            width: 14px;
+            height: 14px;
+            background-color: #333;
+            color: #fff;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 14px;
+            font-size: 10px;
+            cursor: help;
+        }
+
+            .tooltip .tooltip-text {
+                visibility: hidden;
+                width: 200px;
+                background-color: #000;
+                color: #fff;
+                text-align: center;
+                border-radius: 3px;
+                padding: 5px;
+                position: absolute;
+                z-index: 1;
+                bottom: 125%;
+                left: 50%;
+                margin-left: -100px;
+                opacity: 0;
+                transition: opacity 0.3s;
+                font-size: 14px;
+                border: 1px solid #f7931a;
+            }
+
+            .tooltip:hover .tooltip-text {
+                visibility: visible;
+                opacity: 1;
+            }
+
+        /* Style the select dropdown with custom arrow */
         .form-group select {
-            width: 100%;
-            background-color: #111;
-            border: 1px solid #f7931a;
-            padding: 8px;
-            color: white;
-            font-family: 'VT323', monospace;
-            font-size: 18px;
+            appearance: none;
             -webkit-appearance: none;
             -moz-appearance: none;
-            appearance: none;
-            cursor: pointer;
-        }
-
-        /* Add a custom dropdown arrow */
-        .form-group select {
             background-image: linear-gradient(45deg, transparent 50%, #f7931a 50%), linear-gradient(135deg, #f7931a 50%, transparent 50%);
-            background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+            background-position: calc(100% - 15px) calc(1em + 0px), calc(100% - 10px) calc(1em + 0px);
             background-size: 5px 5px, 5px 5px;
             background-repeat: no-repeat;
-            padding-right: 25px; /* Space for the arrow */
-        }
-
-            .form-group select:focus {
-                outline: none;
-                box-shadow: 0 0 5px #f7931a;
-            }
-
-            /* Style the option groups */
-            .form-group select optgroup {
-                background-color: #111;
-                color: #f7931a;
-                font-family: 'VT323', monospace;
-            }
-
-            /* Style the options */
-            .form-group select option {
-                background-color: #222;
-                color: white;
-                padding: 8px;
-            }
-
-        /* Improve mobile appearance */
-        @media (max-width: 768px) {
-            .form-group select {
-                padding: 12px;
-                padding-right: 30px; /* More space for the dropdown arrow */
-                font-size: 20px;
-            }
+            padding-right: 30px;
         }
     </style>
 </head>
 <body>
+    <!-- Theme toggle button (new) -->
+    <button id="themeToggle" class="theme-toggle-btn">
+        <span>Toggle Theme</span>
+    </button>
     <button id="skip-button">SKIP</button>
     <div id="debug-info"></div>
     <div id="loading-message">Loading mining data...</div>
@@ -232,7 +263,7 @@
 ██╔══██╗   ██║   ██║       ██║   ██║╚════██║
 ██████╔╝   ██║   ╚██████╗  ╚██████╔╝███████║
 ╚═════╝    ╚═╝    ╚═════╝   ╚═════╝ ╚══════╝
-                                       v.21
+v.21
     </div>
     <div id="terminal">
         <div id="terminal-content">
@@ -322,6 +353,45 @@
     </div>
 
     <script>
+        // Theme toggle initialization
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize theme toggle button based on current theme
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                // Check current theme
+                const isDeepSea = localStorage.getItem('useDeepSeaTheme') === 'true';
+
+                // Update button style based on theme
+                if (isDeepSea) {
+                    document.body.classList.add('deepsea-theme');
+                    themeToggle.style.borderColor = '#0088cc';
+                    themeToggle.style.color = '#0088cc';
+                } else {
+                    document.body.classList.remove('deepsea-theme');
+                    themeToggle.style.borderColor = '#f2a900';
+                    themeToggle.style.color = '#f2a900';
+                }
+
+                // Add click event listener
+                themeToggle.addEventListener('click', function () {
+                    toggleTheme(); // This will now trigger a page refresh
+                });
+            }
+
+            // Update terminal colors based on theme (boot.html specific)
+            function updateTerminalColors() {
+                const isDeepSeaTheme = localStorage.getItem('useDeepSeaTheme') === 'true';
+                if (isDeepSeaTheme) {
+                    document.body.classList.add('deepsea-theme');
+                } else {
+                    document.body.classList.remove('deepsea-theme');
+                }
+            }
+
+            // Initialize terminal colors
+            updateTerminalColors();
+        });
+
         // Add a function to populate all available timezones
         function populateTimezones() {
             const otherTimezones = document.getElementById('other-timezones');

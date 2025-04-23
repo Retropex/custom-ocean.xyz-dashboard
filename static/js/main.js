@@ -1,4 +1,7 @@
-﻿"use strict";
+﻿// Add this flag at the top of your file, outside the function
+let isApplyingTheme = false;
+
+"use strict";
 
 /**
  * ArrowIndicator - A clean implementation for managing metric value change indicators
@@ -175,6 +178,11 @@ class ArrowIndicator {
                 this.arrowStates[key] = "";
             });
         }
+
+        // Current theme affects arrow colors
+        const theme = getCurrentTheme();
+        const upArrowColor = THEME.SHARED.GREEN;
+        const downArrowColor = THEME.SHARED.RED;
 
         // Get normalized values and compare with previous metrics
         for (const key of metricKeys) {
@@ -714,15 +722,16 @@ function handleVisibilityChange() {
 
 // Helper function to show connection issues to the user
 function showConnectionIssue(message) {
+    const theme = getCurrentTheme();
     let $connectionStatus = $("#connectionStatus");
     if (!$connectionStatus.length) {
-        $("body").append('<div id="connectionStatus" style="position: fixed; top: 10px; right: 10px; background: rgba(255,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;"></div>');
+        $("body").append(`<div id="connectionStatus" style="position: fixed; top: 10px; right: 10px; background: rgba(255,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;"></div>`);
         $connectionStatus = $("#connectionStatus");
     }
     $connectionStatus.html(`<i class="fas fa-exclamation-triangle"></i> ${message}`).show();
 
-    // Show manual refresh button when there are connection issues
-    $("#refreshButton").show();
+    // Show manual refresh button with theme color
+    $("#refreshButton").css('background-color', theme.PRIMARY).show();
 }
 
 // Helper function to hide connection issue message
@@ -766,7 +775,7 @@ function manualRefresh() {
     });
 }
 
-// Initialize Chart.js with Unit Normalization
+// Modify the initializeChart function to use blue colors for the chart
 function initializeChart() {
     try {
         const ctx = document.getElementById('trendGraph').getContext('2d');
@@ -780,10 +789,12 @@ function initializeChart() {
             return null;
         }
 
+        // Get the current theme colors
+        const theme = getCurrentTheme();
+
         // Check if Chart.js plugin is available
         const hasAnnotationPlugin = window['chartjs-plugin-annotation'] !== undefined;
 
-        // Inside the initializeChart function, modify the dataset configuration:
         return new Chart(ctx, {
             type: 'line',
             data: {
@@ -796,29 +807,29 @@ function initializeChart() {
                         const chart = context.chart;
                         const { ctx, chartArea } = chart;
                         if (!chartArea) {
-                            return '#f7931a';
+                            return theme.PRIMARY;
                         }
                         // Create gradient for line
                         const gradient = ctx.createLinearGradient(0, 0, 0, chartArea.bottom);
-                        gradient.addColorStop(0, '#ffa64d');  // Lighter orange
-                        gradient.addColorStop(1, '#f7931a');  // Bitcoin orange
+                        gradient.addColorStop(0, theme.CHART.GRADIENT_START);
+                        gradient.addColorStop(1, theme.CHART.GRADIENT_END);
                         return gradient;
                     },
                     backgroundColor: function (context) {
                         const chart = context.chart;
                         const { ctx, chartArea } = chart;
                         if (!chartArea) {
-                            return 'rgba(247,147,26,0.1)';
+                            return `rgba(${theme.PRIMARY_RGB}, 0.1)`;
                         }
                         // Create gradient for fill
                         const gradient = ctx.createLinearGradient(0, 0, 0, chartArea.bottom);
-                        gradient.addColorStop(0, 'rgba(255, 166, 77, 0.3)');  // Lighter orange with transparency
-                        gradient.addColorStop(0.5, 'rgba(247, 147, 26, 0.2)'); // Bitcoin orange with medium transparency
-                        gradient.addColorStop(1, 'rgba(247, 147, 26, 0.05)');  // Bitcoin orange with high transparency
+                        gradient.addColorStop(0, `rgba(${theme.PRIMARY_RGB}, 0.3)`);
+                        gradient.addColorStop(0.5, `rgba(${theme.PRIMARY_RGB}, 0.2)`);
+                        gradient.addColorStop(1, `rgba(${theme.PRIMARY_RGB}, 0.05)`);
                         return gradient;
                     },
                     fill: true,
-                    tension: 0.3,  // Slightly increase tension for smoother curves
+                    tension: 0.3,
                 }]
             },
             options: {
@@ -848,10 +859,10 @@ function initializeChart() {
                     y: {
                         title: {
                             display: true,
-                            text: 'HASHRATE (TH/S)', // Already uppercase
-                            color: '#f7931a', // Bitcoin orange
+                            text: 'HASHRATE (TH/S)',
+                            color: theme.PRIMARY,
                             font: {
-                                family: "'VT323', monospace", // Terminal font
+                                family: "'VT323', monospace",
                                 size: 16,
                                 weight: 'bold'
                             }
@@ -905,7 +916,7 @@ function initializeChart() {
                 plugins: {
                     tooltip: {
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#f7931a',
+                        titleColor: theme.PRIMARY,
                         bodyColor: '#FFFFFF',
                         titleFont: {
                             family: "'VT323', monospace",
@@ -937,10 +948,10 @@ function initializeChart() {
                                 type: 'line',
                                 yMin: 0,
                                 yMax: 0,
-                                borderColor: '#ffd700', // Gold color
+                                borderColor: theme.CHART.ANNOTATION,
                                 borderWidth: 3,
                                 borderDash: [8, 4],
-                                shadowColor: 'rgba(255, 215, 0, 0.5)',
+                                shadowColor: `rgba(${theme.PRIMARY_RGB}, 0.5)`,
                                 shadowBlur: 8,
                                 shadowOffsetX: 0,
                                 shadowOffsetY: 0,
@@ -948,7 +959,7 @@ function initializeChart() {
                                     enabled: true,
                                     content: '24HR AVG: 0 TH/S',
                                     backgroundColor: 'rgba(0,0,0,0.8)',
-                                    color: '#ffd700',
+                                    color: theme.CHART.ANNOTATION,
                                     font: {
                                         family: "'VT323', monospace",
                                         size: 16,
@@ -1237,20 +1248,21 @@ function updateChartWithNormalizedData(chart, data) {
             chart.data.datasets[0].data = [normalizedValue];
         }
 
-        // If using 3hr average due to low hashrate device detection, add visual indicator
+        // In updateChartWithNormalizedData function
         if (useHashrate3hr) {
             // Add indicator text to the chart
             if (!chart.lowHashrateIndicator) {
                 // Create the indicator element if it doesn't exist
                 const graphContainer = document.getElementById('graphContainer');
                 if (graphContainer) {
+                    const theme = getCurrentTheme();
                     const indicator = document.createElement('div');
                     indicator.id = 'lowHashrateIndicator';
                     indicator.style.position = 'absolute';
                     indicator.style.bottom = '10px';
                     indicator.style.right = '10px';
                     indicator.style.background = 'rgba(0,0,0,0.7)';
-                    indicator.style.color = '#f7931a';
+                    indicator.style.color = theme.PRIMARY;
                     indicator.style.padding = '5px 10px';
                     indicator.style.borderRadius = '3px';
                     indicator.style.fontSize = '12px';
@@ -1261,6 +1273,8 @@ function updateChartWithNormalizedData(chart, data) {
                     chart.lowHashrateIndicator = indicator;
                 }
             } else {
+                // Update color based on current theme
+                chart.lowHashrateIndicator.style.color = getCurrentTheme().PRIMARY;
                 // Show the indicator if it already exists
                 chart.lowHashrateIndicator.style.display = 'block';
             }
@@ -1902,8 +1916,512 @@ function resetDashboardChart() {
     }
 }
 
-// Document ready initialization
+// Replace your entire function with this version
+function applyDeepSeaTheme() {
+    // Check if we're already applying the theme to prevent recursion
+    if (isApplyingTheme) {
+        console.log("Theme application already in progress, avoiding recursion");
+        return;
+    }
+
+    // Set the guard flag
+    isApplyingTheme = true;
+
+    try {
+        console.log("Applying DeepSea theme...");
+
+        // Create or update CSS variables for the DeepSea theme
+        const styleElement = document.createElement('style');
+        styleElement.id = 'deepSeaThemeStyles'; // Give it an ID so we can check if it exists
+
+        // Enhanced CSS with your requested changes
+        styleElement.textContent = `
+            /* Base theme variables */
+            :root {
+                --primary-color: #0088cc !important;
+                --bitcoin-orange: #0088cc !important; 
+                --bitcoin-orange-rgb: 0, 136, 204 !important;
+                --bg-gradient: linear-gradient(135deg, #0a0a0a, #131b20) !important;
+                --accent-color: #00b3ff !important;
+                --header-bg: linear-gradient(to right, #0088cc, #005580) !important;
+                --card-header-bg: linear-gradient(to right, #0088cc, #006699) !important;
+                --progress-bar-color: #0088cc !important;
+                --link-color: #0088cc !important;
+                --link-hover-color: #00b3ff !important;
+            
+                /* Standardized text shadow values */
+                --blue-text-shadow: 0 0 10px rgba(0, 136, 204, 0.8), 0 0 5px rgba(0, 136, 204, 0.5);
+                --yellow-text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 5px rgba(255, 215, 0, 0.5);
+                --green-text-shadow: 0 0 10px rgba(50, 205, 50, 0.8), 0 0 5px rgba(50, 205, 50, 0.5);
+                --red-text-shadow: 0 0 10px rgba(255, 85, 85, 0.8), 0 0 5px rgba(255, 85, 85, 0.5);
+                --white-text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5);
+                --cyan-text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 5px rgba(0, 255, 255, 0.5);
+            }
+        
+            /* Blue elements - main theme elements */
+            .card-header, .card > .card-header,
+            .container-fluid .card > .card-header {
+                background: linear-gradient(to right, #0088cc, #006699) !important;
+                border-bottom: 1px solid #0088cc !important;
+                text-shadow: var(--blue-text-shadow) !important;
+                color: #fff !important;
+            }
+        
+            .card {
+                border: 1px solid #0088cc !important;
+                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
+            }
+        
+            /* Navigation and interface elements */
+            .nav-link {
+                border: 1px solid #0088cc !important;
+                color: #0088cc !important;
+            }
+        
+            .nav-link:hover, .nav-link.active {
+                background-color: #0088cc !important;
+                color: #fff !important;
+                box-shadow: 0 0 10px rgba(0, 136, 204, 0.5) !important;
+            }
+        
+            #terminal-cursor {
+                background-color: #0088cc !important;
+                box-shadow: 0 0 5px rgba(0, 136, 204, 0.8) !important;
+            }
+        
+            #lastUpdated {
+                color: #0088cc !important;
+            }
+        
+            /* Chart and progress elements */
+            .bitcoin-progress-inner {
+                background: linear-gradient(90deg, #0088cc, #00b3ff) !important;
+            }
+        
+            .bitcoin-progress-container {
+                border: 1px solid #0088cc !important;
+                box-shadow: 0 0 8px rgba(0, 136, 204, 0.5) !important;
+            }
+        
+            h1, .text-center h1 {
+                color: #0088cc !important;
+                text-shadow: var(--blue-text-shadow) !important;
+            }
+        
+            .nav-badge {
+                background-color: #0088cc !important;
+            }
+        
+            /* ===== COLOR SPECIFIC STYLING ===== */
+        
+            /* YELLOW - SATOSHI EARNINGS & BTC PRICE */
+            /* All Satoshi earnings in yellow with consistent text shadow */
+            #daily_mined_sats,
+            #monthly_mined_sats,
+            #estimated_earnings_per_day_sats,
+            #estimated_earnings_next_block_sats,
+            #estimated_rewards_in_window_sats,
+            #btc_price, /* BTC Price in yellow */
+            .card:contains('SATOSHI EARNINGS') span.metric-value {
+                color: #ffd700 !important; /* Bitcoin gold/yellow */
+                text-shadow: var(--yellow-text-shadow) !important;
+            }
+        
+            /* More specific selectors for Satoshi values */
+            span.metric-value[id$="_sats"] {
+                color: #ffd700 !important;
+                text-shadow: var(--yellow-text-shadow) !important;
+            }
+        
+            /* Retaining original yellow for specific elements */
+            .est_time_to_payout:not(.green):not(.red) {
+                color: #ffd700 !important;
+                text-shadow: var(--yellow-text-shadow) !important;
+            }
+        
+            /* GREEN - POSITIVE USD VALUES */
+            /* USD earnings that are positive should be green */
+            .metric-value.green,
+            span.green,
+            #daily_revenue:not([style*="color: #ff"]),
+            #monthly_profit_usd:not([style*="color: #ff"]),
+            #daily_profit_usd:not([style*="color: #ff"]) {
+                color: #32CD32 !important; /* Lime green */
+                text-shadow: var(--green-text-shadow) !important;
+            }
+        
+            /* Status indicators remain green */
+            .status-green {
+                color: #32CD32 !important;
+                text-shadow: var(--green-text-shadow) !important;
+            }
+        
+            .online-dot {
+                background: #32CD32 !important;
+                box-shadow: 0 0 10px #32CD32, 0 0 20px #32CD32 !important;
+            }
+        
+            /* RED - NEGATIVE USD VALUES & WARNINGS */
+            /* Red for negative values and warnings */
+            .metric-value.red,
+            span.red,
+            .status-red,
+            #daily_power_cost {
+                color: #ff5555 !important;
+                text-shadow: var(--red-text-shadow) !important;
+            }
+        
+            .offline-dot {
+                background: #ff5555 !important;
+                box-shadow: 0 0 10px #ff5555, 0 0 20px #ff5555 !important;
+            }
+        
+            /* WHITE - Network stats and worker data */
+            #block_number,
+            #difficulty,
+            #network_hashrate,
+            #pool_fees_percentage,
+            #workers_hashing,
+            #last_share,
+            #blocks_found,
+            #last_block_height {
+                color: #ffffff !important;
+                text-shadow: var(--white-text-shadow) !important;
+            }
+        
+            /* CYAN - Time ago in last block */
+            #last_block_time {
+                color: #00ffff !important; /* Cyan */
+                text-shadow: var(--cyan-text-shadow) !important;
+            }
+        
+            /* BLUE - Pool statistics */
+            #pool_total_hashrate {
+                color: #0088cc !important;
+                text-shadow: var(--blue-text-shadow) !important;
+            }
+        
+            /* Hashrate values are white */
+            #hashrate_24hr,
+            #hashrate_3hr,
+            #hashrate_10min,
+            #hashrate_60sec {
+                color: white !important;
+                text-shadow: var(--white-text-shadow) !important;
+            }
+        
+            /* Pool luck/efficiency colors - PRESERVE EXISTING */
+            #pool_luck.very-lucky {
+                color: #32CD32 !important; /* Very lucky - bright green */
+                text-shadow: var(--green-text-shadow) !important;
+            }
+        
+            #pool_luck.lucky {
+                color: #90EE90 !important; /* Lucky - light green */
+                text-shadow: 0 0 10px rgba(144, 238, 144, 0.8), 0 0 5px rgba(144, 238, 144, 0.5) !important;
+            }
+        
+            #pool_luck.normal-luck {
+                color: #F0E68C !important; /* Normal - khaki */
+                text-shadow: 0 0 10px rgba(240, 230, 140, 0.8), 0 0 5px rgba(240, 230, 140, 0.5) !important;
+            }
+        
+            #pool_luck.unlucky {
+                color: #ff5555 !important; /* Unlucky - red */
+                text-shadow: var(--red-text-shadow) !important;
+            }
+        
+            /* Congrats message */
+            #congratsMessage {
+                background: #0088cc !important;
+                box-shadow: 0 0 15px rgba(0, 136, 204, 0.7) !important;
+            }
+        
+            /* Animations */
+            @keyframes waitingPulse {
+                0%, 100% { box-shadow: 0 0 10px #0088cc, 0 0 15px #0088cc !important; opacity: 0.8; }
+                50% { box-shadow: 0 0 20px #0088cc, 0 0 35px #0088cc !important; opacity: 1; }
+            }
+        
+            @keyframes glow {
+                0%, 100% { box-shadow: 0 0 10px #0088cc, 0 0 15px #0088cc !important; }
+                50% { box-shadow: 0 0 15px #0088cc, 0 0 25px #0088cc !important; }
+            }
+        `;
+
+        // Check if our style element already exists
+        const existingStyle = document.getElementById('deepSeaThemeStyles');
+        if (existingStyle) {
+            existingStyle.parentNode.removeChild(existingStyle);
+        }
+
+        // Add our new style element to the head
+        document.head.appendChild(styleElement);
+
+        // Update page title
+        document.title = document.title.replace("BTC-OS", "DeepSea");
+        document.title = document.title.replace("Bitcoin", "DeepSea");
+
+        // Update header text
+        const headerElement = document.querySelector('h1');
+        if (headerElement) {
+            headerElement.innerHTML = headerElement.innerHTML.replace("BTC-OS", "DeepSea");
+            headerElement.innerHTML = headerElement.innerHTML.replace("BITCOIN", "DEEPSEA");
+        }
+
+        console.log("DeepSea theme applied with color adjustments");
+    } finally {
+        // Always reset the guard flag when done, even if there's an error
+        isApplyingTheme = false;
+    }
+}
+
+// Make the function accessible globally so main.js can check for it
+window.applyDeepSeaTheme = applyDeepSeaTheme;
+
 $(document).ready(function () {
+    // Apply theme based on stored preference - moved to beginning for better initialization
+    try {
+        const useDeepSea = localStorage.getItem('useDeepSeaTheme') === 'true';
+        if (useDeepSea) {
+            applyDeepSeaTheme();
+        }
+        // Setup theme change listener
+        setupThemeChangeListener();
+    } catch (e) {
+        console.error("Error handling theme:", e);
+    }
+
+    // Modify the initializeChart function to use blue colors for the chart
+    function initializeChart() {
+        try {
+            const ctx = document.getElementById('trendGraph').getContext('2d');
+            if (!ctx) {
+                console.error("Could not find trend graph canvas");
+                return null;
+            }
+
+            if (!window.Chart) {
+                console.error("Chart.js not loaded");
+                return null;
+            }
+
+            // Get the current theme colors
+            const theme = getCurrentTheme();
+
+            // Check if Chart.js plugin is available
+            const hasAnnotationPlugin = window['chartjs-plugin-annotation'] !== undefined;
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'HASHRATE TREND (TH/s)',
+                        data: [],
+                        borderWidth: 2,
+                        borderColor: function (context) {
+                            const chart = context.chart;
+                            const { ctx, chartArea } = chart;
+                            if (!chartArea) {
+                                return theme.PRIMARY;
+                            }
+                            // Create gradient for line
+                            const gradient = ctx.createLinearGradient(0, 0, 0, chartArea.bottom);
+                            gradient.addColorStop(0, theme.CHART.GRADIENT_START);
+                            gradient.addColorStop(1, theme.CHART.GRADIENT_END);
+                            return gradient;
+                        },
+                        backgroundColor: function (context) {
+                            const chart = context.chart;
+                            const { ctx, chartArea } = chart;
+                            if (!chartArea) {
+                                return `rgba(${theme.PRIMARY_RGB}, 0.1)`;
+                            }
+                            // Create gradient for fill
+                            const gradient = ctx.createLinearGradient(0, 0, 0, chartArea.bottom);
+                            gradient.addColorStop(0, `rgba(${theme.PRIMARY_RGB}, 0.3)`);
+                            gradient.addColorStop(0.5, `rgba(${theme.PRIMARY_RGB}, 0.2)`);
+                            gradient.addColorStop(1, `rgba(${theme.PRIMARY_RGB}, 0.05)`);
+                            return gradient;
+                        },
+                        fill: true,
+                        tension: 0.3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0 // Disable animations for better performance
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: {
+                                maxTicksLimit: 8, // Limit number of x-axis labels
+                                maxRotation: 0,   // Don't rotate labels
+                                autoSkip: true,   // Automatically skip some labels
+                                color: '#FFFFFF',
+                                font: {
+                                    family: "'VT323', monospace", // Terminal font
+                                    size: 14
+                                }
+                            },
+                            grid: {
+                                color: '#333333',
+                                lineWidth: 0.5
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'HASHRATE (TH/S)',
+                                color: theme.PRIMARY,
+                                font: {
+                                    family: "'VT323', monospace",
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#FFFFFF',
+                                maxTicksLimit: 6, // Limit total number of ticks
+                                precision: 1,     // Control decimal precision
+                                autoSkip: true,   // Skip labels to prevent overcrowding
+                                autoSkipPadding: 10, // Padding between skipped labels
+                                font: {
+                                    family: "'VT323', monospace", // Terminal font
+                                    size: 14
+                                },
+                                callback: function (value) {
+                                    // For zero, just return 0
+                                    if (value === 0) return '0';
+
+                                    // For very large values (1M+)
+                                    if (value >= 1000000) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    }
+                                    // For large values (1K+)
+                                    else if (value >= 1000) {
+                                        return (value / 1000).toFixed(1) + 'K';
+                                    }
+                                    // For values between 10 and 1000
+                                    else if (value >= 10) {
+                                        return Math.round(value);
+                                    }
+                                    // For small values, limit decimal places
+                                    else if (value >= 1) {
+                                        return value.toFixed(1);
+                                    }
+                                    // For tiny values, use appropriate precision
+                                    else {
+                                        return value.toPrecision(2);
+                                    }
+                                }
+                            },
+                            grid: {
+                                color: '#333333',
+                                lineWidth: 0.5,
+                                drawBorder: false,
+                                zeroLineColor: '#555555',
+                                zeroLineWidth: 1,
+                                drawTicks: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: theme.PRIMARY,
+                            bodyColor: '#FFFFFF',
+                            titleFont: {
+                                family: "'VT323', monospace",
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: "'VT323', monospace",
+                                size: 14
+                            },
+                            padding: 10,
+                            cornerRadius: 0,
+                            displayColors: false,
+                            callbacks: {
+                                title: function (tooltipItems) {
+                                    return tooltipItems[0].label.toUpperCase();
+                                },
+                                label: function (context) {
+                                    // Format tooltip values with appropriate unit
+                                    const value = context.raw;
+                                    return 'HASHRATE: ' + formatHashrateForDisplay(value).toUpperCase();
+                                }
+                            }
+                        },
+                        legend: { display: false },
+                        annotation: hasAnnotationPlugin ? {
+                            annotations: {
+                                averageLine: {
+                                    type: 'line',
+                                    yMin: 0,
+                                    yMax: 0,
+                                    borderColor: theme.CHART.ANNOTATION,
+                                    borderWidth: 3,
+                                    borderDash: [8, 4],
+                                    shadowColor: `rgba(${theme.PRIMARY_RGB}, 0.5)`,
+                                    shadowBlur: 8,
+                                    shadowOffsetX: 0,
+                                    shadowOffsetY: 0,
+                                    label: {
+                                        enabled: true,
+                                        content: '24HR AVG: 0 TH/S',
+                                        backgroundColor: 'rgba(0,0,0,0.8)',
+                                        color: theme.CHART.ANNOTATION,
+                                        font: {
+                                            family: "'VT323', monospace",
+                                            size: 16,
+                                            weight: 'bold'
+                                        },
+                                        padding: { top: 4, bottom: 4, left: 8, right: 8 },
+                                        borderRadius: 0,
+                                        position: 'start'
+                                    }
+                                }
+                            }
+                        } : {}
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Error initializing chart:", error);
+            return null;
+        }
+    }
+
+    // Add this function to the document ready section
+    function setupThemeChangeListener() {
+        // Listen for storage events to detect theme changes from other tabs/windows
+        window.addEventListener('storage', function (event) {
+            if (event.key === 'useDeepSeaTheme') {
+                // Update chart with new theme colors
+                if (trendChart) {
+                    // Trigger chart update with new colors
+                    trendChart.destroy();
+                    trendChart = initializeChart();
+                    updateChartWithNormalizedData(trendChart, latestMetrics);
+                }
+
+                // Update other UI elements that depend on theme colors
+                updateRefreshButtonColor();
+
+                // Trigger a custom event that other components can listen to
+                $(document).trigger('themeChanged');
+            }
+        });
+    }
+
+    setupThemeChangeListener();
+
     // Remove the existing refreshUptime container to avoid duplicates
     $('#refreshUptime').hide();
 
@@ -2046,6 +2564,14 @@ $(document).ready(function () {
         }
     }
 
+    // Update BitcoinProgressBar theme when theme changes
+    $(document).on('themeChanged', function () {
+        if (typeof BitcoinMinuteRefresh !== 'undefined' &&
+            typeof BitcoinMinuteRefresh.updateTheme === 'function') {
+            BitcoinMinuteRefresh.updateTheme();
+        }
+    });
+
     // Set up event source for SSE
     setupEventSource();
 
@@ -2053,8 +2579,8 @@ $(document).ready(function () {
     updateServerTime();
     setInterval(updateServerTime, 30000);
 
-    // Add a manual refresh button for fallback
-    $("body").append('<button id="refreshButton" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #f7931a; color: black; border: none; padding: 8px 16px; display: none; border-radius: 4px; cursor: pointer;">Refresh Data</button>');
+    // Update the manual refresh button color
+    $("body").append('<button id="refreshButton" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #0088cc; color: white; border: none; padding: 8px 16px; display: none; border-radius: 4px; cursor: pointer;">Refresh Data</button>');
 
     $("#refreshButton").on("click", function () {
         $(this).text("Refreshing...");

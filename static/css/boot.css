@@ -143,11 +143,30 @@ body::before {
   font-size: 16px;
   box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
   transition: all 0.2s ease;
+  z-index: 50; /* Lower z-index value */
 }
 
 #skip-button:hover {
   background-color: #ffa32e;
   box-shadow: 0 0 12px rgba(247, 147, 26, 0.7);
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+    #skip-button {
+        bottom: 25px;
+        right: 10px;
+        padding: 10px 18px; /* Larger touch target for mobile */
+        font-size: 18px;
+        height: 40px;
+        z-index: 50;
+    }
+}
+
+/* Add this to your CSS */
+#config-form {
+    z-index: 100; /* Higher than the skip button */
+    position: relative; /* Needed for z-index to work properly */
 }
 
 /* Prompt Styling */

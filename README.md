@@ -173,7 +173,7 @@ Built with a modern stack for reliability and performance:
 The project follows a modular architecture with clear separation of concerns:
 
 ```
-bitcoin-mining-dashboard/
+DeepSea-Dashboard/
 │
 ├── App.py                      # Main application entry point
 ├── config.py                   # Configuration management
@@ -182,9 +182,12 @@ bitcoin-mining-dashboard/
 ├── models.py                   # Data models
 ├── state_manager.py            # Manager for persistent state
 ├── worker_service.py           # Service for worker data management
+├── notification_service.py     # Service for notifications
+├── minify.py                   # Script for minifying assets
 ├── setup.py                    # Setup script for organizing files
 ├── requirements.txt            # Python dependencies
 ├── Dockerfile                  # Docker configuration
+├── docker-compose.yml          # Docker Compose configuration
 │
 ├── templates/                  # HTML templates
 │   ├── base.html              # Base template with common elements
@@ -192,6 +195,7 @@ bitcoin-mining-dashboard/
 │   ├── dashboard.html         # Main dashboard template
 │   ├── workers.html           # Workers dashboard template
 │   ├── blocks.html            # Bitcoin blocks template
+│   ├── notifications.html     # Notifications template
 │   └── error.html             # Error page template
 │
 ├── static/                     # Static assets
@@ -201,18 +205,24 @@ bitcoin-mining-dashboard/
 │   │   ├── workers.css        # Workers page styles
 │   │   ├── boot.css           # Boot sequence styles
 │   │   ├── blocks.css         # Blocks page styles
+│   │   ├── notifications.css  # Notifications page styles
 │   │   ├── error.css          # Error page styles
-│   │   └── retro-refresh.css  # Floating refresh bar styles
+│   │   ├── retro-refresh.css  # Floating refresh bar styles
+│   │   └── theme-toggle.css   # Theme toggle styles
 │   │
 │   └── js/                    # JavaScript files
 │       ├── main.js            # Main dashboard functionality
 │       ├── workers.js         # Workers page functionality
 │       ├── blocks.js          # Blocks page functionality
+│       ├── notifications.js   # Notifications functionality
 │       ├── block-animation.js # Block mining animation
-│       └── BitcoinProgressBar.js # System monitor functionality
+│       ├── BitcoinProgressBar.js # System monitor functionality
+│       └── theme.js           # Theme toggle functionality
 │
 ├── deployment_steps.md         # Deployment guide
-└── project_structure.md        # Additional structure documentation
+├── project_structure.md        # Additional structure documentation
+├── LICENSE.md                  # License information
+└── logs/                       # Application logs (generated at runtime)
 ```
 
 For more detailed information on the architecture and component interactions, see [project_structure.md](project_structure.md).

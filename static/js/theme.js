@@ -162,7 +162,98 @@ function applyDeepSeaTheme() {
                 background-color: rgba(0, 136, 204, 0.1) !important;
                 box-shadow: 0 0 10px rgba(0, 136, 204, 0.3) !important;
             }
-        
+            
+            /* FIX 1: Make pool hashrate value text white - with more specific selectors */
+            #pool_hashrate, 
+            #pool_total_hashrate, 
+            span#pool_total_hashrate, 
+            span#pool_hashrate, 
+            .card-body p #pool_total_hashrate, 
+            .card-body p span#pool_hashrate,
+            .metric-value#pool_total_hashrate,
+            .metric-value#pool_hashrate,
+            div[class*="col"] span#pool_total_hashrate,
+            div[class*="col"] span#pool_hashrate,
+            .card-body span#pool_total_hashrate.metric-value,
+            .card-body span#pool_hashrate.metric-value {
+                color: #ffffff !important;
+                text-shadow: var(--white-text-shadow) !important;
+            }
+            
+            /* FIX 2: Make .stat-item strong blue in blocks page */
+            .stat-item strong {
+                color: #0088cc !important;
+                text-shadow: var(--blue-text-shadow) !important;
+            }
+            
+            /* FIX 3: Make .filter-button.active box shadow blue in notifications page */
+            .filter-button.active {
+                background-color: var(--primary-color) !important;
+                color: var(--bg-color) !important;
+                box-shadow: 0 0 10px rgba(0, 136, 204, 0.5) !important;
+            }
+            /* FIX 4: Update filter-button hover effect in notifications page to match DeepSea theme */
+            .filter-button:hover {
+                background-color: rgba(0, 136, 204, 0.2) !important; /* DeepSea blue with transparency */
+                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
+            }
+
+            /* Also update action buttons in notifications page */
+            .action-button:hover:not(.danger) {
+                background-color: rgba(0, 136, 204, 0.2) !important;
+                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
+            }
+
+            /* And load more button */
+            .load-more-button:hover {
+                background-color: rgba(0, 136, 204, 0.2) !important;
+                box-shadow: 0 0 5px rgba(0, 136, 204, 0.3) !important;
+            }
+
+            /* FIX 5: Update block card hover effect to match DeepSea theme */
+            .block-card:hover {
+                box-shadow: 0 0 15px rgba(0, 136, 204, 0.5) !important; /* DeepSea blue glow */
+                transform: translateY(-2px);
+            }
+
+            /* Update block-height color in blocks page */
+            .block-height {
+                color: var(--primary-color) !important;
+                text-shadow: var(--blue-text-shadow) !important;
+            }
+
+            /* Also update block inputs and button hover styles */
+            .block-input:focus {
+                outline: none !important;
+                box-shadow: 0 0 8px rgba(0, 136, 204, 0.5) !important;
+            }
+
+            .block-button:hover {
+                background-color: #0088cc !important;
+                color: var(--bg-color) !important;
+                box-shadow: 0 0 10px rgba(0, 136, 204, 0.5) !important;
+            }
+
+            /* Update block modal styling */
+            .block-modal-content {
+                box-shadow: 0 0 20px rgba(0, 136, 204, 0.5) !important;
+            }
+
+            .block-modal-header {
+                text-shadow: 0 0 5px #0088cc !important;
+            }
+
+            .block-modal-close:hover,
+            .block-modal-close:focus {
+                color: #00b3ff !important;
+                text-shadow: 0 0 10px rgba(0, 179, 255, 0.8) !important;
+            }
+
+            .block-detail-title {
+                color: var(--primary-color) !important;
+                text-shadow: 0 0 5px rgba(0, 136, 204, 0.5) !important;
+            }
+
             /* ===== COLOR SPECIFIC STYLING ===== */
         
             /* YELLOW - SATOSHI EARNINGS & BTC PRICE */
@@ -246,10 +337,10 @@ function applyDeepSeaTheme() {
                 text-shadow: var(--cyan-text-shadow) !important;
             }
         
-            /* BLUE - Pool statistics */
+            /* BLUE - Pool statistics - OVERRIDE TO WHITE */
             #pool_total_hashrate {
-                color: #0088cc !important;
-                text-shadow: var(--blue-text-shadow) !important;
+                color: #ffffff !important;
+                text-shadow: var(--white-text-shadow) !important;
             }
         
             /* Hashrate values are white */
@@ -298,6 +389,12 @@ function applyDeepSeaTheme() {
                 0%, 100% { box-shadow: 0 0 10px #0088cc, 0 0 15px #0088cc !important; }
                 50% { box-shadow: 0 0 15px #0088cc, 0 0 25px #0088cc !important; }
             }
+
+            /* Final important overrides to ensure theme consistency */
+            .card-body p strong + span#pool_total_hashrate.metric-value.white {
+                color: #ffffff !important;
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5) !important;
+            }
         `;
 
         // Check if our style element already exists
@@ -326,6 +423,16 @@ function applyDeepSeaTheme() {
             themeToggle.style.borderColor = '#0088cc';
             themeToggle.style.color = '#0088cc';
         }
+
+        // Add direct style application to pool hashrate elements
+        setTimeout(() => {
+            // Direct DOM manipulation as a fallback to ensure the pool hashrate is white
+            const poolHashrateElements = document.querySelectorAll('#pool_total_hashrate, #pool_hashrate');
+            poolHashrateElements.forEach(el => {
+                el.style.setProperty('color', '#ffffff', 'important');
+                el.style.setProperty('text-shadow', '0 0 10px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5)', 'important');
+            });
+        }, 100);
 
         console.log("DeepSea theme applied with color adjustments");
     } finally {

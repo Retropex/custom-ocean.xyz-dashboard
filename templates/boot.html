@@ -298,9 +298,180 @@
                 font-family: 'VT323', monospace;
                 z-index: 2; /* Ensure version displays on top */
             }
+            /* Ocean Wave Ripple Effect for DeepSea Theme */
+            body.deepsea-theme::after {
+                content: "";
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                background: transparent;
+                opacity: 0.1;
+                z-index: 10;
+                animation: oceanRipple 8s infinite linear;
+                background-image: repeating-linear-gradient( 0deg, rgba(0, 136, 204, 0.1), rgba(0, 136, 204, 0.1) 1px, transparent 1px, transparent 6px );
+                background-size: 100% 6px;
+            }
+
+            /* Ocean waves moving animation */
+            @keyframes oceanRipple {
+                0% {
+                    transform: translateY(0);
+                }
+
+                100% {
+                    transform: translateY(6px);
+                }
+            }
+
+            /* Retro glitch effect for DeepSea Theme */
+            body.deepsea-theme::before {
+                content: "";
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                z-index: 3;
+                opacity: 0.15;
+                background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 73, 109, 0.1) 50%), linear-gradient(90deg, rgba(0, 81, 122, 0.03), rgba(0, 136, 204, 0.08), rgba(0, 191, 255, 0.03));
+                background-size: 100% 2px, 3px 100%;
+                animation: glitchEffect 2s infinite;
+            }
+
+            /* Glitch animation */
+            @keyframes glitchEffect {
+                0% {
+                    opacity: 0.15;
+                    background-position: 0 0;
+                }
+
+                20% {
+                    opacity: 0.17;
+                }
+
+                40% {
+                    opacity: 0.14;
+                    background-position: -1px 0;
+                }
+
+                60% {
+                    opacity: 0.15;
+                    background-position: 1px 0;
+                }
+
+                80% {
+                    opacity: 0.16;
+                    background-position: -2px 0;
+                }
+
+                100% {
+                    opacity: 0.15;
+                    background-position: 0 0;
+                }
+            }
+
+            /* Deep underwater light rays */
+            body.deepsea-theme {
+                position: relative;
+                overflow: hidden;
+            }
+
+                body.deepsea-theme .underwater-rays {
+                    position: fixed;
+                    top: -50%;
+                    left: -50%;
+                    right: -50%;
+                    bottom: -50%;
+                    width: 200%;
+                    height: 200%;
+                    background: rgba(0, 0, 0, 0);
+                    pointer-events: none;
+                    z-index: 1;
+                    background-image: radial-gradient(ellipse at top, rgba(0, 136, 204, 0.1) 0%, rgba(0, 136, 204, 0) 70%), radial-gradient(ellipse at bottom, rgba(0, 91, 138, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+                    animation: lightRays 15s ease infinite alternate;
+                }
+
+            /* Light ray animation */
+            @keyframes lightRays {
+                0% {
+                    transform: rotate(0deg) scale(1);
+                    opacity: 0.3;
+                }
+
+                50% {
+                    opacity: 0.4;
+                }
+
+                100% {
+                    transform: rotate(360deg) scale(1.1);
+                    opacity: 0.3;
+                }
+            }
+
+            /* Subtle digital noise texture */
+            body.deepsea-theme .digital-noise {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4woEFQwNDaabTQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAACASURBVGje7dixDcIwFEbhb8QMKWn5dwEWY4fswAasRJkBkhfAIarsNDEF5x5LrV/dJ1cEAAAAAOzHuefF5byzZ7tS6xDj6qoQpdRxUvNM6lH3rPeM1+ZJ3ROtqe9feGcjY8z74M8UvJGxEVHxTcIbGSsR+SECAAAAsC9/8G82GwHDD80AAAAASUVORK5CYII=');
+                opacity: 0.05;
+                z-index: 2;
+                pointer-events: none;
+                animation: noise 0.5s steps(5) infinite;
+            }
+
+            /* Noise animation */
+            @keyframes noise {
+                0% {
+                    transform: translate(0, 0);
+                }
+
+                20% {
+                    transform: translate(-1px, 1px);
+                }
+
+                40% {
+                    transform: translate(1px, -1px);
+                }
+
+                60% {
+                    transform: translate(-2px, -1px);
+                }
+
+                80% {
+                    transform: translate(2px, 1px);
+                }
+
+                100% {
+                    transform: translate(0, 0);
+                }
+            }
     </style>
 </head>
 <body>
+    <script>
+        // Add underwater effects for DeepSea theme
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check if DeepSea theme is active
+            if (localStorage.getItem('useDeepSeaTheme') === 'true') {
+                // Create underwater light rays
+                const rays = document.createElement('div');
+                rays.className = 'underwater-rays';
+                document.body.appendChild(rays);
+
+                // Create digital noise
+                const noise = document.createElement('div');
+                noise.className = 'digital-noise';
+                document.body.appendChild(noise);
+            }
+        });
+    </script>
     <!-- Theme toggle button (new) -->
     <button id="themeToggle" class="theme-toggle-btn">
         <span>Toggle Theme</span>

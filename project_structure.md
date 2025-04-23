@@ -5,22 +5,29 @@ This document provides a comprehensive overview of the Bitcoin Mining Dashboard 
 ## Directory Structure
 
 ```
-bitcoin-mining-dashboard/
+DeepSea-Dashboard/
 │
-├── App.py                      # Main application entry point and Flask routes
-├── config.py                   # Configuration management utilities
-├── config.json                 # User configuration file
-├── data_service.py             # Service for fetching mining/market data
-├── models.py                   # Data models and conversion utilities
-├── state_manager.py            # Manager for persistent state and history
+├── App.py                      # Main application entry point
+├── config.py                   # Configuration management
+├── config.json                 # Configuration file
+├── data_service.py             # Service for fetching mining data
+├── models.py                   # Data models
+├── state_manager.py            # Manager for persistent state
 ├── worker_service.py           # Service for worker data management
+├── notification_service.py     # Service for notifications
+├── minify.py                   # Script for minifying assets
+├── setup.py                    # Setup script for organizing files
+├── requirements.txt            # Python dependencies
+├── Dockerfile                  # Docker configuration
+├── docker-compose.yml          # Docker Compose configuration
 │
 ├── templates/                  # HTML templates
 │   ├── base.html              # Base template with common elements
 │   ├── boot.html              # Boot sequence animation
 │   ├── dashboard.html         # Main dashboard template
-│   ├── workers.html           # Workers overview template
+│   ├── workers.html           # Workers dashboard template
 │   ├── blocks.html            # Bitcoin blocks template
+│   ├── notifications.html     # Notifications template
 │   └── error.html             # Error page template
 │
 ├── static/                     # Static assets
@@ -30,23 +37,24 @@ bitcoin-mining-dashboard/
 │   │   ├── workers.css        # Workers page styles
 │   │   ├── boot.css           # Boot sequence styles
 │   │   ├── blocks.css         # Blocks page styles
+│   │   ├── notifications.css  # Notifications page styles
 │   │   ├── error.css          # Error page styles
-│   │   └── retro-refresh.css  # Floating system monitor styles
+│   │   ├── retro-refresh.css  # Floating refresh bar styles
+│   │   └── theme-toggle.css   # Theme toggle styles
 │   │
 │   └── js/                    # JavaScript files
 │       ├── main.js            # Main dashboard functionality
 │       ├── workers.js         # Workers page functionality
 │       ├── blocks.js          # Blocks page functionality
+│       ├── notifications.js   # Notifications functionality
 │       ├── block-animation.js # Block mining animation
-│       └── BitcoinProgressBar.js # System monitor implementation
+│       ├── BitcoinProgressBar.js # System monitor functionality
+│       └── theme.js           # Theme toggle functionality
 │
-├── logs/                       # Application logs directory
-├── requirements.txt            # Python dependencies
-├── Dockerfile                  # Docker configuration
-├── setup.py                    # Setup script for organizing files
-├── deployment_steps.md         # Deployment documentation
-├── project_structure.md        # This document
-└── README.md                   # Project overview and instructions
+├── deployment_steps.md         # Deployment guide
+├── project_structure.md        # Additional structure documentation
+├── LICENSE.md                  # License information
+└── logs/                       # Application logs (generated at runtime)
 ```
 
 ## Core Components
@@ -210,28 +218,28 @@ All hashrates are normalized to TH/s internally because:
 
 ```
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  Ocean.xyz API  │      │  blockchain.info │      │  mempool.guide  │
+│  Ocean.xyz API  │      │ blockchain.info │      │  mempool.guide  │
 └────────┬────────┘      └────────┬────────┘      └────────┬────────┘
          │                        │                        │
          ▼                        ▼                        ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                           data_service.py                           │
+│                           data_service.py                          │
 └────────────────────────────────┬───────────────────────────────────┘
                                  │
                                  ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                             App.py                                  │
+│                             App.py                                 │
 ├────────────────────────────────────────────────────────────────────┤
-│                                                                     │
+│                                                                    │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
-│  │  worker_service │    │  state_manager  │    │ Background Jobs  │ │
+│  │  worker_service │    │  state_manager  │    │ Background Jobs │ │
 │  └─────────────────┘    └─────────────────┘    └─────────────────┘ │
-│                                                                     │
+│                                                                    │
 └───────────────────────────────┬────────────────────────────────────┘
                                 │
                                 ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                         Flask Routes & SSE                          │
+│                         Flask Routes & SSE                         │
 └───────────────────────────────┬────────────────────────────────────┘
                                 │
          ┌────────────────────────────────────────────┐

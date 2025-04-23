@@ -1,8 +1,7 @@
-﻿/* Responsive Theme Toggle Button Styles */
-/* Common styles for the theme toggle button regardless of device */
+﻿/* Theme Toggle Button with positioning logic similar to topRightLink */
 #themeToggle,
 .theme-toggle-btn {
-    position: fixed;
+    position: absolute; /* Change from fixed to absolute like topRightLink */
     z-index: 1000;
     background: transparent;
     border-width: 1px;
@@ -16,14 +15,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    top: 30px; /* Match the top positioning of topRightLink */
+    left: 15px; /* Keep on left side */
 }
 
-/* Default positioning and styling for desktop */
+/* Desktop specific styling */
 @media screen and (min-width: 768px) {
     #themeToggle,
     .theme-toggle-btn {
-        top: 15px;
-        left: 15px;
         padding: 6px 12px;
         font-size: 14px;
         border-radius: 3px;
@@ -46,17 +45,15 @@
         }
 }
 
-/* Mobile-specific styling - MODIFIED to keep left positioning */
+/* Mobile-specific styling */
 @media screen and (max-width: 767px) {
     #themeToggle,
     .theme-toggle-btn {
-        top: 60px;
-        left: 10px; /* Keep on left side */
-        padding: 8px;
+        padding: 6px;
         font-size: 12px;
         border-radius: 50%;
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
     }
 
         /* Use just icon for mobile to save space */
@@ -64,7 +61,7 @@
         .theme-toggle-btn:before {
             content: "☀/☾";
             margin-right: 0;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         /* Hide text on mobile */

@@ -1061,6 +1061,42 @@ def force_gc():
         logging.error(f"Error during forced GC: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route("/memory-dashboard")
+def memory_dashboard():
+    """Serve the memory monitoring dashboard page."""
+    try:
+        process = psutil.Process(os.getpid())
+        mem_info = process.memory_info()
+        
+        memory_data = {
+            "current_usage": {
+                "rss_mb": mem_info.rss / 1024 / 1024,
+                "percent": process.memory_percent()
+            },
+            "history": memory_usage_history[-20:] if memory_usage_history else [],
+            "data_structures": {
+                "arrow_history_entries": sum(len(v) for v in arrow_history.values() if isinstance(v, list)),
+                "arrow_history_keys": list(arrow_history.keys()),
+                "metrics_log_entries": len(metrics_log),
+                "sse_connections": active_sse_connections
+            },
+            "gc_stats": {
+                "counts": gc.get_count(),
+                "threshold": gc.get_threshold(),
+                "enabled": gc.isenabled()
+            }
+        }
+        
+        current_time = datetime.now(ZoneInfo(get_timezone())).strftime("%Y-%m-%d %H:%M:%S %p")
+        return render_template(
+            "memory_dashboard.html",
+            memory=memory_data,
+            current_time=current_time
+        )
+    except Exception as e:
+        logging.error(f"Error rendering memory dashboard: {e}")
+        return render_template("error.html", message="Error loading memory dashboard."), 500
+
 @app.route("/api/notifications")
 def api_notifications():
     """API endpoint for notification data."""

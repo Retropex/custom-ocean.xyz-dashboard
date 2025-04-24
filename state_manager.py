@@ -211,42 +211,52 @@ class StateManager:
         except Exception as e:
             logging.error(f"Error saving graph state to Redis: {e}")
     
-    def prune_old_data(self):
-        """Remove old data to prevent memory growth with optimized strategy."""
+    def prune_old_data(self, aggressive=False):
+        """
+        Remove old data to prevent memory growth with optimized strategy.
+    
+        Args:
+            aggressive (bool): If True, be more aggressive with pruning
+        """
         global arrow_history, metrics_log
-        
+    
         with state_lock:
+            # Set thresholds based on aggressiveness
+            max_history = MAX_HISTORY_ENTRIES // 2 if aggressive else MAX_HISTORY_ENTRIES
+        
             # Prune arrow_history with more sophisticated approach
             for key in arrow_history:
                 if isinstance(arrow_history[key], list):
-                    if len(arrow_history[key]) > MAX_HISTORY_ENTRIES:
+                    if len(arrow_history[key]) > max_history:
                         # For most recent data (last hour) - keep every point
                         recent_data = arrow_history[key][-60:]
-                        
-                        # For older data, reduce resolution by keeping every other point
+                    
+                        # For older data, reduce resolution by keeping fewer points when aggressive
                         older_data = arrow_history[key][:-60]
                         if len(older_data) > 0:
-                            sparse_older_data = [older_data[i] for i in range(0, len(older_data), 2)]
+                            step = 3 if aggressive else 2
+                            sparse_older_data = [older_data[i] for i in range(0, len(older_data), step)]
                             arrow_history[key] = sparse_older_data + recent_data
                         else:
                             arrow_history[key] = recent_data
-                            
-                        logging.info(f"Pruned {key} history from {len(arrow_history[key])} to {len(sparse_older_data + recent_data) if older_data else len(recent_data)} entries")
+                        
+                        logging.info(f"Pruned {key} history from original state to {len(arrow_history[key])} entries")
                     
             # Prune metrics_log more aggressively
-            if len(metrics_log) > MAX_HISTORY_ENTRIES:
+            if len(metrics_log) > max_history:
                 # Keep most recent entries at full resolution
                 recent_logs = metrics_log[-60:]
-                
+            
                 # Reduce resolution of older entries
                 older_logs = metrics_log[:-60]
                 if len(older_logs) > 0:
-                    sparse_older_logs = [older_logs[i] for i in range(0, len(older_logs), 3)]  # Keep every 3rd entry
+                    step = 4 if aggressive else 3  # More aggressive step
+                    sparse_older_logs = [older_logs[i] for i in range(0, len(older_logs), step)]
                     metrics_log = sparse_older_logs + recent_logs
-                    logging.info(f"Pruned metrics log from {len(metrics_log)} to {len(sparse_older_logs + recent_logs)} entries")
+                    logging.info(f"Pruned metrics log to {len(metrics_log)} entries")
         
-        # Free memory more aggressively
-        gc.collect()
+            # Free memory more aggressively
+            gc.collect()
     
     def persist_critical_state(self, cached_metrics, scheduler_last_successful_run, last_metrics_update_time):
         """

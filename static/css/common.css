@@ -1,3 +1,74 @@
+.footer {
+    margin-top: 30px;
+    padding: 10px 0;
+    color: grey;
+    font-size: 0.9rem;
+    text-shadow: 0 0 5px rgba(100, 100, 100, 0.3);
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+}
+
+</style >
+<!-- Preload theme to prevent flicker -->
+<style id="theme-preload" >
+/* Theme-aware loading state */
+html.bitcoin-theme {
+    background-color: #111111;
+}
+
+html.deepsea-theme {
+    background-color: #0c141a;
+}
+
+#theme-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    font-family: 'VT323', monospace;
+}
+
+html.bitcoin-theme #theme-loader {
+    background-color: #111111;
+    color: #f2a900;
+}
+
+html.deepsea-theme #theme-loader {
+    background-color: #0c141a;
+    color: #0088cc;
+}
+
+#loader-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    animation: spin 2s infinite linear;
+}
+
+#loader-text {
+    font-size: 24px;
+    text-transform: uppercase;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Hide content during load */
+body {
+    visibility: hidden;
+}
+
 /* Common styling elements shared across all pages */
 :root {
     --bg-color: #0a0a0a;

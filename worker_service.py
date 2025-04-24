@@ -392,7 +392,7 @@ class WorkerService:
                 unpaid_earnings = 0.001
         
         # Ensure we have a minimum value for unpaid earnings
-        if unpaid_earnings <= 0:
+        if unpaid_earnings is None or unpaid_earnings <= 0:
             unpaid_earnings = 0.001
         
         # Use unpaid_earnings as total_earnings

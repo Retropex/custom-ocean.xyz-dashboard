@@ -9,6 +9,45 @@
     <link rel="stylesheet" href="/static/css/theme-toggle.css">
     <!-- Add Theme JS -->
     <script src="/static/js/theme.js"></script>
+    <!-- Add Boot Sequence Bypass Logic -->
+    <script>
+        // Check if we should bypass boot sequence and go directly to dashboard
+        (function () {
+            // Only try to bypass if we've booted before
+            const hasBootedBefore = localStorage.getItem('hasCompletedBootSequence') === 'true';
+
+            if (hasBootedBefore) {
+                console.log("Boot sequence previously completed, checking configuration...");
+
+                // Check if configuration exists and is valid
+                fetch('/api/config?nocache=' + new Date().getTime())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Configuration check failed');
+                        }
+                        return response.json();
+                    })
+                    .then(config => {
+                        // Check if configuration has a valid wallet (not default/empty)
+                        const isConfigured = config.wallet &&
+                            config.wallet !== "yourwallethere" &&
+                            config.wallet.trim() !== "";
+
+                        if (isConfigured) {
+                            console.log("Valid configuration found, bypassing boot sequence");
+                            window.location.href = window.location.origin + "/dashboard";
+                        } else {
+                            console.log("Configuration invalid or incomplete, showing boot sequence");
+                            // Continue with normal boot sequence
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error checking configuration:", error);
+                        // On error, continue with boot sequence
+                    });
+            }
+        })();
+    </script>
 </head>
 <body>
     <script>
@@ -421,6 +460,8 @@ v.21
         // Redirect to dashboard
         function redirectToDashboard() {
             updateDebug("Boot sequence complete, redirecting...");
+            // Set localStorage flag to indicate boot sequence has been completed
+            localStorage.setItem('hasCompletedBootSequence', 'true');
             const baseUrl = window.location.origin;
             window.location.href = baseUrl + "/dashboard";
         }

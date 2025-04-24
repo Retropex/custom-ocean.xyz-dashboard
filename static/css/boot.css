@@ -374,7 +374,7 @@ body.deepsea-theme {
         height: 200%;
         background: rgba(0, 0, 0, 0);
         pointer-events: none;
-        z-index: 1;
+        z-index: -1;
         background-image: radial-gradient(ellipse at top, rgba(0, 136, 204, 0.1) 0%, rgba(0, 136, 204, 0) 70%), radial-gradient(ellipse at bottom, rgba(0, 91, 138, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
         animation: lightRays 15s ease infinite alternate;
     }
@@ -382,16 +382,17 @@ body.deepsea-theme {
 /* Light ray animation */
 @keyframes lightRays {
     0% {
-        transform: rotate(0deg) scale(1);
+        transform: scale(1) skew(0deg);
         opacity: 0.3;
     }
 
     50% {
+        transform: scale(1.05) skew(2deg);
         opacity: 0.4;
     }
 
     100% {
-        transform: rotate(360deg) scale(1.1);
+        transform: scale(1.1) skew(0deg);
         opacity: 0.3;
     }
 }

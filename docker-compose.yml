@@ -13,7 +13,7 @@ services:
       interval: 1s
       timeout: 5s
       retries: 3
-      start_period: 3s
+      start_period: 1s
 
   dashboard:
     build: .
@@ -30,12 +30,9 @@ services:
       - LOG_LEVEL=INFO
     volumes:
       - ./logs:/app/logs
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
+      interval: 5s
       timeout: 10s
       retries: 3
 

@@ -19,7 +19,6 @@ body:not(.deepsea-theme) #prompt-text,
 body:not(.deepsea-theme) #user-input,
 body:not(.deepsea-theme) #loading-message {
     color: #f7931a;
-    text-shadow: 0 0 5px rgba(247, 147, 26, 0.4);
 }
 
 /* DeepSea theme text color */
@@ -30,7 +29,6 @@ body.deepsea-theme #prompt-text,
 body.deepsea-theme #user-input,
 body.deepsea-theme #loading-message {
     color: #0088cc;
-    text-shadow: 0 0 5px rgba(0, 136, 204, 0.4);
 }
 
 /* DeepSea cursor color */
@@ -55,7 +53,6 @@ body.deepsea-theme #config-form {
 
 body.deepsea-theme .config-title {
     color: #0088cc;
-    text-shadow: 0 0 8px rgba(0, 136, 204, 0.8);
 }
 
 body.deepsea-theme .form-group label {
@@ -110,7 +107,6 @@ body.deepsea-theme #skip-button {
     text-align: center;
     margin-bottom: 20px;
     color: #f7931a;
-    text-shadow: 0 0 8px rgba(247, 147, 26, 0.8);
 }
 
 .form-group {
@@ -451,7 +447,6 @@ body {
   margin: 0;
   padding: 10px;
   overflow-x: hidden;
-  text-shadow: 0 0 5px rgba(247, 147, 26, 0.4);
   height: calc(100vh - 100px);
   display: flex;
   flex-direction: column;
@@ -522,32 +517,26 @@ body::before {
 /* Neon-inspired color classes */
 .green {
   color: #39ff14 !important;
-  text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14;
 }
 
 .blue {
   color: #00dfff !important;
-  text-shadow: 0 0 10px #00dfff, 0 0 20px #00dfff;
 }
 
 .yellow {
   color: #ffd700 !important;
-  text-shadow: 0 0 8px #ffd700, 0 0 16px #ffd700;
 }
 
 .white {
   color: #ffffff !important;
-  text-shadow: 0 0 8px #ffffff, 0 0 16px #ffffff;
 }
 
 .red {
   color: #ff2d2d !important;
-  text-shadow: 0 0 10px #ff2d2d, 0 0 20px #ff2d2d;
 }
 
 .magenta {
   color: #ff2d95 !important;
-  text-shadow: 0 0 10px #ff2d95, 0 0 20px #ff2d95;
 }
 
 /* Bitcoin Logo styling with extra neon border */
@@ -621,7 +610,6 @@ body::before {
 #prompt-text {
   color: #f7931a;
   margin-right: 5px;
-  text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
   display: inline;
 }
 
@@ -637,7 +625,6 @@ body::before {
     height: 33px;
     padding: 0;
     margin: 0;
-    text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
     display: inline-block;
     vertical-align: top;
 }
@@ -665,7 +652,6 @@ body::before {
 #loading-message {
   text-align: center;
   margin-bottom: 10px;
-  text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
 }
 
 #debug-info {

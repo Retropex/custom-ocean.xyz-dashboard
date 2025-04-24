@@ -79,26 +79,17 @@ function applyDeepSeaTheme() {
                 --primary-color-rgb: 0, 136, 204;
                 --accent-color: #00b3ff;
                 --bg-gradient: linear-gradient(135deg, #0a0a0a, #131b20);
-                
-                /* Standardized text shadow values */
-                --blue-text-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.8), 0 0 5px rgba(var(--primary-color-rgb), 0.5);
-                --yellow-text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 5px rgba(255, 215, 0, 0.5);
-                --green-text-shadow: 0 0 10px rgba(50, 205, 50, 0.8), 0 0 5px rgba(50, 205, 50, 0.5);
-                --red-text-shadow: 0 0 10px rgba(255, 85, 85, 0.8), 0 0 5px rgba(255, 85, 85, 0.5);
-                --white-text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5);
-                --cyan-text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 5px rgba(0, 255, 255, 0.5);
             }
         
             /* Card styling */
             .card {
                 border: 1px solid var(--primary-color) !important;
-                box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3) !important;
             }
             
             .card-header, .card > .card-header {
                 background: linear-gradient(to right, var(--primary-color), #006699) !important;
                 border-bottom: 1px solid var(--primary-color) !important;
-                text-shadow: var(--blue-text-shadow) !important;
                 color: #fff !important;
             }
             
@@ -117,7 +108,7 @@ function applyDeepSeaTheme() {
             /* Interface elements */
             #terminal-cursor {
                 background-color: var(--primary-color) !important;
-                box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.8) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.8) !important;
             }
             
             #lastUpdated {
@@ -126,7 +117,6 @@ function applyDeepSeaTheme() {
             
             h1, .text-center h1 {
                 color: var(--primary-color) !important;
-                text-shadow: var(--blue-text-shadow) !important;
             }
             
             .nav-badge {
@@ -140,7 +130,7 @@ function applyDeepSeaTheme() {
             
             .bitcoin-progress-container {
                 border: 1px solid var(--primary-color) !important;
-                box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5) !important;
             }
             
             /* Theme toggle button styling */
@@ -161,7 +151,6 @@ function applyDeepSeaTheme() {
             /* Pool hashrate - always white */
             [id^="pool_"] {
                 color: #ffffff !important;
-                text-shadow: var(--white-text-shadow) !important;
             }
             
             /* Block page elements */
@@ -169,13 +158,12 @@ function applyDeepSeaTheme() {
             .block-height,
             .block-detail-title {
                 color: var(--primary-color) !important;
-                text-shadow: var(--blue-text-shadow) !important;
             }
             
             /* Block inputs and button styles */
             .block-input:focus {
                 outline: none !important;
-                box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5) !important;
             }
             
             .block-button:hover {
@@ -195,27 +183,22 @@ function applyDeepSeaTheme() {
             .action-button:hover:not(.danger),
             .load-more-button:hover {
                 background-color: rgba(var(--primary-color-rgb), 0.2) !important;
-                box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3) !important;
             }
             
             /* Block cards and modals */
             .block-card:hover {
-                box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.5) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5) !important;
                 transform: translateY(-2px);
             }
             
             .block-modal-content {
-                box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.5) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5) !important;
             }
-            
-            .block-modal-header {
-                text-shadow: 0 0 5px var(--primary-color) !important;
-            }
-            
+           
             .block-modal-close:hover,
             .block-modal-close:focus {
                 color: var(--accent-color) !important;
-                text-shadow: 0 0 10px rgba(0, 179, 255, 0.8) !important;
             }
             
             /* ===== COLOR CATEGORIES ===== */
@@ -238,24 +221,21 @@ function applyDeepSeaTheme() {
             #pool_luck.very-lucky,
             #pool_luck.lucky {
                 color: #32CD32 !important;
-                text-shadow: var(--green-text-shadow) !important;
             }
             
             .online-dot {
                 background: #32CD32 !important;
-                box-shadow: 0 0 10px #32CD32, 0 0 20px #32CD32 !important;
+                box-shadow: 0 0 10px #32CD32, 0 0 10px #32CD32 !important;
             }
             
             /* Light green for "lucky" status */
             #pool_luck.lucky {
                 color: #90EE90 !important;
-                text-shadow: 0 0 10px rgba(144, 238, 144, 0.8), 0 0 5px rgba(144, 238, 144, 0.5) !important;
             }
             
             /* NORMAL LUCK - KHAKI */
             #pool_luck.normal-luck {
                 color: #F0E68C !important;
-                text-shadow: 0 0 10px rgba(240, 230, 140, 0.8), 0 0 5px rgba(240, 230, 140, 0.5) !important;
             }
             
             /* RED - NEGATIVE VALUES & WARNINGS */
@@ -265,12 +245,11 @@ function applyDeepSeaTheme() {
             #daily_power_cost,
             #pool_luck.unlucky {
                 color: #ff5555 !important;
-                text-shadow: var(--red-text-shadow) !important;
             }
             
             .offline-dot {
                 background: #ff5555 !important;
-                box-shadow: 0 0 10px #ff5555, 0 0 20px #ff5555 !important;
+                box-shadow: 0 0 10px #ff5555, 0 0 10px #ff5555 !important;
             }
             
             /* WHITE - NETWORK STATS & WORKER DATA */
@@ -287,30 +266,28 @@ function applyDeepSeaTheme() {
             #hashrate_10min,
             #hashrate_60sec {
                 color: #ffffff !important;
-                text-shadow: var(--white-text-shadow) !important;
             }
             
             /* CYAN - TIME AGO IN LAST BLOCK */
             #last_block_time {
                 color: #00ffff !important;
-                text-shadow: var(--cyan-text-shadow) !important;
             }
             
             /* CONGRATULATIONS MESSAGE */
             #congratsMessage {
                 background: var(--primary-color) !important;
-                box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.7) !important;
+                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.7) !important;
             }
             
             /* ANIMATIONS */
             @keyframes waitingPulse {
-                0%, 100% { box-shadow: 0 0 10px var(--primary-color), 0 0 15px var(--primary-color) !important; opacity: 0.8; }
-                50% { box-shadow: 0 0 20px var(--primary-color), 0 0 35px var(--primary-color) !important; opacity: 1; }
+                0%, 100% { box-shadow: 0 0 10px var(--primary-color), 0 0 10px var(--primary-color) !important; opacity: 0.8; }
+                50% { box-shadow: 0 0 10px var(--primary-color), 0 0 10px var(--primary-color) !important; opacity: 1; }
             }
             
             @keyframes glow {
-                0%, 100% { box-shadow: 0 0 10px var(--primary-color), 0 0 15px var(--primary-color) !important; }
-                50% { box-shadow: 0 0 15px var(--primary-color), 0 0 25px var(--primary-color) !important; }
+                0%, 100% { box-shadow: 0 0 10px var(--primary-color), 0 0 10px var(--primary-color) !important; }
+                50% { box-shadow: 0 0 10px var(--primary-color), 0 0 10px var(--primary-color) !important; }
             }
         `;
 

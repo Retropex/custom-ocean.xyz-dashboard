@@ -113,7 +113,6 @@
 .metric-value {
   color: var(--text-color);
   font-weight: bold;
-  text-shadow: 0 0 10px #32cd32;
 }
 
 /* Yellow color family (BTC price, sats metrics, time to payout) */
@@ -125,7 +124,6 @@
 #estimated_rewards_in_window_sats,
 #est_time_to_payout { 
   color: #ffd700; 
-  text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
 }
 
 /* Green color family (profits, earnings) */
@@ -134,13 +132,11 @@
 #daily_profit_usd,
 #monthly_profit_usd { 
   color: #32CD32; 
-  text-shadow: 0 0 6px rgba(50, 205, 50, 0.6);
 }
 
 /* Red color family (costs) */
 #daily_power_cost { 
   color: #ff5555 !important; 
-  text-shadow: 0 0 6px rgba(255, 85, 85, 0.6);
 }
 
 /* White metrics (general stats) */
@@ -154,19 +150,16 @@
 #last_block_height,
 #pool_fees_percentage {
     color: #ffffff;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
 }
 
 /* Blue metrics (time data) */
 #last_block_time {
   color: #00dfff;
-  text-shadow: 0 0 6px rgba(0, 223, 255, 0.6);
 }
 
 .card-body strong {
   color: var(--primary-color);
   margin-right: 0.25rem;
-  text-shadow: 0 0 10px var(--primary-color);
 }
 
 .card-body p {
@@ -239,20 +232,16 @@
 .very-lucky {
     color: #32CD32 !important;
     font-weight: bold !important;
-    text-shadow: 0 0 6px rgba(50, 205, 50, 0.6) !important;
 }
 
 .lucky {
     color: #90EE90 !important;
-    text-shadow: 0 0 4px rgba(144, 238, 144, 0.5) !important;
 }
 
 .normal-luck {
     color: #ffd700 !important;
-    text-shadow: 0 0 4px rgba(255, 215, 0, 0.5) !important;
 }
 
 .unlucky {
     color: #ff5555 !important;
-    text-shadow: 0 0 4px rgba(255, 85, 85, 0.5) !important;
 }

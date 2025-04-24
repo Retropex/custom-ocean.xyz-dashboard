@@ -3,7 +3,6 @@
     padding: 10px 0;
     color: grey;
     font-size: 0.9rem;
-    text-shadow: 0 0 5px rgba(100, 100, 100, 0.3);
     border-top: 1px solid rgba(128, 128, 128, 0.2);
 }
 
@@ -132,7 +131,6 @@ h1 {
   color: var(--primary-color);
   font-family: var(--header-font);
   letter-spacing: 1px;
-  text-shadow: 0 0 10px var(--primary-color);
   animation: flicker 4s infinite;
 }
 
@@ -181,7 +179,6 @@ h1 {
   color: grey;
   text-decoration: none;
   font-size: 0.7rem; /* Decreased font size */
-  text-shadow: 0 0 5px grey;
   padding: 5px 10px; /* Add padding for a larger clickable area */
   transition: background-color 0.3s ease; /* Optional: Add hover effect */
 }
@@ -238,7 +235,6 @@ h1 {
   padding: 0.3rem 0.5rem;
   font-size: 1.1rem;
   border-bottom: 1px solid var(--primary-color);
-  text-shadow: 0 0 5px var(--primary-color);
   animation: flicker 4s infinite;
   font-family: var(--header-font);
 }
@@ -260,7 +256,6 @@ h1 {
   border-radius: 5px;
   z-index: 9999;
   font-size: 0.9rem;
-  text-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
   box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
 }
 
@@ -340,54 +335,44 @@ h1 {
 
 .red-glow, .status-red {
   color: #ff2d2d !important;
-  text-shadow: 0 0 2px #ff2d2d, 0 0 2px #ff2d2d;
 }
 
 .yellow-glow {
   color: #ffd700 !important;
-  text-shadow: 0 0 2px #ffd700, 0 0 2px #ffd700;
 }
 
 .blue-glow {
   color: #00dfff !important;
-  text-shadow: 0 0 2px #00dfff, 0 0 2px #00dfff;
 }
 
 .white-glow {
   color: #ffffff !important;
-  text-shadow: 0 0 2px #ffffff, 0 0 2px #ffffff;
 }
 
 /* Basic color classes for backward compatibility */
 .green {
     color: #39ff14 !important;
-    text-shadow: 0 0 10px #39ff14, 0 0 2px #39ff14;
 }
 
 .blue {
     color: #00dfff !important;
-    text-shadow: 0 0 10px #00dfff, 0 0 2px #00dfff;
 }
 
 .yellow {
     color: #ffd700 !important;
-    text-shadow: 0 0 10px #ffd700, 0 0 2px #ffd700 !important;
     font-weight: normal !important;
 }
 
 .white {
     color: #ffffff !important;
-    text-shadow: 0 0 10px #ffffff, 0 0 2px #ffffff;
 }
 
 .red {
     color: #ff2d2d !important;
-    text-shadow: 0 0 10px #ff2d2d, 0 0 2px #ff2d2d;
 }
 
 .magenta {
     color: #ff2d95 !important;
-    text-shadow: 0 0 10px #ff2d95, 0 0 2px #ff2d95;
 }
 
 /* Bitcoin Progress Bar Styles */
@@ -470,7 +455,6 @@ h1 {
   font-size: 1rem;
   color: var(--primary-color);
   margin-top: 0.3rem;
-  text-shadow: 0 0 5px var(--primary-color);
   text-align: center;
   width: 100%;
 }

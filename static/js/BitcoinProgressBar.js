@@ -459,7 +459,6 @@ const BitcoinMinuteRefresh = (function () {
         color: ${currentThemeColor};
         font-weight: bold;
         font-size: 1.1rem;
-        text-shadow: 0 0 5px rgba(${rgbValues}, 0.8);
         animation: terminal-flicker 4s infinite;
       }
       
@@ -523,7 +522,6 @@ const BitcoinMinuteRefresh = (function () {
       .terminal-clock {
         font-size: 1rem;
         font-weight: bold;
-        text-shadow: 0 0 5px rgba(${rgbValues}, 0.5);
       }
       
       /* Uptime Display - Modern Digital Clock Style (Horizontal) */
@@ -560,7 +558,6 @@ const BitcoinMinuteRefresh = (function () {
         display: inline-block;
         text-align: center;
         letter-spacing: 2px;
-        text-shadow: 0 0 8px rgba(${rgbValues}, 0.8);
         color: #dee2e6;
       }
       
@@ -574,7 +571,6 @@ const BitcoinMinuteRefresh = (function () {
         font-size: 1.4rem;
         font-weight: bold;
         padding: 0 2px;
-        text-shadow: 0 0 8px rgba(${rgbValues}, 0.8);
       }
       
       .uptime-title {
@@ -582,7 +578,6 @@ const BitcoinMinuteRefresh = (function () {
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 2px;
-        text-shadow: 0 0 5px rgba(${rgbValues}, 0.8);
         margin-bottom: 3px;
       }
       
@@ -671,7 +666,6 @@ const BitcoinMinuteRefresh = (function () {
       #${DOM_IDS.MINIMIZED_UPTIME} {
         font-size: 0.9rem;
         font-weight: bold;
-        text-shadow: 0 0 5px rgba(${rgbValues}, 0.5);
         margin-left: 45px;
         color: #dee2e6;
       }

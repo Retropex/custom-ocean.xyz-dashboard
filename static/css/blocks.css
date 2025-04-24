@@ -112,7 +112,6 @@
     font-size: 1.2rem;
     font-weight: bold;
     color: var(--primary-color);
-    text-shadow: 0 0 5px rgba(247, 147, 26, 0.5);
 }
 
 .block-time {
@@ -142,27 +141,22 @@
 
     .block-info-value.yellow {
         color: #ffd700;
-        text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
     }
 
     .block-info-value.green {
         color: #32CD32;
-        text-shadow: 0 0 6px rgba(50, 205, 50, 0.6);
     }
 
     .block-info-value.blue {
         color: #00dfff;
-        text-shadow: 0 0 6px rgba(0, 223, 255, 0.6);
     }
 
     .block-info-value.white {
         color: #ffffff;
-        text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
     }
 
     .block-info-value.red {
         color: #ff5555;
-        text-shadow: 0 0 6px rgba(255, 85, 85, 0.6);
     }
 
 /* Loader */
@@ -221,7 +215,6 @@
     padding: 0.5rem 1rem;
     font-size: 1.1rem;
     border-bottom: 1px solid var(--primary-color);
-    text-shadow: 0 0 5px var(--primary-color);
     animation: flicker 4s infinite;
     font-family: var(--header-font);
     display: flex;
@@ -242,7 +235,6 @@
     .block-modal-close:hover,
     .block-modal-close:focus {
         color: #ffa500;
-        text-shadow: 0 0 10px rgba(255, 165, 0, 0.8);
     }
 
 .block-modal-body {
@@ -265,7 +257,6 @@
     font-size: 1.1rem;
     color: var(--primary-color);
     margin-bottom: 10px;
-    text-shadow: 0 0 5px rgba(247, 147, 26, 0.5);
     font-weight: bold;
 }
 

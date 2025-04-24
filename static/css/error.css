@@ -39,7 +39,6 @@ body {
   color: var(--text-color);
   padding-top: 50px;
   font-family: var(--terminal-font);
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 a.btn-primary {
@@ -97,7 +96,6 @@ h1 {
   margin-bottom: 1rem;
   font-family: var(--header-font);
   font-weight: bold;
-  text-shadow: 0 0 10px var(--primary-color);
   position: relative;
   z-index: 2;
 }
@@ -108,7 +106,6 @@ p {
   position: relative;
   z-index: 2;
   color: #ff5555;
-  text-shadow: 0 0 8px rgba(255, 85, 85, 0.6);
 }
 
 /* Cursor blink for terminal feel */
@@ -133,6 +130,5 @@ p {
   font-family: var(--terminal-font);
   font-size: 1.2rem;
   color: #00dfff;
-  text-shadow: 0 0 10px #00dfff, 0 0 20px #00dfff;
   margin-bottom: 1rem;
 }

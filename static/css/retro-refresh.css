@@ -70,7 +70,6 @@ body {
   font-weight: bold;
   font-size: 1.1rem; /* Match card header font size */
   border-bottom: none;
-  text-shadow: 0 0 5px var(--primary-color);
   animation: flicker 4s infinite; /* Add flicker animation from card headers */
   font-family: var(--header-font); /* Use the same font variable */
   padding: 0.3rem 0; /* Match card header padding */
@@ -232,7 +231,6 @@ body {
 #retro-terminal-bar #progress-text {
   font-size: 16px;
   color: var(--terminal-text);
-  text-shadow: 0 0 5px var(--terminal-text);
   margin-top: 5px;
   text-align: center;
   position: relative;
@@ -242,7 +240,6 @@ body {
 #retro-terminal-bar #uptimeTimer {
   font-size: 16px;
   color: var(--terminal-text);
-  text-shadow: 0 0 5px var(--terminal-text);
   text-align: center;
   position: relative;
   z-index: 2;

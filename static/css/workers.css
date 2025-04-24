@@ -95,7 +95,6 @@
   color: var(--primary-color);
   font-weight: bold;
   font-size: 1.2rem;
-  text-shadow: 0 0 5px var(--primary-color);
   margin-bottom: 5px;
   white-space: nowrap;
   overflow: hidden;
@@ -157,14 +156,12 @@
   background-color: rgba(50, 205, 50, 0.2);
   border: 1px solid #32CD32;
   color: #32CD32;
-  text-shadow: 0 0 5px rgba(50, 205, 50, 0.8);
 }
 
 .status-badge-offline {
   background-color: rgba(255, 85, 85, 0.2);
   border: 1px solid #ff5555;
   color: #ff5555;
-  text-shadow: 0 0 5px rgba(255, 85, 85, 0.8);
 }
 
 /* Stats bars */

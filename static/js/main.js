@@ -1256,8 +1256,11 @@ function updateChartWithNormalizedData(chart, data) {
                     const indicator = document.createElement('div');
                     indicator.id = 'lowHashrateIndicator';
                     indicator.style.position = 'absolute';
-                    indicator.style.bottom = '10px';
+
+                    // Change position from bottom to top right
+                    indicator.style.top = '10px';  // Changed from bottom to top
                     indicator.style.right = '10px';
+
                     indicator.style.background = 'rgba(0,0,0,0.7)';
                     indicator.style.color = theme.PRIMARY;
                     indicator.style.padding = '5px 10px';

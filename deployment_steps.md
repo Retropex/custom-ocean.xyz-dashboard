@@ -16,8 +16,8 @@ This guide provides comprehensive instructions for deploying the Bitcoin Mining 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/bitcoin-mining-dashboard.git
-   cd bitcoin-mining-dashboard
+   git clone https://github.com/Djobleezy/DeepSea-Dashboard.git
+   cd DeepSea-Dashboard
    ```
 
 2. Create a virtual environment (recommended):

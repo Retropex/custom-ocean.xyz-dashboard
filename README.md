@@ -24,7 +24,6 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Payout Monitoring**: View unpaid balance and estimated time to next payout
 - **Pool Fee Analysis**: Monitor pool fee percentages with visual indicator when optimal rates (0.9-1.3%) are detected
 
-
 ### Worker Management
 - **Fleet Overview**: Comprehensive view of all mining devices in one interface
 - **Status Monitoring**: Real-time status indicators for online and offline devices
@@ -41,12 +40,18 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Backup Polling**: Fallback to traditional polling if real-time connection fails
 - **Cross-Tab Synchronization**: Data consistency across multiple browser tabs
 - **Server Health Monitoring**: Built-in watchdog processes ensure reliability
+- **Error Handling**: Displays a user-friendly error page (`error.html`) for unexpected issues.
 
 ### Distinctive Design Elements
 - **Retro Terminal Aesthetic**: Nostalgic interface with modern functionality
 - **Boot Sequence Animation**: Engaging initialization sequence on startup
 - **System Monitor**: Floating status display with uptime and refresh information
 - **Responsive Interface**: Adapts to desktop and mobile devices
+
+### DeepSea Theme
+- **Underwater Effects**: Light rays and digital noise create an immersive experience.
+- **Retro Glitch Effects**: Subtle animations for a nostalgic feel.
+- **Theme Toggle**: Switch between Bitcoin and DeepSea themes with a single click.
 
 ## Quick Start
 
@@ -103,6 +108,8 @@ You can modify the following environment variables in the `docker-compose.yml` f
 - `WALLET`: Your Bitcoin wallet address.
 - `POWER_COST`: Cost of power per kWh.
 - `POWER_USAGE`: Power usage in watts.
+- `NETWORK_FEE`: Additional fees beyond pool fees (e.g., firmware fees).
+- `TIMEZONE`: Local timezone for displaying time information.
 
 Redis data is stored in a persistent volume (`redis_data`), and application logs are saved in the `./logs` directory.
 
@@ -157,6 +164,12 @@ Built with a modern stack for reliability and performance:
 - **Data Processing**: Concurrent API calls with smart caching
 - **Resilience**: Automatic recovery mechanisms and state persistence
 - **Configuration**: Environment variables and JSON-based settings
+
+## API Endpoints
+- `/api/metrics`: Provides real-time mining metrics.
+- `/api/available_timezones`: Returns a list of supported timezones.
+- `/api/config`: Fetches or updates the mining configuration.
+- `/api/health`: Returns the health status of the application.
 
 ## Project Structure
 

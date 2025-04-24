@@ -301,7 +301,7 @@ h1 {
   margin-left: 0.5em;
   position: relative;
   top: -1px;
-  animation: glow 3s infinite;
+  animation: pulse 2s infinite;
   box-shadow: 0 0 10px #32CD32, 0 0 20px #32CD32;
 }
 
@@ -319,7 +319,7 @@ h1 {
     margin-left: 0.5em;
     position: relative;
     top: -1px;
-    animation: glow 3s infinite;
+    animation: pulse 2s infinite;
     box-shadow: 0 0 10px red, 0 0 20px red !important;
 }
 

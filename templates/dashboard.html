@@ -202,17 +202,6 @@
             <div class="card-header">Network Stats</div>
             <div class="card-body">
                 <p>
-                    <strong>Block Number:</strong>
-                    <span id="block_number" class="metric-value white">
-                        {% if metrics and metrics.block_number %}
-                        {{ metrics.block_number|commafy }}
-                        {% else %}
-                        N/A
-                        {% endif %}
-                    </span>
-                    <span id="indicator_block_number"></span>
-                </p>
-                <p>
                     <strong>BTC Price:</strong>
                     <span id="btc_price" class="metric-value yellow">
                         {% if metrics and metrics.btc_price %}
@@ -222,6 +211,17 @@
                         {% endif %}
                     </span>
                     <span id="indicator_btc_price"></span>
+                </p>
+                <p>
+                    <strong>Block Number:</strong>
+                    <span id="block_number" class="metric-value white">
+                        {% if metrics and metrics.block_number %}
+                        {{ metrics.block_number|commafy }}
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </span>
+                    <span id="indicator_block_number"></span>
                 </p>
                 <p>
                     <strong>Network Hashrate:</strong>

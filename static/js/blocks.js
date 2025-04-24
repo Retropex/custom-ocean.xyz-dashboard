@@ -1,13 +1,76 @@
 ﻿"use strict";
 
+// Constants for configuration
+const REFRESH_INTERVAL = 60000; // 60 seconds
+const TOAST_DISPLAY_TIME = 3000; // 3 seconds
+const DEFAULT_TIMEZONE = 'America/Los_Angeles';
+const SATOSHIS_PER_BTC = 100000000;
+const MAX_CACHE_SIZE = 20; // Number of block heights to cache
+
+// POOL configuration
+const POOL_CONFIG = {
+    oceanPools: ['ocean', 'oceanpool', 'oceanxyz', 'ocean.xyz'],
+    oceanColor: '#00ffff',
+    defaultUnknownColor: '#999999'
+};
+
 // Global variables
 let currentStartHeight = null;
 const mempoolBaseUrl = "https://mempool.guide"; // Switched from mempool.space to mempool.guide - more aligned with Ocean.xyz ethos
 let blocksCache = {};
 let isLoading = false;
 
+// Helper function for debouncing
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Helper function to validate block height
+function isValidBlockHeight(height) {
+    height = parseInt(height);
+    if (isNaN(height) || height < 0) {
+        showToast("Please enter a valid block height");
+        return false;
+    }
+    return height;
+}
+
+// Helper function to add items to cache with size management
+function addToCache(height, data) {
+    blocksCache[height] = data;
+
+    // Remove oldest entries if cache exceeds maximum size
+    const cacheKeys = Object.keys(blocksCache).map(Number).sort((a, b) => a - b);
+    if (cacheKeys.length > MAX_CACHE_SIZE) {
+        const keysToRemove = cacheKeys.slice(0, cacheKeys.length - MAX_CACHE_SIZE);
+        keysToRemove.forEach(key => delete blocksCache[key]);
+    }
+}
+
+// Clean up event handlers when refreshing or navigating
+function cleanupEventHandlers() {
+    $(window).off("click.blockModal");
+    $(document).off("keydown.blockModal");
+}
+
+// Setup keyboard navigation for modal
+function setupModalKeyboardNavigation() {
+    $(document).on('keydown.blockModal', function (e) {
+        const modal = $("#block-modal");
+        if (modal.css('display') === 'block') {
+            if (e.keyCode === 27) { // ESC key
+                closeModal();
+            }
+        }
+    });
+}
+
 // DOM ready initialization
-$(document).ready(function() {
+$(document).ready(function () {
     console.log("Blocks page initialized");
 
     // Load timezone setting early
@@ -46,47 +109,49 @@ $(document).ready(function() {
 
     // Initialize notification badge
     initNotificationBadge();
-    
+
     // Load the latest blocks on page load
     loadLatestBlocks();
-    
+
     // Set up event listeners
-    $("#load-blocks").on("click", function() {
-        const height = $("#block-height").val();
-        if (height && !isNaN(height)) {
+    $("#load-blocks").on("click", function () {
+        const height = isValidBlockHeight($("#block-height").val());
+        if (height !== false) {
             loadBlocksFromHeight(height);
-        } else {
-            showToast("Please enter a valid block height");
         }
     });
-    
+
     $("#latest-blocks").on("click", loadLatestBlocks);
-    
-    // Handle Enter key on the block height input
-    $("#block-height").on("keypress", function(e) {
+
+    // Handle Enter key on the block height input with debouncing
+    $("#block-height").on("keypress", debounce(function (e) {
         if (e.which === 13) {
-            const height = $(this).val();
-            if (height && !isNaN(height)) {
+            const height = isValidBlockHeight($(this).val());
+            if (height !== false) {
                 loadBlocksFromHeight(height);
-            } else {
-                showToast("Please enter a valid block height");
             }
         }
-    });
-    
+    }, 300));
+
     // Close the modal when clicking the X or outside the modal
     $(".block-modal-close").on("click", closeModal);
-    $(window).on("click", function(event) {
+    $(window).on("click.blockModal", function (event) {
         if ($(event.target).hasClass("block-modal")) {
             closeModal();
         }
     });
-    
+
     // Initialize BitcoinMinuteRefresh if available
     if (typeof BitcoinMinuteRefresh !== 'undefined' && BitcoinMinuteRefresh.initialize) {
         BitcoinMinuteRefresh.initialize(loadLatestBlocks);
         console.log("BitcoinMinuteRefresh initialized with refresh function");
     }
+
+    // Setup keyboard navigation for modals
+    setupModalKeyboardNavigation();
+
+    // Cleanup before unload
+    $(window).on('beforeunload', cleanupEventHandlers);
 });
 
 // Update unread notifications badge in navigation
@@ -113,8 +178,9 @@ function initNotificationBadge() {
     updateNotificationBadge();
 
     // Update every 60 seconds
-    setInterval(updateNotificationBadge, 60000);
+    setInterval(updateNotificationBadge, REFRESH_INTERVAL);
 }
+
 // Helper function to format timestamps as readable dates
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp * 1000);
@@ -126,7 +192,7 @@ function formatTimestamp(timestamp) {
         minute: '2-digit',
         second: '2-digit',
         hour12: true,
-        timeZone: window.dashboardTimezone || 'America/Los_Angeles' // Use global timezone setting
+        timeZone: window.dashboardTimezone || DEFAULT_TIMEZONE // Use global timezone setting
     };
     return date.toLocaleString('en-US', options);
 }
@@ -142,6 +208,40 @@ function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + " B";
     else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
     else return (bytes / 1048576).toFixed(2) + " MB";
+}
+
+// Helper function to create common info items
+function createInfoItem(label, value, valueClass = '') {
+    const item = $("<div>", { class: "block-info-item" });
+
+    item.append($("<div>", {
+        class: "block-info-label",
+        text: label
+    }));
+
+    item.append($("<div>", {
+        class: `block-info-value ${valueClass}`,
+        text: value
+    }));
+
+    return item;
+}
+
+// Helper function for creating detail items
+function createDetailItem(label, value, valueClass = '') {
+    const item = $("<div>", { class: "block-detail-item" });
+
+    item.append($("<div>", {
+        class: "block-detail-label",
+        text: label
+    }));
+
+    item.append($("<div>", {
+        class: `block-detail-value ${valueClass}`,
+        text: value
+    }));
+
+    return item;
 }
 
 // Helper function to show toast messages
@@ -160,7 +260,7 @@ function showToast(message) {
             }
         }).appendTo("body");
     }
-    
+
     // Create a new toast
     const toast = $("<div>", {
         class: "toast",
@@ -177,16 +277,16 @@ function showToast(message) {
             transition: "opacity 0.3s ease"
         }
     }).appendTo(toastContainer);
-    
+
     // Show the toast
     setTimeout(() => {
         toast.css("opacity", 1);
-        
-        // Hide and remove the toast after 3 seconds
+
+        // Hide and remove the toast after the configured time
         setTimeout(() => {
             toast.css("opacity", 0);
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        }, TOAST_DISPLAY_TIME);
     }, 100);
 }
 
@@ -198,10 +298,10 @@ function getPoolColor(poolName) {
     // Define color mappings for common mining pools with Ocean pool featured prominently
     const poolColors = {
         // OCEAN pool with a distinctive bright cyan color for prominence
-        'ocean': '#00ffff',                // Bright Cyan for Ocean
-        'oceanpool': '#00ffff',            // Bright Cyan for Ocean
-        'oceanxyz': '#00ffff',             // Bright Cyan for Ocean
-        'ocean.xyz': '#00ffff',            // Bright Cyan for Ocean
+        'ocean': POOL_CONFIG.oceanColor,
+        'oceanpool': POOL_CONFIG.oceanColor,
+        'oceanxyz': POOL_CONFIG.oceanColor,
+        'ocean.xyz': POOL_CONFIG.oceanColor,
 
         // Other common mining pools with more muted colors
         'f2pool': '#1a9eff',               // Blue
@@ -216,7 +316,7 @@ function getPoolColor(poolName) {
         'sbicrypto': '#cc9933',            // Bronze
         'mara': '#8844cc',                 // Violet
         'ultimuspool': '#09c7be',          // Teal
-        'unknown': '#999999'               // Grey for unknown pools
+        'unknown': POOL_CONFIG.defaultUnknownColor  // Grey for unknown pools
     };
 
     // Check for partial matches in pool names (for variations like "F2Pool" vs "F2pool.com")
@@ -238,6 +338,12 @@ function getPoolColor(poolName) {
     return `hsl(${hue}, 70%, 60%)`;
 }
 
+// Function to check if a pool is an Ocean pool
+function isOceanPool(poolName) {
+    const normalizedName = poolName.toLowerCase();
+    return POOL_CONFIG.oceanPools.some(name => normalizedName.includes(name));
+}
+
 // Function to create a block card
 function createBlockCard(block) {
     const timestamp = formatTimestamp(block.timestamp);
@@ -251,20 +357,23 @@ function createBlockCard(block) {
     const poolColor = getPoolColor(poolName);
 
     // Check if this is an Ocean pool block for special styling
-    const isOceanPool = poolName.toLowerCase().includes('ocean');
+    const isPoolOcean = isOceanPool(poolName);
 
     // Calculate total fees in BTC
-    const totalFees = block.extras ? (block.extras.totalFees / 100000000).toFixed(8) : "N/A";
+    const totalFees = block.extras ? (block.extras.totalFees / SATOSHIS_PER_BTC).toFixed(8) : "N/A";
 
-    // Create the block card
+    // Create the block card with accessibility attributes
     const blockCard = $("<div>", {
         class: "block-card",
         "data-height": block.height,
-        "data-hash": block.id
+        "data-hash": block.id,
+        tabindex: "0", // Make focusable
+        role: "button",
+        "aria-label": `Block ${block.height} mined by ${poolName} on ${timestamp}`
     });
 
     // Apply pool color border - with special emphasis for Ocean pool
-    if (isOceanPool) {
+    if (isPoolOcean) {
         // Give Ocean pool blocks a more prominent styling
         blockCard.css({
             "border": `2px solid ${poolColor}`,
@@ -303,15 +412,6 @@ function createBlockCard(block) {
         class: "block-info"
     });
 
-    // Add transaction count with conditional coloring based on count
-    const txCountItem = $("<div>", {
-        class: "block-info-item"
-    });
-    txCountItem.append($("<div>", {
-        class: "block-info-label",
-        text: "Transactions"
-    }));
-
     // Determine transaction count color based on thresholds
     let txCountClass = "green"; // Default for high transaction counts (2000+)
     if (block.tx_count < 500) {
@@ -320,25 +420,11 @@ function createBlockCard(block) {
         txCountClass = "yellow"; // Between 500 and 1999 transactions
     }
 
-    txCountItem.append($("<div>", {
-        class: `block-info-value ${txCountClass}`,
-        text: formattedTxCount
-    }));
-    blockInfo.append(txCountItem);
+    // Add transaction count using helper
+    blockInfo.append(createInfoItem("Transactions", formattedTxCount, txCountClass));
 
-    // Add size
-    const sizeItem = $("<div>", {
-        class: "block-info-item"
-    });
-    sizeItem.append($("<div>", {
-        class: "block-info-label",
-        text: "Size"
-    }));
-    sizeItem.append($("<div>", {
-        class: "block-info-value white",
-        text: formattedSize
-    }));
-    blockInfo.append(sizeItem);
+    // Add size using helper
+    blockInfo.append(createInfoItem("Size", formattedSize, "white"));
 
     // Add miner/pool with custom color
     const minerItem = $("<div>", {
@@ -355,13 +441,13 @@ function createBlockCard(block) {
         text: poolName,
         css: {
             color: poolColor,
-            textShadow: isOceanPool ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
-            fontWeight: isOceanPool ? "bold" : "normal"
+            textShadow: isPoolOcean ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
+            fontWeight: isPoolOcean ? "bold" : "normal"
         }
     });
 
     // Add a special indicator icon for Ocean pool
-    if (isOceanPool) {
+    if (isPoolOcean) {
         minerValue.prepend($("<span>", {
             html: "★ ",
             css: { color: poolColor }
@@ -371,25 +457,21 @@ function createBlockCard(block) {
     minerItem.append(minerValue);
     blockInfo.append(minerItem);
 
-    // Add Avg Fee Rate
-    const feesItem = $("<div>", {
-        class: "block-info-item"
-    });
-    feesItem.append($("<div>", {
-        class: "block-info-label",
-        text: "Avg Fee Rate"
-    }));
-    feesItem.append($("<div>", {
-        class: "block-info-value yellow",
-        text: block.extras && block.extras.avgFeeRate ? block.extras.avgFeeRate + " sat/vB" : "N/A"
-    }));
-    blockInfo.append(feesItem);
+    // Add Avg Fee Rate using helper
+    const feeRateText = block.extras && block.extras.avgFeeRate ? block.extras.avgFeeRate + " sat/vB" : "N/A";
+    blockInfo.append(createInfoItem("Avg Fee Rate", feeRateText, "yellow"));
 
     blockCard.append(blockInfo);
 
-    // Add event listener for clicking on the block card
+    // Add event listeners for clicking and keyboard on the block card
     blockCard.on("click", function () {
         showBlockDetails(block);
+    });
+
+    blockCard.on("keypress", function (e) {
+        if (e.which === 13 || e.which === 32) { // Enter or Space key
+            showBlockDetails(block);
+        }
     });
 
     return blockCard;
@@ -398,53 +480,53 @@ function createBlockCard(block) {
 // Function to load blocks from a specific height
 function loadBlocksFromHeight(height) {
     if (isLoading) return;
-    
+
     // Convert to integer
     height = parseInt(height);
     if (isNaN(height) || height < 0) {
         showToast("Please enter a valid block height");
         return;
     }
-    
+
     isLoading = true;
     currentStartHeight = height;
-    
+
     // Check if we already have this data in cache
     if (blocksCache[height]) {
         displayBlocks(blocksCache[height]);
         isLoading = false;
         return;
     }
-    
+
     // Show loading state
     $("#blocks-grid").html('<div class="loader"><span class="loader-text">Loading blocks from height ' + height + '<span class="terminal-cursor"></span></span></div>');
-    
+
     // Fetch blocks from the API
     $.ajax({
         url: `${mempoolBaseUrl}/api/v1/blocks/${height}`,
         method: "GET",
         dataType: "json",
         timeout: 10000,
-        success: function(data) {
-            // Cache the data
-            blocksCache[height] = data;
-            
+        success: function (data) {
+            // Cache the data using helper
+            addToCache(height, data);
+
             // Display the blocks
             displayBlocks(data);
-            
+
             // Update latest block stats
             if (data.length > 0) {
                 updateLatestBlockStats(data[0]);
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error("Error fetching blocks:", error);
             $("#blocks-grid").html('<div class="error">Error fetching blocks. Please try again later.</div>');
-            
+
             // Show error toast
             showToast("Failed to load blocks. Please try again later.");
         },
-        complete: function() {
+        complete: function () {
             isLoading = false;
         }
     });
@@ -469,7 +551,7 @@ function loadLatestBlocks() {
             // Cache the data (use the first block's height as the key)
             if (data.length > 0) {
                 currentStartHeight = data[0].height;
-                blocksCache[currentStartHeight] = data;
+                addToCache(currentStartHeight, data);
 
                 // Update the block height input with the latest height
                 $("#block-height").val(currentStartHeight);
@@ -494,19 +576,22 @@ function loadLatestBlocks() {
     }).then(data => data.length > 0 ? data[0].height : null);
 }
 
-// Refresh blocks page every 60 seconds if there are new blocks
+// Refresh blocks page every 60 seconds if there are new blocks - with smart refresh
 setInterval(function () {
     console.log("Checking for new blocks at " + new Date().toLocaleTimeString());
     loadLatestBlocks().then(latestHeight => {
         if (latestHeight && latestHeight > currentStartHeight) {
-            console.log("New blocks detected, refreshing the page");
-            location.reload();
+            console.log("New blocks detected, loading latest blocks");
+            // Instead of reloading the page, just load the latest blocks
+            currentStartHeight = latestHeight;
+            loadLatestBlocks();
+            // Show a notification
+            showToast("New blocks detected! View updated.");
         } else {
             console.log("No new blocks detected");
         }
     });
-}, 60000);
-
+}, REFRESH_INTERVAL);
 
 // Function to update the latest block stats section
 function updateLatestBlockStats(block) {
@@ -521,7 +606,7 @@ function updateLatestBlockStats(block) {
     // Pool info with color coding
     const poolName = block.extras && block.extras.pool ? block.extras.pool.name : "Unknown";
     const poolColor = getPoolColor(poolName);
-    const isOceanPool = poolName.toLowerCase().includes('ocean');
+    const isPoolOcean = isOceanPool(poolName);
 
     // Clear previous content of the pool span
     const poolSpan = $("#latest-pool");
@@ -532,13 +617,13 @@ function updateLatestBlockStats(block) {
         text: poolName,
         css: {
             color: poolColor,
-            textShadow: isOceanPool ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
-            fontWeight: isOceanPool ? "bold" : "normal"
+            textShadow: isPoolOcean ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
+            fontWeight: isPoolOcean ? "bold" : "normal"
         }
     });
 
     // Add star icon for Ocean pool
-    if (isOceanPool) {
+    if (isPoolOcean) {
         poolElement.prepend($("<span>", {
             html: "★ ",
             css: { color: poolColor }
@@ -550,7 +635,7 @@ function updateLatestBlockStats(block) {
 
     // If this is the latest block from Ocean pool, add a subtle highlight to the stats card
     const statsCard = $(".latest-block-stats").closest(".card");
-    if (isOceanPool) {
+    if (isPoolOcean) {
         statsCard.css({
             "border": `2px solid ${poolColor}`,
             "box-shadow": `0 0 10px ${poolColor}`,
@@ -576,21 +661,27 @@ function updateLatestBlockStats(block) {
 // Function to display the blocks in the grid
 function displayBlocks(blocks) {
     const blocksGrid = $("#blocks-grid");
-    
+
     // Clear the grid
     blocksGrid.empty();
-    
+
     if (!blocks || blocks.length === 0) {
         blocksGrid.html('<div class="no-blocks">No blocks found</div>');
         return;
     }
-    
+
+    // Use document fragment for batch DOM operations
+    const fragment = document.createDocumentFragment();
+
     // Create a card for each block
-    blocks.forEach(function(block) {
+    blocks.forEach(function (block) {
         const blockCard = createBlockCard(block);
-        blocksGrid.append(blockCard);
+        fragment.appendChild(blockCard[0]);
     });
-    
+
+    // Add all cards at once
+    blocksGrid.append(fragment);
+
     // Add navigation controls if needed
     addNavigationControls(blocks);
 }
@@ -600,38 +691,40 @@ function addNavigationControls(blocks) {
     // Get the height of the first and last block in the current view
     const firstBlockHeight = blocks[0].height;
     const lastBlockHeight = blocks[blocks.length - 1].height;
-    
+
     // Create navigation controls
     const navControls = $("<div>", {
         class: "block-navigation"
     });
-    
+
     // Newer blocks button (if not already at the latest blocks)
     if (firstBlockHeight !== currentStartHeight) {
         const newerButton = $("<button>", {
             class: "block-button",
-            text: "Newer Blocks"
+            text: "Newer Blocks",
+            "aria-label": "Load newer blocks"
         });
-        
-        newerButton.on("click", function() {
+
+        newerButton.on("click", function () {
             loadBlocksFromHeight(firstBlockHeight + 15);
         });
-        
+
         navControls.append(newerButton);
     }
-    
+
     // Older blocks button
     const olderButton = $("<button>", {
         class: "block-button",
-        text: "Older Blocks"
+        text: "Older Blocks",
+        "aria-label": "Load older blocks"
     });
-    
-    olderButton.on("click", function() {
+
+    olderButton.on("click", function () {
         loadBlocksFromHeight(lastBlockHeight - 1);
     });
-    
+
     navControls.append(olderButton);
-    
+
     // Add the navigation controls to the blocks grid
     $("#blocks-grid").append(navControls);
 }
@@ -640,6 +733,12 @@ function addNavigationControls(blocks) {
 function showBlockDetails(block) {
     const modal = $("#block-modal");
     const blockDetails = $("#block-details");
+
+    // Clean up previous handlers
+    cleanupEventHandlers();
+
+    // Re-add scoped handlers
+    setupModalKeyboardNavigation();
 
     // Clear the details
     blockDetails.empty();
@@ -685,6 +784,7 @@ function showBlockDetails(block) {
         target: "_blank",
         class: "mempool-link",
         text: "View on mempool.guide",
+        "aria-label": `View block ${block.height} on mempool.guide (opens in new window)`,
         css: {
             color: "#f7931a",
             textDecoration: "none"
@@ -707,19 +807,8 @@ function showBlockDetails(block) {
 
     headerSection.append(linkItem);
 
-    // Add timestamp
-    const timeItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    timeItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Timestamp"
-    }));
-    timeItem.append($("<div>", {
-        class: "block-detail-value",
-        text: timestamp
-    }));
-    headerSection.append(timeItem);
+    // Add timestamp using helper
+    headerSection.append(createDetailItem("Timestamp", timestamp));
 
     // Add merkle root
     const merkleItem = $("<div>", {
@@ -771,7 +860,7 @@ function showBlockDetails(block) {
     }));
     const poolName = block.extras && block.extras.pool ? block.extras.pool.name : "Unknown";
     const poolColor = getPoolColor(poolName);
-    const isOceanPool = poolName.toLowerCase().includes('ocean');
+    const isPoolOcean = isOceanPool(poolName);
 
     // Apply special styling for Ocean pool in the modal
     const minerValue = $("<div>", {
@@ -779,13 +868,13 @@ function showBlockDetails(block) {
         text: poolName,
         css: {
             color: poolColor,
-            textShadow: isOceanPool ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
-            fontWeight: isOceanPool ? "bold" : "normal"
+            textShadow: isPoolOcean ? `0 0 8px ${poolColor}` : `0 0 6px ${poolColor}80`,
+            fontWeight: isPoolOcean ? "bold" : "normal"
         }
     });
 
     // Add a special indicator icon for Ocean pool
-    if (isOceanPool) {
+    if (isPoolOcean) {
         minerValue.prepend($("<span>", {
             html: "★ ",
             css: { color: poolColor }
@@ -805,62 +894,26 @@ function showBlockDetails(block) {
     minerItem.append(minerValue);
     miningSection.append(minerItem);
 
-    // Rest of the function remains unchanged
-    // Add difficulty
-    const difficultyItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    difficultyItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Difficulty"
-    }));
-    difficultyItem.append($("<div>", {
-        class: "block-detail-value",
-        text: numberWithCommas(Math.round(block.difficulty))
-    }));
-    miningSection.append(difficultyItem);
+    // Add difficulty with helper
+    miningSection.append(createDetailItem(
+        "Difficulty",
+        numberWithCommas(Math.round(block.difficulty))
+    ));
 
-    // Add nonce
-    const nonceItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    nonceItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Nonce"
-    }));
-    nonceItem.append($("<div>", {
-        class: "block-detail-value",
-        text: numberWithCommas(block.nonce)
-    }));
-    miningSection.append(nonceItem);
+    // Add nonce with helper
+    miningSection.append(createDetailItem(
+        "Nonce",
+        numberWithCommas(block.nonce)
+    ));
 
-    // Add bits
-    const bitsItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    bitsItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Bits"
-    }));
-    bitsItem.append($("<div>", {
-        class: "block-detail-value",
-        text: block.bits
-    }));
-    miningSection.append(bitsItem);
+    // Add bits with helper
+    miningSection.append(createDetailItem("Bits", block.bits));
 
-    // Add version
-    const versionItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    versionItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Version"
-    }));
-    versionItem.append($("<div>", {
-        class: "block-detail-value",
-        text: "0x" + block.version.toString(16)
-    }));
-    miningSection.append(versionItem);
+    // Add version with helper
+    miningSection.append(createDetailItem(
+        "Version",
+        "0x" + block.version.toString(16)
+    ));
 
     blockDetails.append(miningSection);
 
@@ -874,47 +927,23 @@ function showBlockDetails(block) {
         text: "Transaction Details"
     }));
 
-    // Add transaction count
-    const txCountItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    txCountItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Transaction Count"
-    }));
-    txCountItem.append($("<div>", {
-        class: "block-detail-value",
-        text: numberWithCommas(block.tx_count)
-    }));
-    txSection.append(txCountItem);
+    // Add transaction count with helper
+    txSection.append(createDetailItem(
+        "Transaction Count",
+        numberWithCommas(block.tx_count)
+    ));
 
-    // Add size
-    const sizeItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    sizeItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Size"
-    }));
-    sizeItem.append($("<div>", {
-        class: "block-detail-value",
-        text: formatFileSize(block.size)
-    }));
-    txSection.append(sizeItem);
+    // Add size with helper
+    txSection.append(createDetailItem(
+        "Size",
+        formatFileSize(block.size)
+    ));
 
-    // Add weight
-    const weightItem = $("<div>", {
-        class: "block-detail-item"
-    });
-    weightItem.append($("<div>", {
-        class: "block-detail-label",
-        text: "Weight"
-    }));
-    weightItem.append($("<div>", {
-        class: "block-detail-value",
-        text: numberWithCommas(block.weight) + " WU"
-    }));
-    txSection.append(weightItem);
+    // Add weight with helper
+    txSection.append(createDetailItem(
+        "Weight",
+        numberWithCommas(block.weight) + " WU"
+    ));
 
     blockDetails.append(txSection);
 
@@ -929,77 +958,31 @@ function showBlockDetails(block) {
             text: "Fee Details"
         }));
 
-        // Add total fees
-        const totalFeesItem = $("<div>", {
-            class: "block-detail-item"
-        });
-        totalFeesItem.append($("<div>", {
-            class: "block-detail-label",
-            text: "Total Fees"
-        }));
-        const totalFees = (block.extras.totalFees / 100000000).toFixed(8);
-        totalFeesItem.append($("<div>", {
-            class: "block-detail-value",
-            text: totalFees + " BTC"
-        }));
-        feeSection.append(totalFeesItem);
+        // Add total fees with helper
+        const totalFees = (block.extras.totalFees / SATOSHIS_PER_BTC).toFixed(8);
+        feeSection.append(createDetailItem("Total Fees", totalFees + " BTC"));
 
-        // Add reward
-        const rewardItem = $("<div>", {
-            class: "block-detail-item"
-        });
-        rewardItem.append($("<div>", {
-            class: "block-detail-label",
-            text: "Block Reward"
-        }));
-        const reward = (block.extras.reward / 100000000).toFixed(8);
-        rewardItem.append($("<div>", {
-            class: "block-detail-value",
-            text: reward + " BTC"
-        }));
-        feeSection.append(rewardItem);
+        // Add reward with helper
+        const reward = (block.extras.reward / SATOSHIS_PER_BTC).toFixed(8);
+        feeSection.append(createDetailItem("Block Reward", reward + " BTC"));
 
-        // Add median fee
-        const medianFeeItem = $("<div>", {
-            class: "block-detail-item"
-        });
-        medianFeeItem.append($("<div>", {
-            class: "block-detail-label",
-            text: "Median Fee Rate"
-        }));
-        medianFeeItem.append($("<div>", {
-            class: "block-detail-value",
-            text: block.extras.medianFee + " sat/vB"
-        }));
-        feeSection.append(medianFeeItem);
+        // Add median fee with helper
+        feeSection.append(createDetailItem(
+            "Median Fee Rate",
+            block.extras.medianFee + " sat/vB"
+        ));
 
-        // Add average fee
-        const avgFeeItem = $("<div>", {
-            class: "block-detail-item"
-        });
-        avgFeeItem.append($("<div>", {
-            class: "block-detail-label",
-            text: "Average Fee"
-        }));
-        avgFeeItem.append($("<div>", {
-            class: "block-detail-value",
-            text: numberWithCommas(block.extras.avgFee) + " sat"
-        }));
-        feeSection.append(avgFeeItem);
+        // Add average fee with helper
+        feeSection.append(createDetailItem(
+            "Average Fee",
+            numberWithCommas(block.extras.avgFee) + " sat"
+        ));
 
-        // Add average fee rate
-        const avgFeeRateItem = $("<div>", {
-            class: "block-detail-item"
-        });
-        avgFeeRateItem.append($("<div>", {
-            class: "block-detail-label",
-            text: "Average Fee Rate"
-        }));
-        avgFeeRateItem.append($("<div>", {
-            class: "block-detail-value",
-            text: block.extras.avgFeeRate + " sat/vB"
-        }));
-        feeSection.append(avgFeeRateItem);
+        // Add average fee rate with helper
+        feeSection.append(createDetailItem(
+            "Average Fee Rate",
+            block.extras.avgFeeRate + " sat/vB"
+        ));
 
         // Add fee range with visual representation
         if (block.extras.feeRange && block.extras.feeRange.length > 0) {
@@ -1021,7 +1004,8 @@ function showBlockDetails(block) {
 
             // Add visual fee bar
             const feeBarContainer = $("<div>", {
-                class: "fee-bar-container"
+                class: "fee-bar-container",
+                "aria-label": "Fee rate range visualization"
             });
 
             const feeBar = $("<div>", {
@@ -1042,11 +1026,15 @@ function showBlockDetails(block) {
         blockDetails.append(feeSection);
     }
 
-    // Show the modal
+    // Show the modal with aria attributes
+    modal.attr("aria-hidden", "false");
     modal.css("display", "block");
 }
 
 // Function to close the modal
 function closeModal() {
-    $("#block-modal").css("display", "none");
+    const modal = $("#block-modal");
+    modal.css("display", "none");
+    modal.attr("aria-hidden", "true");
+    cleanupEventHandlers();
 }

@@ -7,9 +7,35 @@
 
 const BitcoinMinuteRefresh = (function () {
     // Constants
-    const STORAGE_KEY = 'bitcoin_last_refresh_time'; // For cross-page sync
+    const STORAGE_KEY = 'bitcoin_last_refresh_time';
     const BITCOIN_COLOR = '#f7931a';
     const DEEPSEA_COLOR = '#0088cc';
+    const DOM_IDS = {
+        TERMINAL: 'bitcoin-terminal',
+        STYLES: 'bitcoin-terminal-styles',
+        CLOCK: 'terminal-clock',
+        UPTIME_HOURS: 'uptime-hours',
+        UPTIME_MINUTES: 'uptime-minutes',
+        UPTIME_SECONDS: 'uptime-seconds',
+        MINIMIZED_UPTIME: 'minimized-uptime-value',
+        SHOW_BUTTON: 'bitcoin-terminal-show'
+    };
+    const STORAGE_KEYS = {
+        THEME: 'useDeepSeaTheme',
+        COLLAPSED: 'bitcoin_terminal_collapsed',
+        SERVER_OFFSET: 'serverTimeOffset',
+        SERVER_START: 'serverStartTime',
+        REFRESH_EVENT: 'bitcoin_refresh_event'
+    };
+    const SELECTORS = {
+        HEADER: '.terminal-header',
+        TITLE: '.terminal-title',
+        TIMER: '.uptime-timer',
+        SEPARATORS: '.uptime-separator',
+        UPTIME_TITLE: '.uptime-title',
+        MINI_LABEL: '.mini-uptime-label',
+        TERMINAL_DOT: '.terminal-dot'
+    };
 
     // Private variables
     let terminalElement = null;
@@ -20,102 +46,103 @@ const BitcoinMinuteRefresh = (function () {
     let isInitialized = false;
     let refreshCallback = null;
     let currentThemeColor = BITCOIN_COLOR; // Default Bitcoin color
+    let dragListenersAdded = false;
+
+    /**
+     * Logging helper function
+     * @param {string} message - Message to log
+     * @param {string} level - Log level (log, warn, error)
+     */
+    function log(message, level = 'log') {
+        const prefix = "BitcoinMinuteRefresh: ";
+        if (level === 'error') {
+            console.error(prefix + message);
+        } else if (level === 'warn') {
+            console.warn(prefix + message);
+        } else {
+            console.log(prefix + message);
+        }
+    }
+
+    /**
+     * Helper function to set multiple styles on an element
+     * @param {Element} element - The DOM element to style
+     * @param {Object} styles - Object with style properties
+     */
+    function applyStyles(element, styles) {
+        Object.keys(styles).forEach(key => {
+            element.style[key] = styles[key];
+        });
+    }
 
     /**
      * Apply the current theme color 
      */
     function applyThemeColor() {
         // Check if theme toggle is set to DeepSea
-        const isDeepSeaTheme = localStorage.getItem('useDeepSeaTheme') === 'true';
+        const isDeepSeaTheme = localStorage.getItem(STORAGE_KEYS.THEME) === 'true';
         currentThemeColor = isDeepSeaTheme ? DEEPSEA_COLOR : BITCOIN_COLOR;
 
         // Don't try to update DOM elements if they don't exist yet
         if (!terminalElement) return;
 
-        // Update terminal colors
-        if (isDeepSeaTheme) {
-            terminalElement.style.borderColor = DEEPSEA_COLOR;
-            terminalElement.style.color = DEEPSEA_COLOR;
-            terminalElement.style.boxShadow = `0 0 5px rgba(0, 136, 204, 0.3)`;
+        // Define color values based on theme
+        const rgbValues = isDeepSeaTheme ? '0, 136, 204' : '247, 147, 26';
 
-            // Update header border
-            const headerElement = terminalElement.querySelector('.terminal-header');
-            if (headerElement) {
-                headerElement.style.borderColor = DEEPSEA_COLOR;
-            }
+        // Create theme config
+        const themeConfig = {
+            color: currentThemeColor,
+            borderColor: currentThemeColor,
+            boxShadow: `0 0 5px rgba(${rgbValues}, 0.3)`,
+            textShadow: `0 0 5px rgba(${rgbValues}, 0.8)`,
+            borderColorRGBA: `rgba(${rgbValues}, 0.5)`,
+            textShadowStrong: `0 0 8px rgba(${rgbValues}, 0.8)`
+        };
 
-            // Update terminal title
-            const titleElement = terminalElement.querySelector('.terminal-title');
-            if (titleElement) {
-                titleElement.style.color = DEEPSEA_COLOR;
-                titleElement.style.textShadow = '0 0 5px rgba(0, 136, 204, 0.8)';
-            }
+        // Apply styles to terminal
+        applyStyles(terminalElement, {
+            borderColor: themeConfig.color,
+            color: themeConfig.color,
+            boxShadow: themeConfig.boxShadow
+        });
 
-            // Update uptime timer border
-            const uptimeTimer = terminalElement.querySelector('.uptime-timer');
-            if (uptimeTimer) {
-                uptimeTimer.style.borderColor = `rgba(0, 136, 204, 0.5)`;
-            }
+        // Update header border
+        const headerElement = terminalElement.querySelector(SELECTORS.HEADER);
+        if (headerElement) {
+            headerElement.style.borderColor = themeConfig.color;
+        }
 
-            // Update uptime separators
-            const separators = terminalElement.querySelectorAll('.uptime-separator');
-            separators.forEach(sep => {
-                sep.style.textShadow = '0 0 8px rgba(0, 136, 204, 0.8)';
+        // Update terminal title
+        const titleElement = terminalElement.querySelector(SELECTORS.TITLE);
+        if (titleElement) {
+            applyStyles(titleElement, {
+                color: themeConfig.color,
+                textShadow: themeConfig.textShadow
             });
+        }
 
-            // Update uptime title
-            const uptimeTitle = terminalElement.querySelector('.uptime-title');
-            if (uptimeTitle) {
-                uptimeTitle.style.textShadow = '0 0 5px rgba(0, 136, 204, 0.8)';
-            }
+        // Update uptime timer border
+        const uptimeTimer = terminalElement.querySelector(SELECTORS.TIMER);
+        if (uptimeTimer) {
+            uptimeTimer.style.borderColor = themeConfig.borderColorRGBA;
+        }
 
-            // Update minimized view
-            const miniLabel = terminalElement.querySelector('.mini-uptime-label');
-            if (miniLabel) {
-                miniLabel.style.color = DEEPSEA_COLOR;
-            }
-        } else {
-            // Reset to Bitcoin theme
-            terminalElement.style.borderColor = BITCOIN_COLOR;
-            terminalElement.style.color = BITCOIN_COLOR;
-            terminalElement.style.boxShadow = `0 0 5px rgba(247, 147, 26, 0.3)`;
+        // Update uptime separators
+        const separators = terminalElement.querySelectorAll(SELECTORS.SEPARATORS);
+        separators.forEach(sep => {
+            sep.style.textShadow = themeConfig.textShadowStrong;
+        });
 
-            // Update header border
-            const headerElement = terminalElement.querySelector('.terminal-header');
-            if (headerElement) {
-                headerElement.style.borderColor = BITCOIN_COLOR;
-            }
+        // Update uptime title
+        const uptimeTitle = terminalElement.querySelector(SELECTORS.UPTIME_TITLE);
+        if (uptimeTitle) {
+            uptimeTitle.style.textShadow = themeConfig.textShadow;
+        }
 
-            // Update terminal title
-            const titleElement = terminalElement.querySelector('.terminal-title');
-            if (titleElement) {
-                titleElement.style.color = BITCOIN_COLOR;
-                titleElement.style.textShadow = '0 0 5px rgba(247, 147, 26, 0.8)';
-            }
-
-            // Update uptime timer border
-            const uptimeTimer = terminalElement.querySelector('.uptime-timer');
-            if (uptimeTimer) {
-                uptimeTimer.style.borderColor = `rgba(247, 147, 26, 0.5)`;
-            }
-
-            // Update uptime separators
-            const separators = terminalElement.querySelectorAll('.uptime-separator');
-            separators.forEach(sep => {
-                sep.style.textShadow = '0 0 8px rgba(247, 147, 26, 0.8)';
-            });
-
-            // Update uptime title
-            const uptimeTitle = terminalElement.querySelector('.uptime-title');
-            if (uptimeTitle) {
-                uptimeTitle.style.textShadow = '0 0 5px rgba(247, 147, 26, 0.8)';
-            }
-
-            // Update minimized view
-            const miniLabel = terminalElement.querySelector('.mini-uptime-label');
-            if (miniLabel) {
-                miniLabel.style.color = BITCOIN_COLOR;
-            }
+        // Update minimized view
+        const miniLabel = terminalElement.querySelector(SELECTORS.MINI_LABEL);
+        if (miniLabel) {
+            miniLabel.style.color = themeConfig.color;
         }
     }
 
@@ -125,10 +152,21 @@ const BitcoinMinuteRefresh = (function () {
     function setupThemeChangeListener() {
         // Listen for theme change events from localStorage
         window.addEventListener('storage', function (e) {
-            if (e.key === 'useDeepSeaTheme') {
+            if (e.key === STORAGE_KEYS.THEME) {
                 applyThemeColor();
             }
         });
+    }
+
+    /**
+     * Debounce function to limit execution frequency
+     */
+    function debounce(func, wait) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
     }
 
     /**
@@ -136,12 +174,12 @@ const BitcoinMinuteRefresh = (function () {
      */
     function addDraggingBehavior() {
         // Find the terminal element
-        const terminal = document.getElementById('bitcoin-terminal') ||
+        const terminal = document.getElementById(DOM_IDS.TERMINAL) ||
             document.querySelector('.bitcoin-terminal') ||
             document.getElementById('retro-terminal-bar');
 
         if (!terminal) {
-            console.warn('Terminal element not found for drag behavior');
+            log('Terminal element not found for drag behavior', 'warn');
             return;
         }
 
@@ -155,7 +193,7 @@ const BitcoinMinuteRefresh = (function () {
             if (window.innerWidth < 768) return;
 
             // Don't handle drag if clicking on controls
-            if (e.target.closest('.terminal-dot')) return;
+            if (e.target.closest(SELECTORS.TERMINAL_DOT)) return;
 
             isDragging = true;
             terminal.classList.add('dragging');
@@ -177,8 +215,8 @@ const BitcoinMinuteRefresh = (function () {
             e.preventDefault(); // Prevent text selection
         }
 
-        // Function to handle mouse move (dragging)
-        function handleMouseMove(e) {
+        // Function to handle mouse move (dragging) with debounce for better performance
+        const handleMouseMove = debounce(function (e) {
             if (!isDragging) return;
 
             // Calculate the horizontal movement - vertical stays fixed
@@ -193,7 +231,7 @@ const BitcoinMinuteRefresh = (function () {
             terminal.style.left = newLeft + 'px';
             terminal.style.right = 'auto'; // Remove right positioning
             terminal.style.transform = 'none'; // Remove transformations
-        }
+        }, 10);
 
         // Function to handle mouse up (drag end)
         function handleMouseUp() {
@@ -204,7 +242,7 @@ const BitcoinMinuteRefresh = (function () {
         }
 
         // Find the terminal header for dragging
-        const terminalHeader = terminal.querySelector('.terminal-header');
+        const terminalHeader = terminal.querySelector(SELECTORS.HEADER);
         if (terminalHeader) {
             terminalHeader.addEventListener('mousedown', handleMouseDown);
         } else {
@@ -212,27 +250,88 @@ const BitcoinMinuteRefresh = (function () {
             terminal.addEventListener('mousedown', handleMouseDown);
         }
 
-        // Add mousemove and mouseup listeners to document
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
+        // Add touch support for mobile/tablet
+        function handleTouchStart(e) {
+            if (window.innerWidth < 768) return;
+            if (e.target.closest(SELECTORS.TERMINAL_DOT)) return;
 
-        // Handle window resize to keep terminal visible
-        window.addEventListener('resize', function () {
-            if (window.innerWidth < 768) {
-                // Reset position for mobile view
-                terminal.style.left = '50%';
-                terminal.style.right = 'auto';
-                terminal.style.transform = 'translateX(-50%)';
+            const touch = e.touches[0];
+            isDragging = true;
+            terminal.classList.add('dragging');
+
+            startX = touch.clientX;
+
+            const style = window.getComputedStyle(terminal);
+            if (style.left !== 'auto') {
+                startLeft = parseInt(style.left) || 0;
             } else {
-                // Ensure terminal stays visible in desktop view
-                const maxLeft = window.innerWidth - terminal.offsetWidth;
-                const currentLeft = parseInt(window.getComputedStyle(terminal).left) || 0;
-
-                if (currentLeft > maxLeft) {
-                    terminal.style.left = maxLeft + 'px';
-                }
+                startLeft = window.innerWidth - (parseInt(style.right) || 0) - terminal.offsetWidth;
             }
-        });
+
+            e.preventDefault();
+        }
+
+        function handleTouchMove(e) {
+            if (!isDragging) return;
+
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startX;
+            let newLeft = startLeft + deltaX;
+
+            const maxLeft = window.innerWidth - terminal.offsetWidth;
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+
+            terminal.style.left = newLeft + 'px';
+            terminal.style.right = 'auto';
+            terminal.style.transform = 'none';
+
+            e.preventDefault();
+        }
+
+        function handleTouchEnd() {
+            if (isDragging) {
+                isDragging = false;
+                terminal.classList.remove('dragging');
+            }
+        }
+
+        if (terminalHeader) {
+            terminalHeader.addEventListener('touchstart', handleTouchStart);
+        } else {
+            terminal.addEventListener('touchstart', handleTouchStart);
+        }
+
+        // Add event listeners only once to prevent memory leaks
+        if (!dragListenersAdded) {
+            // Add mousemove and mouseup listeners to document
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+
+            // Add touch event listeners
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd);
+
+            // Handle window resize to keep terminal visible
+            window.addEventListener('resize', function () {
+                if (window.innerWidth < 768) {
+                    // Reset position for mobile view
+                    terminal.style.left = '50%';
+                    terminal.style.right = 'auto';
+                    terminal.style.transform = 'translateX(-50%)';
+                } else {
+                    // Ensure terminal stays visible in desktop view
+                    const maxLeft = window.innerWidth - terminal.offsetWidth;
+                    const currentLeft = parseInt(window.getComputedStyle(terminal).left) || 0;
+
+                    if (currentLeft > maxLeft) {
+                        terminal.style.left = maxLeft + 'px';
+                    }
+                }
+            });
+
+            // Mark listeners as added
+            dragListenersAdded = true;
+        }
     }
 
     /**
@@ -241,7 +340,7 @@ const BitcoinMinuteRefresh = (function () {
     function createTerminalElement() {
         // Container element
         terminalElement = document.createElement('div');
-        terminalElement.id = 'bitcoin-terminal';
+        terminalElement.id = DOM_IDS.TERMINAL;
         terminalElement.className = 'bitcoin-terminal';
 
         // Terminal content - simplified for uptime-only
@@ -259,23 +358,23 @@ const BitcoinMinuteRefresh = (function () {
             <div class="status-dot connected"></div>
             <span>LIVE</span>
           </div>
-          <span id="terminal-clock" class="terminal-clock">00:00:00</span>
+          <span id="${DOM_IDS.CLOCK}" class="terminal-clock">00:00:00</span>
         </div>
         <div id="uptime-timer" class="uptime-timer">
           <div class="uptime-title">UPTIME</div>
           <div class="uptime-display">
             <div class="uptime-value">
-              <span id="uptime-hours" class="uptime-number">00</span>
+              <span id="${DOM_IDS.UPTIME_HOURS}" class="uptime-number">00</span>
               <span class="uptime-label">H</span>
             </div>
             <div class="uptime-separator">:</div>
             <div class="uptime-value">
-              <span id="uptime-minutes" class="uptime-number">00</span>
+              <span id="${DOM_IDS.UPTIME_MINUTES}" class="uptime-number">00</span>
               <span class="uptime-label">M</span>
             </div>
             <div class="uptime-separator">:</div>
             <div class="uptime-value">
-              <span id="uptime-seconds" class="uptime-number">00</span>
+              <span id="${DOM_IDS.UPTIME_SECONDS}" class="uptime-number">00</span>
               <span class="uptime-label">S</span>
             </div>
           </div>
@@ -284,7 +383,7 @@ const BitcoinMinuteRefresh = (function () {
       <div class="terminal-minimized">
         <div class="minimized-uptime">
           <span class="mini-uptime-label">UPTIME</span>
-          <span id="minimized-uptime-value">00:00:00</span>
+          <span id="${DOM_IDS.MINIMIZED_UPTIME}">00:00:00</span>
         </div>
         <div class="minimized-status-dot connected"></div>
       </div>
@@ -300,12 +399,12 @@ const BitcoinMinuteRefresh = (function () {
         uptimeElement = document.getElementById('uptime-timer');
 
         // Check if terminal was previously collapsed
-        if (localStorage.getItem('bitcoin_terminal_collapsed') === 'true') {
+        if (localStorage.getItem(STORAGE_KEYS.COLLAPSED) === 'true') {
             terminalElement.classList.add('collapsed');
         }
 
         // Add custom styles if not already present
-        if (!document.getElementById('bitcoin-terminal-styles')) {
+        if (!document.getElementById(DOM_IDS.STYLES)) {
             addStyles();
         }
     }
@@ -316,7 +415,11 @@ const BitcoinMinuteRefresh = (function () {
     function addStyles() {
         // Use the currentThemeColor variable instead of hardcoded colors
         const styleElement = document.createElement('style');
-        styleElement.id = 'bitcoin-terminal-styles';
+        styleElement.id = DOM_IDS.STYLES;
+
+        // Generate RGB values for dynamic colors
+        const rgbValues = currentThemeColor === DEEPSEA_COLOR ? '0, 136, 204' : '247, 147, 26';
+
         styleElement.textContent = `
       /* Terminal Container */
       .bitcoin-terminal {
@@ -332,7 +435,7 @@ const BitcoinMinuteRefresh = (function () {
         overflow: hidden;
         padding: 8px;
         transition: all 0.3s ease;
-        box-shadow: 0 0 5px rgba(${currentThemeColor === DEEPSEA_COLOR ? '0, 136, 204' : '247, 147, 26'}, 0.3);
+        box-shadow: 0 0 5px rgba(${rgbValues}, 0.3);
       }
       
       /* Terminal Header */
@@ -340,10 +443,10 @@ const BitcoinMinuteRefresh = (function () {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #f7931a;
+        border-bottom: 1px solid ${currentThemeColor};
         padding-bottom: 5px;
         margin-bottom: 8px;
-        cursor: pointer; /* Add pointer (hand) cursor on hover */
+        cursor: grab; /* Add grab cursor on hover */
       }
 
       /* Apply grabbing cursor during active drag */
@@ -353,10 +456,10 @@ const BitcoinMinuteRefresh = (function () {
       }
       
       .terminal-title {
-        color: #f7931a;
+        color: ${currentThemeColor};
         font-weight: bold;
         font-size: 1.1rem;
-        text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+        text-shadow: 0 0 5px rgba(${rgbValues}, 0.8);
         animation: terminal-flicker 4s infinite;
       }
       
@@ -420,7 +523,7 @@ const BitcoinMinuteRefresh = (function () {
       .terminal-clock {
         font-size: 1rem;
         font-weight: bold;
-        text-shadow: 0 0 5px rgba(247, 147, 26, 0.5);
+        text-shadow: 0 0 5px rgba(${rgbValues}, 0.5);
       }
       
       /* Uptime Display - Modern Digital Clock Style (Horizontal) */
@@ -430,7 +533,7 @@ const BitcoinMinuteRefresh = (function () {
         align-items: center;
         padding: 5px;
         background-color: #111;
-        border: 1px solid rgba(247, 147, 26, 0.5);
+        border: 1px solid rgba(${rgbValues}, 0.5);
         margin-top: 5px;
       }
       
@@ -457,7 +560,7 @@ const BitcoinMinuteRefresh = (function () {
         display: inline-block;
         text-align: center;
         letter-spacing: 2px;
-        text-shadow: 0 0 8px rgba(247, 147, 26, 0.8);
+        text-shadow: 0 0 8px rgba(${rgbValues}, 0.8);
         color: #dee2e6;
       }
       
@@ -471,7 +574,7 @@ const BitcoinMinuteRefresh = (function () {
         font-size: 1.4rem;
         font-weight: bold;
         padding: 0 2px;
-        text-shadow: 0 0 8px rgba(247, 147, 26, 0.8);
+        text-shadow: 0 0 8px rgba(${rgbValues}, 0.8);
       }
       
       .uptime-title {
@@ -479,16 +582,16 @@ const BitcoinMinuteRefresh = (function () {
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 2px;
-        text-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+        text-shadow: 0 0 5px rgba(${rgbValues}, 0.8);
         margin-bottom: 3px;
       }
       
       /* Show button */
-      #bitcoin-terminal-show {
+      #${DOM_IDS.SHOW_BUTTON} {
         position: fixed;
         bottom: 10px;
         right: 10px;
-        background-color: #f7931a;
+        background-color: ${currentThemeColor};
         color: #000;
         border: none;
         padding: 8px 12px;
@@ -496,7 +599,7 @@ const BitcoinMinuteRefresh = (function () {
         cursor: pointer;
         z-index: 9999;
         display: none;
-        box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+        box-shadow: 0 0 10px rgba(${rgbValues}, 0.5);
       }
       
       /* CRT scanline effect */
@@ -562,13 +665,13 @@ const BitcoinMinuteRefresh = (function () {
         letter-spacing: 1px;
         opacity: 0.7;
         margin-left: 45px;
-        color: #f7931a;
+        color: ${currentThemeColor};
       }
       
-      #minimized-uptime-value {
+      #${DOM_IDS.MINIMIZED_UPTIME} {
         font-size: 0.9rem;
         font-weight: bold;
-        text-shadow: 0 0 5px rgba(247, 147, 26, 0.5);
+        text-shadow: 0 0 5px rgba(${rgbValues}, 0.5);
         margin-left: 45px;
         color: #dee2e6;
       }
@@ -665,12 +768,12 @@ const BitcoinMinuteRefresh = (function () {
             });
 
             // Update clock in normal view
-            const clockElement = document.getElementById('terminal-clock');
+            const clockElement = document.getElementById(DOM_IDS.CLOCK);
             if (clockElement) {
                 clockElement.textContent = timeString;
             }
         } catch (e) {
-            console.error("BitcoinMinuteRefresh: Error updating clock:", e);
+            log("Error updating clock: " + e.message, 'error');
         }
     }
 
@@ -688,30 +791,57 @@ const BitcoinMinuteRefresh = (function () {
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-                // Update the main uptime display with digital clock style
-                const uptimeHoursElement = document.getElementById('uptime-hours');
-                const uptimeMinutesElement = document.getElementById('uptime-minutes');
-                const uptimeSecondsElement = document.getElementById('uptime-seconds');
+                // Format numbers with leading zeros
+                const formattedTime = {
+                    hours: String(hours).padStart(2, '0'),
+                    minutes: String(minutes).padStart(2, '0'),
+                    seconds: String(seconds).padStart(2, '0')
+                };
 
-                if (uptimeHoursElement) {
-                    uptimeHoursElement.textContent = String(hours).padStart(2, '0');
-                }
-                if (uptimeMinutesElement) {
-                    uptimeMinutesElement.textContent = String(minutes).padStart(2, '0');
-                }
-                if (uptimeSecondsElement) {
-                    uptimeSecondsElement.textContent = String(seconds).padStart(2, '0');
-                }
+                // Update the main uptime display with digital clock style
+                const elements = {
+                    hours: document.getElementById(DOM_IDS.UPTIME_HOURS),
+                    minutes: document.getElementById(DOM_IDS.UPTIME_MINUTES),
+                    seconds: document.getElementById(DOM_IDS.UPTIME_SECONDS),
+                    minimized: document.getElementById(DOM_IDS.MINIMIZED_UPTIME)
+                };
+
+                // Update each element if it exists
+                if (elements.hours) elements.hours.textContent = formattedTime.hours;
+                if (elements.minutes) elements.minutes.textContent = formattedTime.minutes;
+                if (elements.seconds) elements.seconds.textContent = formattedTime.seconds;
 
                 // Update the minimized uptime display
-                const minimizedUptimeElement = document.getElementById('minimized-uptime-value');
-                if (minimizedUptimeElement) {
-                    minimizedUptimeElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                if (elements.minimized) {
+                    elements.minimized.textContent = `${formattedTime.hours}:${formattedTime.minutes}:${formattedTime.seconds}`;
                 }
             } catch (e) {
-                console.error("BitcoinMinuteRefresh: Error updating uptime:", e);
+                log("Error updating uptime: " + e.message, 'error');
             }
         }
+    }
+
+    /**
+     * Start animation frame loop for smooth updates
+     */
+    function startAnimationLoop() {
+        let lastUpdate = 0;
+        const updateInterval = 1000; // Update every second
+
+        function animationFrame(timestamp) {
+            // Only update once per second to save resources
+            if (timestamp - lastUpdate >= updateInterval) {
+                updateClock();
+                updateUptime();
+                lastUpdate = timestamp;
+            }
+
+            // Continue the animation loop
+            requestAnimationFrame(animationFrame);
+        }
+
+        // Start the loop
+        requestAnimationFrame(animationFrame);
     }
 
     /**
@@ -720,8 +850,8 @@ const BitcoinMinuteRefresh = (function () {
     function notifyRefresh() {
         const now = Date.now();
         localStorage.setItem(STORAGE_KEY, now.toString());
-        localStorage.setItem('bitcoin_refresh_event', 'refresh-' + now);
-        console.log("BitcoinMinuteRefresh: Notified other tabs of refresh at " + new Date(now).toISOString());
+        localStorage.setItem(STORAGE_KEYS.REFRESH_EVENT, 'refresh-' + now);
+        log("Notified other tabs of refresh at " + new Date(now).toISOString());
     }
 
     /**
@@ -735,11 +865,11 @@ const BitcoinMinuteRefresh = (function () {
         applyThemeColor();
 
         // Create the terminal element if it doesn't exist
-        if (!document.getElementById('bitcoin-terminal')) {
+        if (!document.getElementById(DOM_IDS.TERMINAL)) {
             createTerminalElement();
         } else {
             // Get references to existing elements
-            terminalElement = document.getElementById('bitcoin-terminal');
+            terminalElement = document.getElementById(DOM_IDS.TERMINAL);
             uptimeElement = document.getElementById('uptime-timer');
 
             // Apply theme to existing element
@@ -751,10 +881,10 @@ const BitcoinMinuteRefresh = (function () {
 
         // Try to get stored server time information
         try {
-            serverTimeOffset = parseFloat(localStorage.getItem('serverTimeOffset') || '0');
-            serverStartTime = parseFloat(localStorage.getItem('serverStartTime') || '0');
+            serverTimeOffset = parseFloat(localStorage.getItem(STORAGE_KEYS.SERVER_OFFSET) || '0');
+            serverStartTime = parseFloat(localStorage.getItem(STORAGE_KEYS.SERVER_START) || '0');
         } catch (e) {
-            console.error("BitcoinMinuteRefresh: Error reading server time from localStorage:", e);
+            log("Error reading server time from localStorage: " + e.message, 'error');
         }
 
         // Clear any existing intervals
@@ -762,11 +892,8 @@ const BitcoinMinuteRefresh = (function () {
             clearInterval(uptimeInterval);
         }
 
-        // Set up interval for updating clock and uptime display
-        uptimeInterval = setInterval(function () {
-            updateClock();
-            updateUptime();
-        }, 1000); // Update every second is sufficient for uptime display
+        // Use requestAnimationFrame for smoother animations
+        startAnimationLoop();
 
         // Listen for storage events to sync across tabs
         window.removeEventListener('storage', handleStorageChange);
@@ -779,15 +906,15 @@ const BitcoinMinuteRefresh = (function () {
         // Mark as initialized
         isInitialized = true;
 
-        console.log("BitcoinMinuteRefresh: Initialized");
+        log("Initialized");
     }
 
     /**
      * Handle storage changes for cross-tab synchronization
      */
     function handleStorageChange(event) {
-        if (event.key === 'bitcoin_refresh_event') {
-            console.log("BitcoinMinuteRefresh: Detected refresh from another tab");
+        if (event.key === STORAGE_KEYS.REFRESH_EVENT) {
+            log("Detected refresh from another tab");
 
             // If another tab refreshed, consider refreshing this one too
             // But don't refresh if it was just refreshed recently (5 seconds)
@@ -795,12 +922,12 @@ const BitcoinMinuteRefresh = (function () {
             if (typeof refreshCallback === 'function' && Date.now() - lastRefreshTime > 5000) {
                 refreshCallback();
             }
-        } else if (event.key === 'serverTimeOffset' || event.key === 'serverStartTime') {
+        } else if (event.key === STORAGE_KEYS.SERVER_OFFSET || event.key === STORAGE_KEYS.SERVER_START) {
             try {
-                serverTimeOffset = parseFloat(localStorage.getItem('serverTimeOffset') || '0');
-                serverStartTime = parseFloat(localStorage.getItem('serverStartTime') || '0');
+                serverTimeOffset = parseFloat(localStorage.getItem(STORAGE_KEYS.SERVER_OFFSET) || '0');
+                serverStartTime = parseFloat(localStorage.getItem(STORAGE_KEYS.SERVER_START) || '0');
             } catch (e) {
-                console.error("BitcoinMinuteRefresh: Error reading updated server time:", e);
+                log("Error reading updated server time: " + e.message, 'error');
             }
         }
     }
@@ -810,7 +937,7 @@ const BitcoinMinuteRefresh = (function () {
      */
     function handleVisibilityChange() {
         if (!document.hidden) {
-            console.log("BitcoinMinuteRefresh: Page became visible, updating");
+            log("Page became visible, updating");
 
             // Update immediately when page becomes visible
             updateClock();
@@ -834,13 +961,13 @@ const BitcoinMinuteRefresh = (function () {
         serverStartTime = startTime;
 
         // Store in localStorage for cross-page sharing
-        localStorage.setItem('serverTimeOffset', serverTimeOffset.toString());
-        localStorage.setItem('serverStartTime', serverStartTime.toString());
+        localStorage.setItem(STORAGE_KEYS.SERVER_OFFSET, serverTimeOffset.toString());
+        localStorage.setItem(STORAGE_KEYS.SERVER_START, serverStartTime.toString());
 
         // Update the uptime immediately
         updateUptime();
 
-        console.log("BitcoinMinuteRefresh: Server time updated - offset:", serverTimeOffset, "ms");
+        log("Server time updated - offset: " + serverTimeOffset + " ms");
     }
 
     /**
@@ -850,7 +977,7 @@ const BitcoinMinuteRefresh = (function () {
         if (!terminalElement) return;
 
         terminalElement.classList.toggle('collapsed');
-        localStorage.setItem('bitcoin_terminal_collapsed', terminalElement.classList.contains('collapsed'));
+        localStorage.setItem(STORAGE_KEYS.COLLAPSED, terminalElement.classList.contains('collapsed'));
     }
 
     /**
@@ -862,15 +989,15 @@ const BitcoinMinuteRefresh = (function () {
         terminalElement.style.display = 'none';
 
         // Create show button if it doesn't exist
-        if (!document.getElementById('bitcoin-terminal-show')) {
+        if (!document.getElementById(DOM_IDS.SHOW_BUTTON)) {
             const showButton = document.createElement('button');
-            showButton.id = 'bitcoin-terminal-show';
+            showButton.id = DOM_IDS.SHOW_BUTTON;
             showButton.textContent = 'Show Monitor';
             showButton.onclick = showTerminal;
             document.body.appendChild(showButton);
         }
 
-        document.getElementById('bitcoin-terminal-show').style.display = 'block';
+        document.getElementById(DOM_IDS.SHOW_BUTTON).style.display = 'block';
     }
 
     /**
@@ -880,7 +1007,10 @@ const BitcoinMinuteRefresh = (function () {
         if (!terminalElement) return;
 
         terminalElement.style.display = 'block';
-        document.getElementById('bitcoin-terminal-show').style.display = 'none';
+        const showButton = document.getElementById(DOM_IDS.SHOW_BUTTON);
+        if (showButton) {
+            showButton.style.display = 'none';
+        }
     }
 
     // Public API
@@ -891,7 +1021,7 @@ const BitcoinMinuteRefresh = (function () {
         toggleTerminal: toggleTerminal,
         hideTerminal: hideTerminal,
         showTerminal: showTerminal,
-        updateTheme: applyThemeColor // <-- Add this new method
+        updateTheme: applyThemeColor
     };
 })();
 

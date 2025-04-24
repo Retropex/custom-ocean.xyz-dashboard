@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.9.18-slim
 
 WORKDIR /app
 
@@ -17,8 +17,8 @@ COPY *.py .
 COPY config.json .
 COPY setup.py .
 
-# Create necessary directories
-RUN mkdir -p static/css static/js templates logs
+# Create all necessary directories in one command
+RUN mkdir -p static/css static/js templates logs /app/logs
 
 # Copy static files and templates
 COPY static/css/*.css static/css/
@@ -29,16 +29,13 @@ COPY templates/*.html templates/
 RUN python setup.py
 
 # Run the minifier to process HTML templates
- RUN python minify.py
+RUN python minify.py
 
 # Create a non-root user for better security
 RUN adduser --disabled-password --gecos '' appuser
 
 # Change ownership of the /app directory so appuser can write files
 RUN chown -R appuser:appuser /app
-
-# Create a directory for logs with proper permissions
-RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
 
 # Switch to non-root user
 USER appuser
@@ -49,7 +46,6 @@ EXPOSE 5000
 # Set environment variables
 ENV FLASK_ENV=production
 ENV PYTHONUNBUFFERED=1
-ENV PYTHON_UNBUFFERED=1
 
 # Add healthcheck
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \

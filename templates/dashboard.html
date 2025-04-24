@@ -98,7 +98,7 @@
                         {% if metrics and metrics.pool_fees_percentage is defined and metrics.pool_fees_percentage is not none %}
                         {{ metrics.pool_fees_percentage }}%
                         {% if metrics.pool_fees_percentage is not none and metrics.pool_fees_percentage >= 0.9 and metrics.pool_fees_percentage <= 1.3 %}
-                        <span class="fee-star">★</span> <span class="datum-label">DATUM</span>
+                        <span class="fee-star">★</span> <span class="datum-label">DATUM</span> <span class="fee-star">★</span>
                         {% endif %}
                         {% else %}
                         N/A

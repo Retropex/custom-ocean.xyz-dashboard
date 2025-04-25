@@ -8,12 +8,6 @@ services:
       - redis_data:/data
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 1s
-      timeout: 5s
-      retries: 3
-      start_period: 1s
 
   dashboard:
     build: .
@@ -30,11 +24,6 @@ services:
       - LOG_LEVEL=INFO
     volumes:
       - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 5s
-      timeout: 10s
-      retries: 3
 
 volumes:
   redis_data:

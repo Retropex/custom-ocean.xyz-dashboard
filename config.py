@@ -7,7 +7,7 @@ import json
 import logging
 
 # Default configuration file path
-CONFIG_FILE = "config.json"
+CONFIG_FILE = "/root/.config/config.json"
 
 def load_config():
     """

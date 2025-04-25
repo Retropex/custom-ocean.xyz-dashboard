@@ -3,10 +3,12 @@ import logging
 import json
 import time
 import uuid
+import pytz
 from datetime import datetime, timedelta
 from enum import Enum
 from collections import deque
 from typing import List, Dict, Any, Optional, Union
+from config import get_timezone
 
 # Constants to replace magic values
 ONE_DAY_SECONDS = 86400
@@ -46,6 +48,34 @@ class NotificationService:
         
         # Load last block height from state
         self._load_last_block_height()
+
+    def _get_current_time(self) -> datetime:
+        """Get current datetime with the configured timezone."""
+        try:
+            tz = pytz.timezone(get_timezone())
+            return datetime.now(tz)
+        except Exception as e:
+            logging.error(f"[NotificationService] Error getting timezone: {e}")
+            # Fallback to naive datetime if timezone fails
+            return datetime.now()
+    
+    def _parse_timestamp(self, timestamp_str: str) -> datetime:
+        """Parse an ISO format timestamp string into a timezone-aware datetime."""
+        try:
+            # Parse the naive datetime from the string
+            dt = datetime.fromisoformat(timestamp_str)
+            
+            # If it's already timezone-aware, return it
+            if dt.tzinfo is not None:
+                return dt
+                
+            # Otherwise, make it timezone-aware
+            tz = pytz.timezone(get_timezone())
+            return tz.localize(dt)
+        except Exception as e:
+            logging.error(f"[NotificationService] Error parsing timestamp: {e}")
+            # Return current time as fallback
+            return self._get_current_time()
     
     def _get_redis_value(self, key: str, default: Any = None) -> Any:
         """Generic method to retrieve values from Redis."""
@@ -133,7 +163,7 @@ class NotificationService:
         """
         notification = {
             "id": str(uuid.uuid4()),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self._get_current_time().isoformat(),
             "message": message,
             "level": level.value,
             "category": category.value,
@@ -248,13 +278,13 @@ class NotificationService:
         
         cutoff_date = None
         if older_than_days:
-            cutoff_date = datetime.now() - timedelta(days=older_than_days)
+            cutoff_date = self._get_current_time() - timedelta(days=older_than_days)
             
         # Apply filters in a single pass
         self.notifications = [
             n for n in self.notifications
             if (not category or n.get("category") != category) and
-               (not cutoff_date or datetime.fromisoformat(n.get("timestamp", datetime.now().isoformat())) >= cutoff_date)
+               (not cutoff_date or self._parse_timestamp(n.get("timestamp", self._get_current_time().isoformat())) >= cutoff_date)
         ]
         
         cleared_count = original_count - len(self.notifications)
@@ -328,7 +358,7 @@ class NotificationService:
     
     def _should_post_daily_stats(self) -> bool:
         """Check if it's time to post daily stats with improved clarity."""
-        now = datetime.now()
+        now = self._get_current_time()
         
         # Only proceed if we're in the target hour and within first 5 minutes
         if now.hour != DEFAULT_TARGET_HOUR or now.minute >= NOTIFICATION_WINDOW_MINUTES:
@@ -498,7 +528,7 @@ class NotificationService:
                     if 0 < days <= 1:
                         if self._should_send_payout_notification():
                             message = f"Payout approaching! Estimated within 1 day"
-                            self.last_payout_notification_time = datetime.now()
+                            self.last_payout_notification_time = self._get_current_time()
                             return self.add_notification(
                                 message,
                                 level=NotificationLevel.SUCCESS,
@@ -509,7 +539,7 @@ class NotificationService:
                 elif "next block" in est_time.lower():
                     if self._should_send_payout_notification():
                         message = f"Payout expected with next block!"
-                        self.last_payout_notification_time = datetime.now()
+                        self.last_payout_notification_time = self._get_current_time()
                         return self.add_notification(
                             message,
                             level=NotificationLevel.SUCCESS,
@@ -544,5 +574,5 @@ class NotificationService:
         """Check if enough time has passed since the last payout notification."""
         if self.last_payout_notification_time is None:
             return True
-        time_since_last_notification = datetime.now() - self.last_payout_notification_time
+        time_since_last_notification = self._get_current_time() - self.last_payout_notification_time
         return time_since_last_notification.total_seconds() > ONE_DAY_SECONDS

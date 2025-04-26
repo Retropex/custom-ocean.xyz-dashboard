@@ -878,15 +878,11 @@ function initializeChart() {
                                 // For zero, just return 0
                                 if (value === 0) return '0';
 
-                                // For very large values (1M+)
-                                if (value >= 1000000) {
-                                    return (value / 1000000).toFixed(1) + 'M';
+                                // For large values (1000+ TH/s), show in PH/s
+                                if (value >= 1000) {
+                                    return (value / 1000).toFixed(1) + ' PH';
                                 }
-                                // For large values (1K+)
-                                else if (value >= 1000) {
-                                    return (value / 1000).toFixed(1) + 'K';
-                                }
-                                // For values between 10 and 1000
+                                // For values between 10 and 1000 TH/s
                                 else if (value >= 10) {
                                     return Math.round(value);
                                 }
@@ -1095,6 +1091,7 @@ function updateChartWithNormalizedData(chart, data) {
         const avg24hrUnit = data.hashrate_24hr_unit ? data.hashrate_24hr_unit.toLowerCase() : 'th/s';
         const normalizedAvg = normalizeHashrate(avg24hr, avg24hrUnit);
 
+        // Update the 24HR AVG line using the existing formatHashrateForDisplay function
         if (!isNaN(normalizedAvg) &&
             chart.options.plugins.annotation &&
             chart.options.plugins.annotation.annotations &&
@@ -1102,7 +1099,10 @@ function updateChartWithNormalizedData(chart, data) {
             const annotation = chart.options.plugins.annotation.annotations.averageLine;
             annotation.yMin = normalizedAvg;
             annotation.yMax = normalizedAvg;
-            annotation.label.content = '24HR AVG: ' + normalizedAvg.toFixed(1) + ' TH/S';
+
+            // Use the formatting function already available to ensure consistent units
+            const formattedAvg = formatHashrateForDisplay(normalizedAvg);
+            annotation.label.content = '24HR AVG: ' + formattedAvg.toUpperCase();
         }
 
         // Detect low hashrate devices (Bitaxe < 2 TH/s)
@@ -1746,7 +1746,7 @@ function updateUI() {
         // Update worker count from metrics (just the number, not full worker data)
         updateWorkersCount();
 
-        updateElementText("unpaid_earnings", data.unpaid_earnings + " BTC");
+        updateElementText("unpaid_earnings", data.unpaid_earnings.toFixed(8) + " BTC");
 
         // Update payout estimation with color coding
         const payoutText = data.est_time_to_payout;
@@ -2013,7 +2013,7 @@ $(document).ready(function () {
                         y: {
                             title: {
                                 display: true,
-                                text: 'HASHRATE (TH/S)',
+                                text: 'HASHRATE',
                                 color: theme.PRIMARY,
                                 font: {
                                     family: "'VT323', monospace",
@@ -2035,15 +2035,15 @@ $(document).ready(function () {
                                     // For zero, just return 0
                                     if (value === 0) return '0';
 
-                                    // For very large values (1M+)
+                                    // For very large values (1M+ TH/s = 1000+ PH/s)
                                     if (value >= 1000000) {
-                                        return (value / 1000000).toFixed(1) + 'M';
+                                        return (value / 1000000).toFixed(1) + 'E'; // Show as EH/s
                                     }
-                                    // For large values (1K+)
+                                    // For large values (1000+ TH/s), show in PH/s
                                     else if (value >= 1000) {
-                                        return (value / 1000).toFixed(1) + 'K';
+                                        return (value / 1000).toFixed(1) + 'P'; // Show as PH/s
                                     }
-                                    // For values between 10 and 1000
+                                    // For values between 10 and 1000 TH/s
                                     else if (value >= 10) {
                                         return Math.round(value);
                                     }

@@ -125,87 +125,63 @@ class StateManager:
         if not self.redis_client:
             logging.info("Redis not available, skipping state save.")
             return
-            
-        # Check if we've saved recently to avoid too frequent saves
-        # Only save at most once every 5 minutes
+
         current_time = time.time()
-        if hasattr(self, 'last_save_time') and current_time - self.last_save_time < 300:  # 300 seconds = 5 minutes
+        if hasattr(self, 'last_save_time') and current_time - self.last_save_time < 300:  # 5 minutes
             logging.debug("Skipping Redis save - last save was less than 5 minutes ago")
             return
-            
-        # Update the last save time
+
         self.last_save_time = current_time
-        
-        # Prune data first to reduce volume
         self.prune_old_data()
-        
-        # Create compact versions of the data structures for Redis storage
+
         try:
-            # 1. Create compact arrow_history with minimal data
+            # Compact arrow_history with unit preservation
             compact_arrow_history = {}
             for key, values in arrow_history.items():
                 if isinstance(values, list) and values:
-                    # Only store recent history (last 2 hours)
                     recent_values = values[-180:] if len(values) > 180 else values
-                    # Use shorter field names and preserve arrow directions
                     compact_arrow_history[key] = [
-                        {"t": entry["time"], "v": entry["value"], "a": entry["arrow"]} 
+                        {"t": entry["time"], "v": entry["value"], "a": entry["arrow"], "u": entry.get("unit", "th/s")}
                         for entry in recent_values
                     ]
-            
-            # 2. Only keep essential hashrate_history
+
+            # Compact hashrate_history
             compact_hashrate_history = hashrate_history[-60:] if len(hashrate_history) > 60 else hashrate_history
-            
-            # 3. Only keep recent metrics_log entries (last 30 minutes)
-            # This is typically the largest data structure
+
+            # Compact metrics_log with unit preservation
             compact_metrics_log = []
             if metrics_log:
-                # Keep only last 30 entries (30 minutes assuming 1-minute updates)
-                recent_logs = metrics_log[-30:] 
-                
+                recent_logs = metrics_log[-30:]
                 for entry in recent_logs:
-                    # Only keep necessary fields from each metrics entry
-                    if "metrics" in entry and "timestamp" in entry:
-                        metrics_copy = {}
-                        original_metrics = entry["metrics"]
-                        
-                        # Only copy the most important metrics for historical tracking
-                        essential_keys = [
-                            "hashrate_60sec", "hashrate_24hr", "btc_price", 
-                            "workers_hashing", "unpaid_earnings", "difficulty",
-                            "network_hashrate", "daily_profit_usd"
-                        ]
-                        
-                        for key in essential_keys:
-                            if key in original_metrics:
-                                metrics_copy[key] = original_metrics[key]
-                        
-                        # Skip arrow_history within metrics as we already stored it separately
-                        compact_metrics_log.append({
-                            "ts": entry["timestamp"],
-                            "m": metrics_copy
-                        })
-            
-            # Create the final state object
+                    metrics_copy = {}
+                    original_metrics = entry["metrics"]
+                    essential_keys = [
+                        "hashrate_60sec", "hashrate_24hr", "btc_price", 
+                        "workers_hashing", "unpaid_earnings", "difficulty",
+                        "network_hashrate", "daily_profit_usd"
+                    ]
+                    for key in essential_keys:
+                        if key in original_metrics:
+                            metrics_copy[key] = {
+                                "value": original_metrics[key],
+                                "unit": original_metrics.get(f"{key}_unit", "th/s")
+                            }
+                    compact_metrics_log.append({
+                        "ts": entry["timestamp"],
+                        "m": metrics_copy
+                    })
+
             state = {
                 "arrow_history": compact_arrow_history,
                 "hashrate_history": compact_hashrate_history,
                 "metrics_log": compact_metrics_log
             }
-            
-            # Convert to JSON once to reuse and measure size
+
             state_json = json.dumps(state)
             data_size_kb = len(state_json) / 1024
-            
-            # Log data size for monitoring
             logging.info(f"Saving graph state to Redis: {data_size_kb:.2f} KB (optimized format)")
-            
-            # Only save if data size is reasonable (adjust threshold as needed)
-            if data_size_kb > 2000:  # 2MB warning threshold (reduced from 5MB)
-                logging.warning(f"Redis save data size is still large: {data_size_kb:.2f} KB")
-            
-            # Store version info to handle future format changes
-            self.redis_client.set(f"{self.STATE_KEY}_version", "2.0")  
+
+            self.redis_client.set(f"{self.STATE_KEY}_version", "2.0")
             self.redis_client.set(self.STATE_KEY, state_json)
             logging.info(f"Successfully saved graph state to Redis ({data_size_kb:.2f} KB)")
         except Exception as e:

@@ -283,12 +283,13 @@
     .notification-actions {
         flex-direction: column;
         gap: 8px;
+        margin-top: 10px;
     }
 
     .action-button {
         width: 100%; /* Full width on small screens */
         padding: 8px 12px;
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 
     .notification-controls {
@@ -297,16 +298,27 @@
     }
 
     .filter-buttons {
-        overflow-x: auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
         padding-bottom: 5px;
-        margin-bottom: 5px;
-        white-space: nowrap;
+        margin-bottom: 10px;
+        width: 100%;
+    }
+
+    .filter-button {
+        text-align: center;
+        white-space: normal;
+        font-size: 0.9rem;
+        padding: 8px 5px;
         display: flex;
-        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
     }
 
     .notification-actions {
-        justify-content: flex-end;
+        justify-content: stretch;
     }
 
     .notification-item {
@@ -323,5 +335,12 @@
 
     .notification-actions {
         flex: 0 0 60px;
+    }
+
+    /* For very small screens, reduce to 2 columns */
+    @media (max-width: 375px) {
+        .filter-buttons {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 }

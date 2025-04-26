@@ -1515,6 +1515,21 @@ function updateChartWithNormalizedData(chart, data) {
     }
 }
 
+// Add a new helper function to calculate pool fees in SATS
+function calculatePoolFeeInSats(poolFeePercentage, estimatedEarningsPerDay) {
+    if (poolFeePercentage === undefined || poolFeePercentage === null ||
+        estimatedEarningsPerDay === undefined || estimatedEarningsPerDay === null) {
+        return null;
+    }
+
+    // Calculate how many SATS are taken as fees daily
+    // Pool fee is a percentage, so we divide by 100 to get the actual rate
+    const feeAmount = (poolFeePercentage / 100) * estimatedEarningsPerDay;
+
+    // Return as a negative number since it represents a cost
+    return -Math.round(feeAmount);
+}
+
 // Main UI update function with hashrate normalization
 function updateUI() {
     function ensureElementStyles() {
@@ -1734,6 +1749,48 @@ function updateUI() {
 
                 // Add to divider container
                 poolDividerContainer.appendChild(poolLuckDiv);
+            }
+        }
+
+        // Update pool fees in SATS (as negative value)
+        if (data.pool_fees_percentage !== undefined && data.estimated_earnings_per_day_sats !== undefined) {
+            const poolFeeSats = calculatePoolFeeInSats(
+                parseFloat(data.pool_fees_percentage),
+                parseFloat(data.estimated_earnings_per_day_sats)
+            );
+
+            // Find the pool_fees_percentage element
+            const poolFeesPercentage = document.getElementById("pool_fees_percentage");
+
+            if (poolFeesPercentage) {
+                // Format the pool fee in SATS with commas
+                const formattedPoolFee = poolFeeSats !== null ?
+                    numberWithCommas(poolFeeSats) + " SATS" : "N/A";
+
+                // Check if pool_fees_sats span already exists
+                let poolFeesSats = document.getElementById("pool_fees_sats");
+
+                if (!poolFeesSats) {
+                    // Create a new span for the fees in SATS if it doesn't exist
+                    poolFeesSats = document.createElement("span");
+                    poolFeesSats.id = "pool_fees_sats";
+                    poolFeesSats.className = "metric-value";
+
+                    // Find the indicator element that comes right after pool_fees_percentage
+                    const indicatorPoolFees = document.getElementById("indicator_pool_fees_percentage");
+
+                    // Insert before the indicator element
+                    if (indicatorPoolFees) {
+                        poolFeesPercentage.parentNode.insertBefore(poolFeesSats, indicatorPoolFees);
+                    } else {
+                        // If no indicator, append to the parent
+                        poolFeesPercentage.parentNode.appendChild(poolFeesSats);
+                    }
+                }
+
+                // Update the text and styling
+                poolFeesSats.textContent = " (" + formattedPoolFee + ")";
+                poolFeesSats.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important; margin-left: 6px;");
             }
         }
 

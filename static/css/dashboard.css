@@ -245,3 +245,10 @@
 .unlucky {
     color: #ff5555 !important;
 }
+
+/* Ensure the pool fee in SATS is always red regardless of theme */
+#pool_fees_sats {
+    color: #ff5555 !important;
+    font-weight: bold !important;
+    margin-left: 6px;
+}

@@ -91,14 +91,20 @@
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Bitcoin theme graph container (default orange) */
-body:not(.deepsea-theme) #graphContainer {
-    box-shadow: 0 0 10px rgba(247, 147, 26, 0.2); /* Orange shadow */
+/* Add RGB values for primary colors */
+html.deepsea-theme {
+    --primary-color: #0088cc;
+    --primary-color-rgb: 0, 136, 204;
 }
 
-/* DeepSea theme graph container (blue) */
-body.deepsea-theme #graphContainer {
-    box-shadow: 0 0 10px rgba(0, 136, 204, 0.2); /* Blue shadow matching DeepSea theme */
+html.bitcoin-theme {
+    --primary-color: #f2a900;
+    --primary-color-rgb: 242, 169, 0;
+}
+
+/* Theme-specific graph container shadow using CSS variable */
+#graphContainer {
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2) !important;
 }
 
 /* Bitcoin theme specific styling (orange) */
@@ -150,15 +156,6 @@ body:not(.deepsea-theme) .theme-toggle-btn:focus {
 body.deepsea-theme #themeToggle:focus,
 body.deepsea-theme .theme-toggle-btn:focus {
     box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.3);
-}
-
-/* Add to your common.css or theme-toggle.css */
-html.deepsea-theme {
-    --primary-color: #0088cc;
-}
-
-html.bitcoin-theme {
-    --primary-color: #f2a900;
 }
 
 /* Add these theme-specific loading styles */

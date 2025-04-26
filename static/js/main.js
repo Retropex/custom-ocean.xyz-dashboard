@@ -1128,7 +1128,7 @@ function showCongrats(message) {
     });
 }
 
-// Enhanced Chart Update Function with better error handling for unit conversion
+// Enhanced Chart Update Function to handle temporary hashrate spikes
 function updateChartWithNormalizedData(chart, data) {
     if (!chart || !data) {
         console.warn("Cannot update chart - chart or data is null");
@@ -1199,16 +1199,80 @@ function updateChartWithNormalizedData(chart, data) {
             console.error("Error processing current hashrates:", err);
         }
 
-        // Choose which hashrate average to display based on device characteristics
-        let useHashrate3hr = false;
+        // Add persistence for mode switching with debounce
+        // Initialize mode state if not already present
+        if (!chart.lowHashrateState) {
+            chart.lowHashrateState = {
+                isLowHashrateMode: false,
+                highHashrateSpikeTime: 0,
+                lowHashrateConfirmTime: 0,
+                modeSwitchTimeoutId: null
+            };
+        }
 
-        // For devices with hashrate under 2 TH/s, use the 3hr average if:
-        // 1. Their 60sec average is zero (appears offline) AND
-        // 2. Their 3hr average shows actual mining activity
-        if (normalizedHashrate3hr < 2.0) {
-            if (normalizedHashrate60sec < 0.01 && normalizedHashrate3hr > 0.01) {
+        // Choose which hashrate average to display based on device characteristics,
+        // with hysteresis to prevent rapid mode switching
+        let useHashrate3hr = false;
+        const currentTime = Date.now();
+        const LOW_HASHRATE_THRESHOLD = 0.01; // TH/s 
+        const HIGH_HASHRATE_THRESHOLD = 2.0; // TH/s
+        const MODE_SWITCH_DELAY = 60000; // 60 seconds delay before switching back to normal mode after spike
+
+        // Case 1: Currently in low hashrate mode
+        if (chart.lowHashrateState.isLowHashrateMode) {
+            // If 60sec hashrate suddenly spikes above threshold
+            if (normalizedHashrate60sec >= HIGH_HASHRATE_THRESHOLD) {
+                // Record the spike time if not already recorded
+                if (!chart.lowHashrateState.highHashrateSpikeTime) {
+                    chart.lowHashrateState.highHashrateSpikeTime = currentTime;
+                    console.log("High hashrate spike detected in low hashrate mode");
+                }
+
+                // Don't switch modes immediately - check if spike has persisted
+                const spikeElapsedTime = currentTime - chart.lowHashrateState.highHashrateSpikeTime;
+
+                // If the spike has persisted for longer than our delay, switch to normal mode
+                if (spikeElapsedTime > MODE_SWITCH_DELAY) {
+                    useHashrate3hr = false;
+                    chart.lowHashrateState.isLowHashrateMode = false;
+                    chart.lowHashrateState.highHashrateSpikeTime = 0;
+                    console.log("Exiting low hashrate mode after sustained high hashrate");
+                } else {
+                    // Spike not persistent enough yet, stay in low hashrate mode
+                    useHashrate3hr = true;
+                    console.log(`Remaining in low hashrate mode despite spike (waiting: ${Math.round(spikeElapsedTime / 1000)}/${MODE_SWITCH_DELAY / 1000}s)`);
+                }
+            } else {
+                // Reset spike timer if hashrate dropped back down
+                if (chart.lowHashrateState.highHashrateSpikeTime) {
+                    console.log("Hashrate spike ended, resetting timer");
+                    chart.lowHashrateState.highHashrateSpikeTime = 0;
+                }
+
+                // Continue using 3hr average in low hashrate mode
                 useHashrate3hr = true;
-                console.log("Low hashrate device detected. Using 3hr average instead of 60sec average.");
+            }
+        }
+        // Case 2: Currently in normal mode
+        else {
+            // Switch to low hashrate mode if:
+            // 1. 60sec average is near zero (appears offline) AND
+            // 2. 3hr average shows actual mining activity
+            if (normalizedHashrate60sec < LOW_HASHRATE_THRESHOLD && normalizedHashrate3hr > LOW_HASHRATE_THRESHOLD) {
+                // Record when low hashrate condition was first observed
+                if (!chart.lowHashrateState.lowHashrateConfirmTime) {
+                    chart.lowHashrateState.lowHashrateConfirmTime = currentTime;
+                    console.log("Low hashrate condition detected");
+                }
+
+                // Immediately switch to low hashrate mode
+                useHashrate3hr = true;
+                chart.lowHashrateState.isLowHashrateMode = true;
+                console.log("Entering low hashrate mode");
+            } else {
+                // Reset low hashrate confirmation timer
+                chart.lowHashrateState.lowHashrateConfirmTime = 0;
+                useHashrate3hr = false;
             }
         }
 

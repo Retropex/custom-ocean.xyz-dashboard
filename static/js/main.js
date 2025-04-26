@@ -1129,6 +1129,7 @@ function showCongrats(message) {
 }
 
 // Enhanced Chart Update Function to handle temporary hashrate spikes
+// Modified the updateChartWithNormalizedData function to ensure the 24hr avg line is visible in low hashrate mode
 function updateChartWithNormalizedData(chart, data) {
     if (!chart || !data) {
         console.warn("Cannot update chart - chart or data is null");
@@ -1371,18 +1372,29 @@ function updateChartWithNormalizedData(chart, data) {
                     chart.data.datasets[0].label = useHashrate3hr ?
                         'Hashrate Trend (3HR AVG)' : 'Hashrate Trend (60SEC AVG)';
 
-                    // Calculate appropriate y-axis range with safeguards for outliers
+                    // Calculate appropriate y-axis range with safeguards for outliers and ensure 24hr avg line is visible
                     const values = chart.data.datasets[0].data.filter(v => !isNaN(v) && v !== null && v > 0);
                     if (values.length > 0) {
                         const max = Math.max(...values);
                         const min = Math.min(...values) || 0;
 
-                        // Use a more reasonable range if we have outliers
-                        chart.options.scales.y.min = min * 0.8;
-                        chart.options.scales.y.max = max * 1.2;
+                        // MODIFICATION: When in low hashrate mode, ensure the y-axis includes the 24hr average
+                        if (useHashrate3hr && normalizedAvg > 0) {
+                            // Ensure the 24-hour average is visible on the chart
+                            const yMin = Math.min(min * 0.8, normalizedAvg * 0.5);
+                            const yMax = Math.max(max * 1.2, normalizedAvg * 1.5);
+
+                            chart.options.scales.y.min = yMin;
+                            chart.options.scales.y.max = yMax;
+                            console.log(`Low hashrate mode: Adjusting y-axis to include 24hr avg: [${yMin.toFixed(2)}, ${yMax.toFixed(2)}]`);
+                        } else {
+                            // Normal mode scaling
+                            chart.options.scales.y.min = min * 0.8;
+                            chart.options.scales.y.max = max * 1.2;
+                        }
 
                         // Set appropriate step size based on range
-                        const range = max - min;
+                        const range = chart.options.scales.y.max - chart.options.scales.y.min;
                         if (range > 1000) {
                             chart.options.scales.y.ticks.stepSize = 500;
                         } else if (range > 100) {
@@ -1447,6 +1459,16 @@ function updateChartWithNormalizedData(chart, data) {
 
                 chart.data.labels = [currentTime];
                 chart.data.datasets[0].data = [normalizedValue];
+
+                // MODIFICATION: For single datapoint in low hashrate mode, ensure 24hr avg is visible
+                if (useHashrate3hr && normalizedAvg > 0) {
+                    const yMin = Math.min(normalizedValue * 0.8, normalizedAvg * 0.5);
+                    const yMax = Math.max(normalizedValue * 1.2, normalizedAvg * 1.5);
+
+                    chart.options.scales.y.min = yMin;
+                    chart.options.scales.y.max = yMax;
+                    console.log(`Low hashrate mode (single point): Adjusting y-axis to include 24hr avg: [${yMin.toFixed(2)}, ${yMax.toFixed(2)}]`);
+                }
             } catch (err) {
                 console.error("Error setting up single datapoint:", err);
                 chart.data.labels = ["Now"];

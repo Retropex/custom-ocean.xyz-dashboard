@@ -91,6 +91,16 @@
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
 }
 
+/* Bitcoin theme graph container (default orange) */
+body:not(.deepsea-theme) #graphContainer {
+    box-shadow: 0 0 10px rgba(247, 147, 26, 0.2); /* Orange shadow */
+}
+
+/* DeepSea theme graph container (blue) */
+body.deepsea-theme #graphContainer {
+    box-shadow: 0 0 10px rgba(0, 136, 204, 0.2); /* Blue shadow matching DeepSea theme */
+}
+
 /* Bitcoin theme specific styling (orange) */
 body:not(.deepsea-theme) #themeToggle,
 body:not(.deepsea-theme) .theme-toggle-btn {

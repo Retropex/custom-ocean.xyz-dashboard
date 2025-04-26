@@ -218,7 +218,7 @@
 }
 
 .datum-label {
-    color: #ffffff; /* White color */
+    color: cyan; /* cyan color */
     font-size: 0.95em;
     font-weight: bold;
     text-transform: uppercase;

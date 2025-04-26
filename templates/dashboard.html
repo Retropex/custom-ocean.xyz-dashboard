@@ -76,7 +76,7 @@
                         {{ metrics.last_block_time if metrics and metrics.last_block_time else "N/A" }}
                     </span>
                     —
-                    <span class="green">
+                    <span id="last_block_earnings" class="metric-value green">
                         {% if metrics and metrics.last_block_earnings %}
                         +{{ metrics.last_block_earnings|int|commafy }} SATS
                         {% else %}

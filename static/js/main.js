@@ -1693,6 +1693,13 @@ function updateUI() {
             data.btc_price != null ? "$" + numberWithCommas(parseFloat(data.btc_price).toFixed(2)) : "N/A"
         );
 
+        // Update last block earnings
+        if (data.last_block_earnings !== undefined) {
+            // Format with "+" prefix and "SATS" suffix
+            updateElementText("last_block_earnings",
+                "+" + numberWithCommas(data.last_block_earnings) + " SATS");
+        }
+
         // Network hashrate (already in EH/s but verify)
         // Improved version with ZH/s support:
         if (data.network_hashrate >= 1000) {

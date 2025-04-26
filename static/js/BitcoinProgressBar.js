@@ -8,8 +8,10 @@
 const BitcoinMinuteRefresh = (function () {
     // Constants
     const STORAGE_KEY = 'bitcoin_last_refresh_time';
-    const BITCOIN_COLOR = '#f7931a';
-    const DEEPSEA_COLOR = '#0088cc';
+    // Default fallback colors if CSS vars aren't available
+    const FALLBACK_BITCOIN_COLOR = '#f2a900';
+    const FALLBACK_DEEPSEA_COLOR = '#0088cc';
+
     const DOM_IDS = {
         TERMINAL: 'bitcoin-terminal',
         STYLES: 'bitcoin-terminal-styles',
@@ -45,8 +47,31 @@ const BitcoinMinuteRefresh = (function () {
     let uptimeInterval = null;
     let isInitialized = false;
     let refreshCallback = null;
-    let currentThemeColor = BITCOIN_COLOR; // Default Bitcoin color
+    let currentThemeColor = '';
+    let currentThemeRGB = '';
     let dragListenersAdded = false;
+
+    /**
+     * Get theme colors from CSS variables
+     */
+    function getThemeColors() {
+        // Try to get CSS variables from document root
+        const rootStyles = getComputedStyle(document.documentElement);
+        let primaryColor = rootStyles.getPropertyValue('--primary-color').trim();
+        let primaryColorRGB = rootStyles.getPropertyValue('--primary-color-rgb').trim();
+
+        // If CSS vars not available, use theme toggle state
+        if (!primaryColor) {
+            const isDeepSea = localStorage.getItem(STORAGE_KEYS.THEME) === 'true';
+            primaryColor = isDeepSea ? FALLBACK_DEEPSEA_COLOR : FALLBACK_BITCOIN_COLOR;
+            primaryColorRGB = isDeepSea ? '0, 136, 204' : '242, 169, 0';
+        }
+
+        return {
+            color: primaryColor,
+            rgb: primaryColorRGB
+        };
+    }
 
     /**
      * Logging helper function
@@ -79,24 +104,22 @@ const BitcoinMinuteRefresh = (function () {
      * Apply the current theme color 
      */
     function applyThemeColor() {
-        // Check if theme toggle is set to DeepSea
-        const isDeepSeaTheme = localStorage.getItem(STORAGE_KEYS.THEME) === 'true';
-        currentThemeColor = isDeepSeaTheme ? DEEPSEA_COLOR : BITCOIN_COLOR;
+        // Get current theme colors
+        const theme = getThemeColors();
+        currentThemeColor = theme.color;
+        currentThemeRGB = theme.rgb;
 
         // Don't try to update DOM elements if they don't exist yet
         if (!terminalElement) return;
-
-        // Define color values based on theme
-        const rgbValues = isDeepSeaTheme ? '0, 136, 204' : '247, 147, 26';
 
         // Create theme config
         const themeConfig = {
             color: currentThemeColor,
             borderColor: currentThemeColor,
-            boxShadow: `0 0 5px rgba(${rgbValues}, 0.3)`,
-            textShadow: `0 0 5px rgba(${rgbValues}, 0.8)`,
-            borderColorRGBA: `rgba(${rgbValues}, 0.5)`,
-            textShadowStrong: `0 0 8px rgba(${rgbValues}, 0.8)`
+            boxShadow: `0 0 5px rgba(${currentThemeRGB}, 0.3)`,
+            textShadow: `0 0 5px rgba(${currentThemeRGB}, 0.8)`,
+            borderColorRGBA: `rgba(${currentThemeRGB}, 0.5)`,
+            textShadowStrong: `0 0 8px rgba(${currentThemeRGB}, 0.8)`
         };
 
         // Apply styles to terminal
@@ -144,6 +167,13 @@ const BitcoinMinuteRefresh = (function () {
         if (miniLabel) {
             miniLabel.style.color = themeConfig.color;
         }
+
+        // Update show button if it exists
+        const showButton = document.getElementById(DOM_IDS.SHOW_BUTTON);
+        if (showButton) {
+            showButton.style.backgroundColor = themeConfig.color;
+            showButton.style.boxShadow = `0 0 10px rgba(${currentThemeRGB}, 0.5)`;
+        }
     }
 
     /**
@@ -155,6 +185,25 @@ const BitcoinMinuteRefresh = (function () {
             if (e.key === STORAGE_KEYS.THEME) {
                 applyThemeColor();
             }
+        });
+
+        // Listen for custom theme change events
+        document.addEventListener('themeChanged', function () {
+            applyThemeColor();
+        });
+
+        // Watch for class changes on HTML element that might indicate theme changes
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                if (mutation.attributeName === 'class') {
+                    applyThemeColor();
+                }
+            });
+        });
+
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
         });
     }
 
@@ -413,12 +462,11 @@ const BitcoinMinuteRefresh = (function () {
      * Add CSS styles for the terminal
      */
     function addStyles() {
-        // Use the currentThemeColor variable instead of hardcoded colors
+        // Get current theme colors for initial styling
+        const theme = getThemeColors();
+
         const styleElement = document.createElement('style');
         styleElement.id = DOM_IDS.STYLES;
-
-        // Generate RGB values for dynamic colors
-        const rgbValues = currentThemeColor === DEEPSEA_COLOR ? '0, 136, 204' : '247, 147, 26';
 
         styleElement.textContent = `
       /* Terminal Container */
@@ -428,14 +476,14 @@ const BitcoinMinuteRefresh = (function () {
         right: 20px;
         width: 230px;
         background-color: #000000;
-        border: 1px solid ${currentThemeColor};
-        color: ${currentThemeColor};
+        border: 1px solid var(--primary-color, ${theme.color});
+        color: var(--primary-color, ${theme.color});
         font-family: 'VT323', monospace;
         z-index: 9999;
         overflow: hidden;
         padding: 8px;
         transition: all 0.3s ease;
-        box-shadow: 0 0 5px rgba(${rgbValues}, 0.3);
+        box-shadow: 0 0 5px rgba(var(--primary-color-rgb, ${theme.rgb}), 0.3);
       }
       
       /* Terminal Header */
@@ -443,20 +491,19 @@ const BitcoinMinuteRefresh = (function () {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid ${currentThemeColor};
+        border-bottom: 1px solid var(--primary-color, ${theme.color});
         padding-bottom: 5px;
         margin-bottom: 8px;
-        cursor: grab; /* Add grab cursor on hover */
+        cursor: grab;
       }
 
-      /* Apply grabbing cursor during active drag */
       .terminal-header:active,
       .bitcoin-terminal.dragging .terminal-header {
         cursor: grabbing;
       }
       
       .terminal-title {
-        color: ${currentThemeColor};
+        color: var(--primary-color, ${theme.color});
         font-weight: bold;
         font-size: 1.1rem;
         animation: terminal-flicker 4s infinite;
@@ -524,14 +571,14 @@ const BitcoinMinuteRefresh = (function () {
         font-weight: bold;
       }
       
-      /* Uptime Display - Modern Digital Clock Style (Horizontal) */
+      /* Uptime Display */
       .uptime-timer {
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 5px;
         background-color: #111;
-        border: 1px solid rgba(${rgbValues}, 0.5);
+        border: 1px solid rgba(var(--primary-color-rgb, ${theme.rgb}), 0.5);
         margin-top: 5px;
       }
       
@@ -586,7 +633,7 @@ const BitcoinMinuteRefresh = (function () {
         position: fixed;
         bottom: 10px;
         right: 10px;
-        background-color: ${currentThemeColor};
+        background-color: var(--primary-color, ${theme.color});
         color: #000;
         border: none;
         padding: 8px 12px;
@@ -594,7 +641,7 @@ const BitcoinMinuteRefresh = (function () {
         cursor: pointer;
         z-index: 9999;
         display: none;
-        box-shadow: 0 0 10px rgba(${rgbValues}, 0.5);
+        box-shadow: 0 0 10px rgba(var(--primary-color-rgb, ${theme.rgb}), 0.5);
       }
       
       /* CRT scanline effect */
@@ -660,7 +707,7 @@ const BitcoinMinuteRefresh = (function () {
         letter-spacing: 1px;
         opacity: 0.7;
         margin-left: 45px;
-        color: ${currentThemeColor};
+        color: var(--primary-color, ${theme.color});
       }
       
       #${DOM_IDS.MINIMIZED_UPTIME} {
@@ -855,9 +902,6 @@ const BitcoinMinuteRefresh = (function () {
         // Store the refresh callback
         refreshCallback = refreshFunc;
 
-        // Get current theme status
-        applyThemeColor();
-
         // Create the terminal element if it doesn't exist
         if (!document.getElementById(DOM_IDS.TERMINAL)) {
             createTerminalElement();
@@ -865,10 +909,10 @@ const BitcoinMinuteRefresh = (function () {
             // Get references to existing elements
             terminalElement = document.getElementById(DOM_IDS.TERMINAL);
             uptimeElement = document.getElementById('uptime-timer');
-
-            // Apply theme to existing element
-            applyThemeColor();
         }
+
+        // Apply theme colors
+        applyThemeColor();
 
         // Set up listener for theme changes
         setupThemeChangeListener();
@@ -923,6 +967,9 @@ const BitcoinMinuteRefresh = (function () {
             } catch (e) {
                 log("Error reading updated server time: " + e.message, 'error');
             }
+        } else if (event.key === STORAGE_KEYS.THEME) {
+            // Update theme when theme preference changes
+            applyThemeColor();
         }
     }
 
@@ -932,6 +979,9 @@ const BitcoinMinuteRefresh = (function () {
     function handleVisibilityChange() {
         if (!document.hidden) {
             log("Page became visible, updating");
+
+            // Apply current theme when page becomes visible
+            applyThemeColor();
 
             // Update immediately when page becomes visible
             updateClock();
@@ -989,6 +1039,11 @@ const BitcoinMinuteRefresh = (function () {
             showButton.textContent = 'Show Monitor';
             showButton.onclick = showTerminal;
             document.body.appendChild(showButton);
+
+            // Apply current theme to the button
+            const theme = getThemeColors();
+            showButton.style.backgroundColor = theme.color;
+            showButton.style.boxShadow = `0 0 10px rgba(${theme.rgb}, 0.5)`;
         }
 
         document.getElementById(DOM_IDS.SHOW_BUTTON).style.display = 'block';

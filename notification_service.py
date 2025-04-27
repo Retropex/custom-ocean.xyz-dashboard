@@ -330,12 +330,12 @@ class NotificationService:
         if older_than_days:
             cutoff_date = self._get_current_time() - timedelta(days=older_than_days)
         
-        # Apply filters in a single pass
+        # Apply filters to KEEP notifications that should NOT be cleared
         self.notifications = [
             n for n in self.notifications
-            if (not category or n.get("category") != category) and
-               (not cutoff_date or self._parse_timestamp(n.get("timestamp", self._get_current_time().isoformat())) >= cutoff_date) and
-               (not read_only or n.get("read", False) == False)  # Keep unread notifications when read_only=True
+            if (category and n.get("category") != category) or  # Keep if we're filtering by category and this isn't that category
+               (cutoff_date and self._parse_timestamp(n.get("timestamp", self._get_current_time().isoformat())) >= cutoff_date) or  # Keep if newer than cutoff
+               (read_only and not n.get("read", False))  # Keep if we're only clearing read notifications and this is unread
         ]
     
         cleared_count = original_count - len(self.notifications)

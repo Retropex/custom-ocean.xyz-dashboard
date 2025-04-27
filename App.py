@@ -1158,10 +1158,12 @@ def api_clear_notifications():
     """API endpoint to clear notifications."""
     category = request.json.get('category')
     older_than_days = request.json.get('older_than_days')
+    read_only = request.json.get('read_only', False)  # Get the read_only parameter with default False
     
     cleared_count = notification_service.clear_notifications(
         category=category,
-        older_than_days=older_than_days
+        older_than_days=older_than_days,
+        read_only=read_only  # Pass the parameter to the method
     )
     
     return jsonify({

@@ -312,35 +312,37 @@ class NotificationService:
         
         return deleted > 0
     
-    def clear_notifications(self, category: Optional[str] = None, older_than_days: Optional[int] = None) -> int:
+    def clear_notifications(self, category: Optional[str] = None, older_than_days: Optional[int] = None, read_only: bool = False) -> int:
         """
         Clear notifications with optimized filtering.
-        
+    
         Args:
             category (str, optional): Only clear specific category
             older_than_days (int, optional): Only clear notifications older than this
-            
+            read_only (bool, optional): Only clear notifications that have been read
+        
         Returns:
             int: Number of notifications cleared
         """
         original_count = len(self.notifications)
-        
+    
         cutoff_date = None
         if older_than_days:
             cutoff_date = self._get_current_time() - timedelta(days=older_than_days)
-            
+        
         # Apply filters in a single pass
         self.notifications = [
             n for n in self.notifications
             if (not category or n.get("category") != category) and
-               (not cutoff_date or self._parse_timestamp(n.get("timestamp", self._get_current_time().isoformat())) >= cutoff_date)
+               (not cutoff_date or self._parse_timestamp(n.get("timestamp", self._get_current_time().isoformat())) >= cutoff_date) and
+               (not read_only or n.get("read", False) == False)  # Keep unread notifications when read_only=True
         ]
-        
+    
         cleared_count = original_count - len(self.notifications)
         if cleared_count > 0:
             logging.info(f"[NotificationService] Cleared {cleared_count} notifications")
             self._save_notifications()
-        
+    
         return cleared_count
     
     def check_and_generate_notifications(self, current_metrics: Dict[str, Any], previous_metrics: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:

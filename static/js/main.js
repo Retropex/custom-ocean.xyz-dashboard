@@ -1515,16 +1515,19 @@ function updateChartWithNormalizedData(chart, data) {
     }
 }
 
-// Add a new helper function to calculate pool fees in SATS
-function calculatePoolFeeInSats(poolFeePercentage, estimatedEarningsPerDay) {
+// Modify the pool fee calculation to use actual last block earnings
+function calculatePoolFeeInSats(poolFeePercentage, lastBlockEarnings) {
     if (poolFeePercentage === undefined || poolFeePercentage === null ||
-        estimatedEarningsPerDay === undefined || estimatedEarningsPerDay === null) {
+        lastBlockEarnings === undefined || lastBlockEarnings === null) {
         return null;
     }
 
-    // Calculate how many SATS are taken as fees daily
+    // Log the raw values for debugging
+    console.log("Pool Fee %:", poolFeePercentage, "Last Block Earnings:", lastBlockEarnings);
+
+    // Calculate how many SATS were taken as fees from the last block
     // Pool fee is a percentage, so we divide by 100 to get the actual rate
-    const feeAmount = (poolFeePercentage / 100) * estimatedEarningsPerDay;
+    const feeAmount = (poolFeePercentage / 100) * lastBlockEarnings;
 
     // Return as a negative number since it represents a cost
     return -Math.round(feeAmount);
@@ -1753,10 +1756,13 @@ function updateUI() {
         }
 
         // Update pool fees in SATS (as negative value)
-        if (data.pool_fees_percentage !== undefined && data.estimated_earnings_per_day_sats !== undefined) {
+        if (data.pool_fees_percentage !== undefined && data.last_block_earnings !== undefined) {
+            // Parse the last_block_earnings (removing any "+" prefix if present)
+            const lastBlockEarnings = parseFloat(data.last_block_earnings.toString().replace(/^\+/, ''));
+
             const poolFeeSats = calculatePoolFeeInSats(
                 parseFloat(data.pool_fees_percentage),
-                parseFloat(data.estimated_earnings_per_day_sats)
+                lastBlockEarnings
             );
 
             // Find the pool_fees_percentage element

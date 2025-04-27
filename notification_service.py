@@ -447,38 +447,71 @@ class NotificationService:
         return 0.0
     
     def _check_hashrate_change(self, current: Dict[str, Any], previous: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Check for significant hashrate changes using 10-minute average."""
+        """Check for significant hashrate changes using appropriate time window based on mode."""
         try:
-            # Get 10min hashrate values
-            current_10min = current.get("hashrate_10min", 0)
-            previous_10min = previous.get("hashrate_10min", 0)
-    
-            # Log what we're comparing
-            logging.debug(f"[NotificationService] Comparing 10min hashrates - current: {current_10min}, previous: {previous_10min}")
-    
-            # Skip if values are missing
-            if not current_10min or not previous_10min:
-                logging.debug("[NotificationService] Skipping hashrate check - missing values")
-                return None
-    
-            # Parse values consistently
-            current_value = self._parse_numeric_value(current_10min)
-            previous_value = self._parse_numeric_value(previous_10min)
+            # Check if we're in low hashrate mode
+            # A simple threshold approach: if hashrate_3hr is below 1 TH/s, consider it low hashrate mode
+            is_low_hashrate_mode = False
+        
+            if "hashrate_3hr" in current:
+                current_3hr = self._parse_numeric_value(current.get("hashrate_3hr", 0))
+                current_3hr_unit = current.get("hashrate_3hr_unit", "TH/s").lower()
             
-            logging.debug(f"[NotificationService] Converted 10min hashrates - current: {current_value}, previous: {previous_value}")
-    
+                # Normalize to TH/s for comparison
+                if "ph/s" in current_3hr_unit:
+                    current_3hr *= 1000
+                elif "gh/s" in current_3hr_unit:
+                    current_3hr /= 1000
+                elif "mh/s" in current_3hr_unit:
+                    current_3hr /= 1000000
+            
+                # If hashrate is less than 3 TH/s, consider it low hashrate mode
+                is_low_hashrate_mode = current_3hr < 3.0
+            
+            logging.debug(f"[NotificationService] Low hashrate mode: {is_low_hashrate_mode}")
+        
+            # Choose the appropriate hashrate metric based on mode
+            if is_low_hashrate_mode:
+                # In low hashrate mode, use 3hr averages for more stability
+                current_hashrate_key = "hashrate_3hr"
+                previous_hashrate_key = "hashrate_3hr"
+                timeframe = "3hr"
+            else:
+                # In normal mode, use 10min averages for faster response
+                current_hashrate_key = "hashrate_10min"
+                previous_hashrate_key = "hashrate_10min"
+                timeframe = "10min"
+            
+            # Get hashrate values
+            current_hashrate = current.get(current_hashrate_key, 0)
+            previous_hashrate = previous.get(previous_hashrate_key, 0)
+
+            # Log what we're comparing
+            logging.debug(f"[NotificationService] Comparing {timeframe} hashrates - current: {current_hashrate}, previous: {previous_hashrate}")
+
+            # Skip if values are missing
+            if not current_hashrate or not previous_hashrate:
+                logging.debug(f"[NotificationService] Skipping hashrate check - missing {timeframe} values")
+                return None
+
+            # Parse values consistently
+            current_value = self._parse_numeric_value(current_hashrate)
+            previous_value = self._parse_numeric_value(previous_hashrate)
+        
+            logging.debug(f"[NotificationService] Converted {timeframe} hashrates - current: {current_value}, previous: {previous_value}")
+
             # Skip if previous was zero (prevents division by zero)
             if previous_value == 0:
-                logging.debug("[NotificationService] Skipping hashrate check - previous was zero")
+                logging.debug(f"[NotificationService] Skipping hashrate check - previous {timeframe} was zero")
                 return None
-        
+    
             # Calculate percentage change
             percent_change = ((current_value - previous_value) / previous_value) * 100
-            logging.debug(f"[NotificationService] 10min hashrate change: {percent_change:.1f}%")
-    
+            logging.debug(f"[NotificationService] {timeframe} hashrate change: {percent_change:.1f}%")
+
             # Significant decrease
             if percent_change <= -SIGNIFICANT_HASHRATE_CHANGE_PERCENT:
-                message = f"Significant 10min hashrate drop detected: {abs(percent_change):.1f}% decrease"
+                message = f"Significant {timeframe} hashrate drop detected: {abs(percent_change):.1f}% decrease"
                 logging.info(f"[NotificationService] Generating hashrate notification: {message}")
                 return self.add_notification(
                     message,
@@ -488,13 +521,14 @@ class NotificationService:
                         "previous": previous_value,
                         "current": current_value,
                         "change": percent_change,
-                        "timeframe": "10min"
+                        "timeframe": timeframe,
+                        "is_low_hashrate_mode": is_low_hashrate_mode
                     }
                 )
-    
+
             # Significant increase
             elif percent_change >= SIGNIFICANT_HASHRATE_CHANGE_PERCENT:
-                message = f"10min hashrate increase detected: {percent_change:.1f}% increase"
+                message = f"{timeframe} hashrate increase detected: {percent_change:.1f}% increase"
                 logging.info(f"[NotificationService] Generating hashrate notification: {message}")
                 return self.add_notification(
                     message,
@@ -504,10 +538,11 @@ class NotificationService:
                         "previous": previous_value,
                         "current": current_value,
                         "change": percent_change,
-                        "timeframe": "10min"
+                        "timeframe": timeframe,
+                        "is_low_hashrate_mode": is_low_hashrate_mode
                     }
                 )
-    
+
             return None
         except Exception as e:
             logging.error(f"[NotificationService] Error checking hashrate change: {e}")

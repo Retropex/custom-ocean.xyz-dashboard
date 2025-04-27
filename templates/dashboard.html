@@ -56,15 +56,18 @@
             <div class="card-header">Payout Info</div>
             <div class="card-body">
                 <p>
-                    <strong>Unpaid Earnings:</strong>
-                    <span id="unpaid_earnings" class="metric-value green">
-                        {% if metrics and metrics.unpaid_earnings %}
-                        {{ metrics.unpaid_earnings }} BTC
+                    <strong>Pool Fees:</strong>
+                    <span id="pool_fees_percentage" class="metric-value">
+                        {% if metrics and metrics.pool_fees_percentage is defined and metrics.pool_fees_percentage is not none %}
+                        {{ metrics.pool_fees_percentage }}%
+                        {% if metrics.pool_fees_percentage is not none and metrics.pool_fees_percentage >= 0.9 and metrics.pool_fees_percentage <= 1.3 %}
+                        <span class="fee-star">★</span> <span class="datum-label">DATUM</span> <span class="fee-star">★</span>
+                        {% endif %}
                         {% else %}
-                        0 BTC
+                        N/A
                         {% endif %}
                     </span>
-                    <span id="indicator_unpaid_earnings"></span>
+                    <span id="indicator_pool_fees_percentage"></span>
                 </p>
                 <p>
                     <strong>Last Block:</strong>
@@ -86,25 +89,22 @@
                     <span id="indicator_last_block"></span>
                 </p>
                 <p>
+                    <strong>Unpaid Earnings:</strong>
+                    <span id="unpaid_earnings" class="metric-value green">
+                        {% if metrics and metrics.unpaid_earnings %}
+                        {{ metrics.unpaid_earnings }} BTC
+                        {% else %}
+                        0 BTC
+                        {% endif %}
+                    </span>
+                    <span id="indicator_unpaid_earnings"></span>
+                </p>
+                <p>
                     <strong>Est. Time to Payout:</strong>
                     <span id="est_time_to_payout" class="metric-value yellow">
                         {{ metrics.est_time_to_payout if metrics and metrics.est_time_to_payout else "N/A" }}
                     </span>
                     <span id="indicator_est_time_to_payout"></span>
-                </p>
-                <p>
-                    <strong>Pool Fees:</strong>
-                    <span id="pool_fees_percentage" class="metric-value">
-                        {% if metrics and metrics.pool_fees_percentage is defined and metrics.pool_fees_percentage is not none %}
-                        {{ metrics.pool_fees_percentage }}%
-                        {% if metrics.pool_fees_percentage is not none and metrics.pool_fees_percentage >= 0.9 and metrics.pool_fees_percentage <= 1.3 %}
-                        <span class="fee-star">★</span> <span class="datum-label">DATUM</span> <span class="fee-star">★</span>
-                        {% endif %}
-                        {% else %}
-                        N/A
-                        {% endif %}
-                    </span>
-                    <span id="indicator_pool_fees_percentage"></span>
                 </p>
             </div>
         </div>

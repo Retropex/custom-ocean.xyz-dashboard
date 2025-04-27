@@ -1130,6 +1130,7 @@ function showCongrats(message) {
 
 // Enhanced Chart Update Function to handle temporary hashrate spikes
 // Modified the updateChartWithNormalizedData function to ensure the 24hr avg line is visible in low hashrate mode
+// Enhanced Chart Update Function with localStorage persistence
 function updateChartWithNormalizedData(chart, data) {
     if (!chart || !data) {
         console.warn("Cannot update chart - chart or data is null");
@@ -1137,143 +1138,171 @@ function updateChartWithNormalizedData(chart, data) {
     }
 
     try {
-        // Process and validate 24hr average line data
-        let normalizedAvg = 0;
-        try {
-            const avg24hr = parseFloat(data.hashrate_24hr || 0);
-            const avg24hrUnit = data.hashrate_24hr_unit ? data.hashrate_24hr_unit.toLowerCase() : 'th/s';
-            normalizedAvg = normalizeHashrate(avg24hr, avg24hrUnit);
+        // Try to load lowHashrate state from localStorage first
+        const storedLowHashrateState = localStorage.getItem('lowHashrateState');
 
-            // Sanity check - if the value seems unreasonable, log a warning
-            if (normalizedAvg > 100000) { // Extremely large value (100,000+ TH/s)
-                console.warn(`WARNING: 24hr avg hashrate seems unreasonably high: ${normalizedAvg} TH/s`);
-                console.warn(`Original value: ${avg24hr} ${avg24hrUnit}`);
-            }
-        } catch (err) {
-            console.error("Error processing 24hr avg hashrate:", err);
-            normalizedAvg = 0;
-        }
-
-        // Update the 24HR AVG line annotation if available
-        if (!isNaN(normalizedAvg) &&
-            chart.options.plugins.annotation &&
-            chart.options.plugins.annotation.annotations &&
-            chart.options.plugins.annotation.annotations.averageLine) {
-            const annotation = chart.options.plugins.annotation.annotations.averageLine;
-            annotation.yMin = normalizedAvg;
-            annotation.yMax = normalizedAvg;
-
-            // Use the formatting function already available to ensure consistent units
-            const formattedAvg = formatHashrateForDisplay(normalizedAvg);
-            annotation.label.content = '24HR AVG: ' + formattedAvg.toUpperCase();
-        }
-
-        // Process and validate current hashrates with better error handling
-        let normalizedHashrate60sec = 0;
-        let normalizedHashrate3hr = 0;
-
-        try {
-            const hashrate60sec = parseFloat(data.hashrate_60sec || 0);
-            const hashrate60secUnit = data.hashrate_60sec_unit ? data.hashrate_60sec_unit.toLowerCase() : 'th/s';
-            normalizedHashrate60sec = normalizeHashrate(hashrate60sec, hashrate60secUnit);
-
-            const hashrate3hr = parseFloat(data.hashrate_3hr || 0);
-            const hashrate3hrUnit = data.hashrate_3hr_unit ? data.hashrate_3hr_unit.toLowerCase() : 'th/s';
-            normalizedHashrate3hr = normalizeHashrate(hashrate3hr, hashrate3hrUnit);
-
-            // Check for inconsistency between 60sec and 3hr values (could indicate unit issues)
-            const ratioThreshold = 100; // Maximum reasonable difference
-            if (normalizedHashrate60sec > 0 && normalizedHashrate3hr > 0) {
-                const ratio = Math.max(
-                    normalizedHashrate60sec / normalizedHashrate3hr,
-                    normalizedHashrate3hr / normalizedHashrate60sec
-                );
-
-                if (ratio > ratioThreshold) {
-                    console.warn(`WARNING: Large discrepancy between 60sec and 3hr hashrates. Possible unit error!`);
-                    console.warn(`60sec: ${hashrate60sec} ${hashrate60secUnit} → ${normalizedHashrate60sec} TH/s`);
-                    console.warn(`3hr: ${hashrate3hr} ${hashrate3hrUnit} → ${normalizedHashrate3hr} TH/s`);
-                    console.warn(`Ratio: ${ratio.toFixed(2)}x difference`);
-                }
-            }
-        } catch (err) {
-            console.error("Error processing current hashrates:", err);
-        }
-
-        // Add persistence for mode switching with debounce
-        // Initialize mode state if not already present
+        // Initialize mode state by combining stored state with defaults
         if (!chart.lowHashrateState) {
-            chart.lowHashrateState = {
+            const defaultState = {
                 isLowHashrateMode: false,
                 highHashrateSpikeTime: 0,
+                spikeCount: 0,
                 lowHashrateConfirmTime: 0,
-                modeSwitchTimeoutId: null
+                modeSwitchTimeoutId: null,
+                lastModeChange: 0,
+                stableModePeriod: 600000
             };
+
+            // If we have stored state, use it
+            if (storedLowHashrateState) {
+                try {
+                    const parsedState = JSON.parse(storedLowHashrateState);
+                    chart.lowHashrateState = {
+                        ...defaultState,
+                        ...parsedState,
+                        // Reset any volatile state that shouldn't persist
+                        highHashrateSpikeTime: parsedState.highHashrateSpikeTime || 0,
+                        modeSwitchTimeoutId: null
+                    };
+                    console.log("Restored low hashrate mode from localStorage:", chart.lowHashrateState.isLowHashrateMode);
+                } catch (e) {
+                    console.error("Error parsing stored low hashrate state:", e);
+                    chart.lowHashrateState = defaultState;
+                }
+            } else {
+                chart.lowHashrateState = defaultState;
+            }
         }
 
-        // Choose which hashrate average to display based on device characteristics,
-        // with hysteresis to prevent rapid mode switching
+        // Get values with enhanced stability
         let useHashrate3hr = false;
         const currentTime = Date.now();
         const LOW_HASHRATE_THRESHOLD = 0.01; // TH/s 
-        const HIGH_HASHRATE_THRESHOLD = 2.0; // TH/s
-        const MODE_SWITCH_DELAY = 60000; // 60 seconds delay before switching back to normal mode after spike
+        const HIGH_HASHRATE_THRESHOLD = 20.0; // TH/s
+        const MODE_SWITCH_DELAY = 120000;     // Increase to 2 minutes for more stability
+        const CONSECUTIVE_SPIKES_THRESHOLD = 3; // Increase to require more consistent high readings
+        const MIN_MODE_STABILITY_TIME = 120000; // 2 minutes minimum between mode switches
+
+        // Check if we changed modes recently - enforce a minimum stability period
+        const timeSinceLastModeChange = currentTime - chart.lowHashrateState.lastModeChange;
+        const enforceStabilityPeriod = timeSinceLastModeChange < MIN_MODE_STABILITY_TIME;
+
+        // IMPORTANT: Calculate normalized hashrate values 
+        const normalizedHashrate60sec = normalizeHashrate(data.hashrate_60sec || 0, data.hashrate_60sec_unit || 'th/s');
+        const normalizedHashrate3hr = normalizeHashrate(data.hashrate_3hr || 0, data.hashrate_3hr_unit || 'th/s');
+        const normalizedAvg = normalizeHashrate(data.hashrate_24hr || 0, data.hashrate_24hr_unit || 'th/s');
+
+        // First check if we should use 3hr data based on the stored state
+        useHashrate3hr = chart.lowHashrateState.isLowHashrateMode;
 
         // Case 1: Currently in low hashrate mode
         if (chart.lowHashrateState.isLowHashrateMode) {
-            // If 60sec hashrate suddenly spikes above threshold
-            if (normalizedHashrate60sec >= HIGH_HASHRATE_THRESHOLD) {
-                // Record the spike time if not already recorded
+            // Default to staying in low hashrate mode
+            useHashrate3hr = true;
+
+            // If we're enforcing stability, don't even check for mode change
+            if (!enforceStabilityPeriod && normalizedHashrate60sec >= HIGH_HASHRATE_THRESHOLD) {
+                // Only track spikes if we aren't in stability enforcement period
                 if (!chart.lowHashrateState.highHashrateSpikeTime) {
                     chart.lowHashrateState.highHashrateSpikeTime = currentTime;
                     console.log("High hashrate spike detected in low hashrate mode");
                 }
 
-                // Don't switch modes immediately - check if spike has persisted
+                // Increment spike counter
+                chart.lowHashrateState.spikeCount++;
+                console.log(`Spike count: ${chart.lowHashrateState.spikeCount}/${CONSECUTIVE_SPIKES_THRESHOLD}`);
+
+                // Check if spikes have persisted long enough
                 const spikeElapsedTime = currentTime - chart.lowHashrateState.highHashrateSpikeTime;
 
-                // If the spike has persisted for longer than our delay, switch to normal mode
-                if (spikeElapsedTime > MODE_SWITCH_DELAY) {
+                if (chart.lowHashrateState.spikeCount >= CONSECUTIVE_SPIKES_THRESHOLD &&
+                    spikeElapsedTime > MODE_SWITCH_DELAY) {
                     useHashrate3hr = false;
                     chart.lowHashrateState.isLowHashrateMode = false;
                     chart.lowHashrateState.highHashrateSpikeTime = 0;
+                    chart.lowHashrateState.spikeCount = 0;
+                    chart.lowHashrateState.lastModeChange = currentTime;
                     console.log("Exiting low hashrate mode after sustained high hashrate");
+
+                    // Save state changes to localStorage
+                    saveLowHashrateState(chart.lowHashrateState);
                 } else {
-                    // Spike not persistent enough yet, stay in low hashrate mode
-                    useHashrate3hr = true;
-                    console.log(`Remaining in low hashrate mode despite spike (waiting: ${Math.round(spikeElapsedTime / 1000)}/${MODE_SWITCH_DELAY / 1000}s)`);
+                    console.log(`Remaining in low hashrate mode despite spike (waiting: ${Math.round(spikeElapsedTime / 1000)}/${MODE_SWITCH_DELAY / 1000}s, count: ${chart.lowHashrateState.spikeCount}/${CONSECUTIVE_SPIKES_THRESHOLD})`);
                 }
             } else {
-                // Reset spike timer if hashrate dropped back down
-                if (chart.lowHashrateState.highHashrateSpikeTime) {
-                    console.log("Hashrate spike ended, resetting timer");
-                    chart.lowHashrateState.highHashrateSpikeTime = 0;
-                }
+                // Don't reset counters immediately on every drop - make the counter more persistent
+                if (chart.lowHashrateState.spikeCount > 0 && normalizedHashrate60sec < HIGH_HASHRATE_THRESHOLD) {
+                    // Don't reset immediately, use a gradual decay approach
+                    if (Math.random() < 0.2) { // 20% chance to decrement counter each update
+                        chart.lowHashrateState.spikeCount--;
+                        console.log("Spike counter decayed to:", chart.lowHashrateState.spikeCount);
 
-                // Continue using 3hr average in low hashrate mode
-                useHashrate3hr = true;
+                        // Save state changes to localStorage
+                        saveLowHashrateState(chart.lowHashrateState);
+                    }
+                }
             }
         }
         // Case 2: Currently in normal mode
         else {
-            // Switch to low hashrate mode if:
-            // 1. 60sec average is near zero (appears offline) AND
-            // 2. 3hr average shows actual mining activity
-            if (normalizedHashrate60sec < LOW_HASHRATE_THRESHOLD && normalizedHashrate3hr > LOW_HASHRATE_THRESHOLD) {
+            // Default to staying in normal mode
+            useHashrate3hr = false;
+
+            // Don't switch to low hashrate mode immediately if we recently switched modes
+            if (!enforceStabilityPeriod && normalizedHashrate60sec < LOW_HASHRATE_THRESHOLD && normalizedHashrate3hr > LOW_HASHRATE_THRESHOLD) {
                 // Record when low hashrate condition was first observed
                 if (!chart.lowHashrateState.lowHashrateConfirmTime) {
                     chart.lowHashrateState.lowHashrateConfirmTime = currentTime;
                     console.log("Low hashrate condition detected");
+
+                    // Save state changes to localStorage
+                    saveLowHashrateState(chart.lowHashrateState);
                 }
 
-                // Immediately switch to low hashrate mode
-                useHashrate3hr = true;
-                chart.lowHashrateState.isLowHashrateMode = true;
-                console.log("Entering low hashrate mode");
+                // Require at least 60 seconds of low hashrate before switching modes
+                const lowHashrateTime = currentTime - chart.lowHashrateState.lowHashrateConfirmTime;
+                if (lowHashrateTime > 60000) { // 1 minute
+                    useHashrate3hr = true;
+                    chart.lowHashrateState.isLowHashrateMode = true;
+                    chart.lowHashrateState.lastModeChange = currentTime;
+                    console.log("Entering low hashrate mode after persistent low hashrate condition");
+
+                    // Save state changes to localStorage
+                    saveLowHashrateState(chart.lowHashrateState);
+                } else {
+                    console.log(`Low hashrate detected but waiting for persistence: ${Math.round(lowHashrateTime / 1000)}/60s`);
+                }
             } else {
-                // Reset low hashrate confirmation timer
-                chart.lowHashrateState.lowHashrateConfirmTime = 0;
-                useHashrate3hr = false;
+                // Only reset the confirmation timer if we've been above threshold consistently
+                if (chart.lowHashrateState.lowHashrateConfirmTime &&
+                    currentTime - chart.lowHashrateState.lowHashrateConfirmTime > 30000) { // 30 seconds above threshold
+                    chart.lowHashrateState.lowHashrateConfirmTime = 0;
+                    console.log("Low hashrate condition cleared after consistent normal hashrate");
+
+                    // Save state changes to localStorage
+                    saveLowHashrateState(chart.lowHashrateState);
+                } else if (chart.lowHashrateState.lowHashrateConfirmTime) {
+                    console.log("Brief hashrate spike, maintaining low hashrate detection timer");
+                }
+            }
+        }
+
+        // Helper function to save lowHashrateState to localStorage
+        function saveLowHashrateState(state) {
+            try {
+                // Create a clean copy without circular references or functions
+                const stateToSave = {
+                    isLowHashrateMode: state.isLowHashrateMode,
+                    highHashrateSpikeTime: state.highHashrateSpikeTime,
+                    spikeCount: state.spikeCount,
+                    lowHashrateConfirmTime: state.lowHashrateConfirmTime,
+                    lastModeChange: state.lastModeChange,
+                    stableModePeriod: state.stableModePeriod
+                };
+                localStorage.setItem('lowHashrateState', JSON.stringify(stateToSave));
+                console.log("Saved low hashrate state:", state.isLowHashrateMode);
+            } catch (e) {
+                console.error("Error saving low hashrate state to localStorage:", e);
             }
         }
 
@@ -1281,11 +1310,21 @@ function updateChartWithNormalizedData(chart, data) {
         if (data.arrow_history && data.arrow_history.hashrate_60sec) {
             // Validate history data
             try {
-                console.log("History data received:", data.arrow_history.hashrate_60sec);
+                // Log 60sec data
+                console.log("60sec history data received:", data.arrow_history.hashrate_60sec);
+
+                // Also log 3hr data if available
+                if (data.arrow_history.hashrate_3hr) {
+                    console.log("3hr history data received:", data.arrow_history.hashrate_3hr);
+                } else {
+                    console.log("3hr history data not available in API response");
+                }
 
                 // If we're using 3hr average, try to use that history if available
                 const historyData = useHashrate3hr && data.arrow_history.hashrate_3hr ?
                     data.arrow_history.hashrate_3hr : data.arrow_history.hashrate_60sec;
+
+                console.log("Using history data:", useHashrate3hr ? "3hr data" : "60sec data");
 
                 if (historyData && historyData.length > 0) {
                     // Format time labels
@@ -1395,15 +1434,52 @@ function updateChartWithNormalizedData(chart, data) {
 
                         // Set appropriate step size based on range
                         const range = chart.options.scales.y.max - chart.options.scales.y.min;
-                        if (range > 1000) {
-                            chart.options.scales.y.ticks.stepSize = 500;
-                        } else if (range > 100) {
-                            chart.options.scales.y.ticks.stepSize = 50;
-                        } else if (range > 10) {
-                            chart.options.scales.y.ticks.stepSize = 5;
+
+                        // Calculate an appropriate stepSize that won't exceed Chart.js tick limits
+                        // Aim for approximately 5-10 ticks (Chart.js recommends ~5-6 ticks for readability)
+                        let stepSize;
+                        const targetTicks = 6;  // Target number of ticks we want to display
+
+                        if (range <= 0.1) {
+                            // For very small ranges (< 0.1 TH/s)
+                            stepSize = 0.01;
+                        } else if (range <= 1) {
+                            // For small ranges (0.1 - 1 TH/s)
+                            stepSize = 0.1;
+                        } else if (range <= 10) {
+                            // For medium ranges (1 - 10 TH/s)
+                            stepSize = 1;
+                        } else if (range <= 50) {
+                            stepSize = 5;
+                        } else if (range <= 100) {
+                            stepSize = 10;
+                        } else if (range <= 500) {
+                            stepSize = 50;
+                        } else if (range <= 1000) {
+                            stepSize = 100;
+                        } else if (range <= 5000) {
+                            stepSize = 500;
                         } else {
-                            chart.options.scales.y.ticks.stepSize = 1;
+                            // For very large ranges, calculate stepSize that will produce ~targetTicks ticks
+                            stepSize = Math.ceil(range / targetTicks);
+
+                            // Round to a nice number (nearest power of 10 multiple)
+                            const magnitude = Math.pow(10, Math.floor(Math.log10(stepSize)));
+                            stepSize = Math.ceil(stepSize / magnitude) * magnitude;
+
+                            // Safety check for extremely large ranges
+                            if (range / stepSize > 1000) {
+                                console.warn(`Y-axis range (${range.toFixed(2)}) requires extremely large stepSize. 
+                                             Adjusting to limit ticks to 1000.`);
+                                stepSize = Math.ceil(range / 1000);
+                            }
                         }
+
+                        // Set the calculated stepSize
+                        chart.options.scales.y.ticks.stepSize = stepSize;
+
+                        // Log the chosen stepSize for debugging
+                        console.log(`Y-axis range: ${range.toFixed(2)}, using stepSize: ${stepSize}`);
                     }
                 } else {
                     console.warn("No valid history data items available");
@@ -1506,6 +1582,31 @@ function updateChartWithNormalizedData(chart, data) {
             }
         } else if (chart.lowHashrateIndicator) {
             chart.lowHashrateIndicator.style.display = 'none';
+        }
+
+        // UPDATE THE 24HR AVERAGE LINE ANNOTATION - THIS WAS MISSING
+        if (chart.options && chart.options.plugins && chart.options.plugins.annotation &&
+            chart.options.plugins.annotation.annotations && chart.options.plugins.annotation.annotations.averageLine) {
+
+            // Get current theme for styling
+            const theme = getCurrentTheme();
+
+            // Update the position of the average line to match the 24hr hashrate
+            chart.options.plugins.annotation.annotations.averageLine.yMin = normalizedAvg;
+            chart.options.plugins.annotation.annotations.averageLine.yMax = normalizedAvg;
+
+            // Update the annotation label
+            const formattedAvg = formatHashrateForDisplay(data.hashrate_24hr, data.hashrate_24hr_unit);
+            chart.options.plugins.annotation.annotations.averageLine.label.content =
+                `24HR AVG: ${formattedAvg}`;
+
+            // Set the color based on current theme
+            chart.options.plugins.annotation.annotations.averageLine.borderColor = theme.CHART.ANNOTATION;
+            chart.options.plugins.annotation.annotations.averageLine.label.color = theme.CHART.ANNOTATION;
+
+            console.log(`Updated 24hr average line: ${normalizedAvg.toFixed(2)} TH/s`);
+        } else {
+            console.warn("Chart annotation plugin not properly configured");
         }
 
         // Finally update the chart with a safe non-animating update
@@ -2304,6 +2405,111 @@ function resetWalletAddressOnly() {
         });
 }
 
+// Function to show a helpful notification to the user about hashrate normalization
+function showHashrateNormalizeNotice() {
+    // Only show if the notification doesn't already exist on the page
+    if ($("#hashrateNormalizeNotice").length === 0) {
+        const theme = getCurrentTheme();
+
+        // Create notification element with theme-appropriate styling
+        const notice = $(`
+            <div id="hashrateNormalizeNotice" style="
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                background-color: rgba(0, 0, 0, 0.85);
+                color: ${theme.PRIMARY};
+                border: 1px solid ${theme.PRIMARY};
+                padding: 15px 20px;
+                border-radius: 4px;
+                z-index: 9999;
+                max-width: 300px;
+                font-family: 'VT323', monospace;
+                font-size: 16px;
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            ">
+                <div style="display: flex; align-items: flex-start;">
+                    <div style="margin-right: 10px;">
+                        <i class="fas fa-chart-line" style="font-size: 22px;"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">Hashrate Chart Notice</div>
+                        <div>Please wait 2-3 minutes for the chart to collect data and normalize for your hashrate pattern.</div>
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button id="hashrateNoticeClose" style="
+                        background: none; 
+                        border: none; 
+                        color: ${theme.PRIMARY}; 
+                        cursor: pointer;
+                        font-family: inherit;
+                        text-decoration: underline;
+                    ">Dismiss</button>
+                    <label style="margin-left: 10px;">
+                        <input type="checkbox" id="dontShowAgain" style="vertical-align: middle;"> 
+                        <span style="font-size: 0.8em; vertical-align: middle;">Don't show again</span>
+                    </label>
+                </div>
+            </div>
+        `);
+
+        // Add to body and handle close button
+        $("body").append(notice);
+
+        // Handler for the close button
+        $("#hashrateNoticeClose").on("click", function () {
+            // Check if "Don't show again" is checked
+            if ($("#dontShowAgain").is(":checked")) {
+                // Remember permanently in localStorage
+                localStorage.setItem('hideHashrateNotice', 'true');
+                console.log("User chose to permanently hide hashrate notice");
+            } else {
+                // Only remember for this session
+                sessionStorage.setItem('hideHashrateNoticeSession', 'true');
+                console.log("User dismissed hashrate notice for this session");
+            }
+
+            // Hide and remove the notice
+            $("#hashrateNormalizeNotice").fadeOut(300, function () {
+                $(this).remove();
+            });
+        });
+
+        // Auto-hide after 60 seconds
+        setTimeout(function () {
+            if ($("#hashrateNormalizeNotice").length) {
+                $("#hashrateNormalizeNotice").fadeOut(500, function () {
+                    $(this).remove();
+                });
+            }
+        }, 60000); // Changed to 60 seconds for better visibility
+    }
+}
+
+// Helper function to check if we should show the notice (call this during page initialization)
+function checkAndShowHashrateNotice() {
+    // Check if user has permanently hidden the notice
+    const permanentlyHidden = localStorage.getItem('hideHashrateNotice') === 'true';
+
+    // Check if user has hidden the notice for this session
+    const sessionHidden = sessionStorage.getItem('hideHashrateNoticeSession') === 'true';
+
+    // Also check low hashrate mode state (to potentially show a different message)
+    const inLowHashrateMode = localStorage.getItem('lowHashrateState') ?
+        JSON.parse(localStorage.getItem('lowHashrateState')).isLowHashrateMode : false;
+
+    if (!permanentlyHidden && !sessionHidden) {
+        // Show the notice with a short delay to ensure the page is fully loaded
+        setTimeout(function () {
+            showHashrateNormalizeNotice();
+        }, 2000);
+    } else {
+        console.log("Hashrate notice will not be shown: permanently hidden = " +
+            permanentlyHidden + ", session hidden = " + sessionHidden);
+    }
+}
+
 $(document).ready(function () {
     // Apply theme based on stored preference - moved to beginning for better initialization
     try {
@@ -2539,6 +2745,13 @@ $(document).ready(function () {
                         }
                     };
 
+                    // No need to create a copy of lowHashrateState here, 
+                    // as we'll load it from localStorage after chart recreation
+
+                    // Save the low hashrate indicator element if it exists
+                    const wasInLowHashrateMode = trendChart.lowHashrateState &&
+                        trendChart.lowHashrateState.isLowHashrateMode;
+
                     // Check if we're on mobile (viewport width < 768px)
                     const isMobile = window.innerWidth < 768;
 
@@ -2550,6 +2763,8 @@ $(document).ready(function () {
                     // Recreate the chart with new theme colors
                     trendChart.destroy();
                     trendChart = initializeChart();
+
+                    // The state will be automatically loaded from localStorage in updateChartWithNormalizedData
 
                     // Ensure font sizes are explicitly set to original values
                     // This is especially important for mobile
@@ -2672,6 +2887,33 @@ $(document).ready(function () {
 
     // Call this function
     fixLastBlockLine();
+
+    // Check if we should show the hashrate normalization notice
+    checkAndShowHashrateNotice();
+
+    // Also show notice when entering low hashrate mode for the first time in a session
+    // Track when we enter low hashrate mode to show specialized notification
+    const originalUpdateChartWithNormalizedData = updateChartWithNormalizedData;
+    window.updateChartWithNormalizedData = function (chart, data) {
+        const wasInLowHashrateMode = chart && chart.lowHashrateState &&
+            chart.lowHashrateState.isLowHashrateMode;
+
+        // Call original function
+        originalUpdateChartWithNormalizedData(chart, data);
+
+        // Check if we just entered low hashrate mode
+        if (chart && chart.lowHashrateState &&
+            chart.lowHashrateState.isLowHashrateMode && !wasInLowHashrateMode) {
+
+            console.log("Entered low hashrate mode - showing notification");
+
+            // Show the notice if it hasn't been permanently hidden
+            if (localStorage.getItem('hideHashrateNotice') !== 'true' &&
+                !$("#hashrateNormalizeNotice").length) {
+                showHashrateNormalizeNotice();
+            }
+        }
+    };
 
     // Load timezone setting early
     (function loadTimezoneEarly() {

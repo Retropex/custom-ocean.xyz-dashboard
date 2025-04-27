@@ -1,14 +1,17 @@
-# notification_service.py
+﻿# notification_service.py
 import logging
 import json
 import time
 import uuid
 import pytz
+import re
 from datetime import datetime, timedelta
 from enum import Enum
 from collections import deque
 from typing import List, Dict, Any, Optional, Union
-from config import get_timezone
+from config import get_timezone, load_config
+
+from data_service import MiningDashboardService
 
 # Constants to replace magic values
 ONE_DAY_SECONDS = 86400
@@ -28,6 +31,52 @@ class NotificationCategory(Enum):
     WORKER = "worker"
     EARNINGS = "earnings"
     SYSTEM = "system"
+
+# Currency utility functions
+def get_currency_symbol(currency):
+    """Return symbol for the specified currency"""
+    symbols = {
+        'USD': '$', 
+        'EUR': '€', 
+        'GBP': '£', 
+        'JPY': '¥',
+        'CAD': 'CA$', 
+        'AUD': 'A$', 
+        'CNY': '¥', 
+        'KRW': '₩',
+        'BRL': 'R$', 
+        'CHF': 'Fr'
+    }
+    return symbols.get(currency, '$')
+
+def format_currency_value(value, currency, exchange_rates):
+    """Format a USD value in the selected currency"""
+    if value is None or value == "N/A":
+        return "N/A"
+        
+    # Get exchange rate (default to 1.0 if not found)
+    exchange_rate = exchange_rates.get(currency, 1.0)
+    converted_value = value * exchange_rate
+    
+    # Get currency symbol
+    symbol = get_currency_symbol(currency)
+    
+    # Format with or without decimals based on currency
+    if currency in ['JPY', 'KRW']:
+        return f"{symbol}{int(converted_value):,}"
+    else:
+        return f"{symbol}{converted_value:.2f}"
+
+def get_exchange_rates():
+    """Get exchange rates with caching"""
+    try:
+        # Create a dashboard service instance for fetching exchange rates
+        dashboard_service = MiningDashboardService(0, 0, "", 0)
+        exchange_rates = dashboard_service.fetch_exchange_rates()
+        return exchange_rates
+    except Exception as e:
+        logging.error(f"Error fetching exchange rates for notifications: {e}")
+        return {}  # Return empty dict if failed
 
 class NotificationService:
     """Service for managing mining dashboard notifications."""
@@ -312,6 +361,11 @@ class NotificationService:
             if not current_metrics:
                 logging.warning("[NotificationService] No current metrics available, skipping notification checks")
                 return new_notifications
+
+            # Skip notification generation after configuration reset
+            if current_metrics.get("wallet") == "yourwallethere" or current_metrics.get("config_reset", False):
+                logging.info("[NotificationService] Configuration reset detected, skipping all notifications")
+                return new_notifications
         
             # Check for block updates (using persistent storage)
             last_block_height = current_metrics.get("last_block_height")
@@ -384,12 +438,22 @@ class NotificationService:
             hashrate_24hr = metrics.get("hashrate_24hr", 0)
             hashrate_unit = metrics.get("hashrate_24hr_unit", "TH/s")
             
-            # Format daily earnings
+            # Format daily earnings with user's currency
             daily_mined_sats = metrics.get("daily_mined_sats", 0)
             daily_profit_usd = metrics.get("daily_profit_usd", 0)
+
+            # Get user's currency preference
+            config = load_config()
+            user_currency = config.get("currency", "USD")
+            
+            # Get exchange rates
+            exchange_rates = get_exchange_rates()
+            
+            # Format with the user's currency
+            formatted_profit = format_currency_value(daily_profit_usd, user_currency, exchange_rates)
             
             # Build message
-            message = f"Daily Mining Summary: {hashrate_24hr} {hashrate_unit} average hashrate, {daily_mined_sats} SATS mined (${daily_profit_usd:.2f})"
+            message = f"Daily Mining Summary: {hashrate_24hr} {hashrate_unit} average hashrate, {daily_mined_sats} SATS mined ({formatted_profit})"
             
             # Add notification
             logging.info(f"[NotificationService] Generating daily stats notification: {message}")
@@ -401,7 +465,8 @@ class NotificationService:
                     "hashrate": hashrate_24hr,
                     "unit": hashrate_unit,
                     "daily_sats": daily_mined_sats,
-                    "daily_profit": daily_profit_usd
+                    "daily_profit": daily_profit_usd,
+                    "currency": user_currency
                 }
             )
         except Exception as e:
@@ -551,8 +616,20 @@ class NotificationService:
     def _check_earnings_progress(self, current: Dict[str, Any], previous: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Check for significant earnings progress or payout approach."""
         try:
+            # First check for configuration reset via Alt+W (this is a more robust check)
+            # This specifically looks for the default "yourwallethere" wallet which indicates Alt+W was used
+            current_wallet = str(current.get("wallet", ""))
+            if current_wallet == "yourwallethere":
+                logging.info("[NotificationService] Detected wallet reset to default (likely Alt+W) - skipping payout notification")
+                return None
+
+            # Check if ANY config value changed that might affect balance
+            if self._is_configuration_change_affecting_balance(current, previous):
+                logging.info("[NotificationService] Configuration change detected - skipping payout notification")
+                return None
+
             current_unpaid = self._parse_numeric_value(current.get("unpaid_earnings", "0"))
-            
+        
             # Check if approaching payout
             if current.get("est_time_to_payout"):
                 est_time = current.get("est_time_to_payout")
@@ -604,6 +681,24 @@ class NotificationService:
         except Exception as e:
             logging.error(f"[NotificationService] Error checking earnings progress: {e}")
             return None
+
+    def _is_configuration_change_affecting_balance(self, current: Dict[str, Any], previous: Dict[str, Any]) -> bool:
+        """Check if any configuration changed that would affect balance calculations."""
+        # Check wallet
+        if "wallet" in current and "wallet" in previous:
+            if current.get("wallet") != previous.get("wallet"):
+                return True
+            
+        # Check currency
+        if "currency" in current and "currency" in previous:
+            if current.get("currency") != previous.get("currency"):
+                return True
+            
+        # Check for emergency reset flag
+        if current.get("config_reset", False):
+            return True
+            
+        return False
 
     def _should_send_payout_notification(self) -> bool:
         """Check if enough time has passed since the last payout notification."""

@@ -367,12 +367,25 @@ def update_metrics_job(force=False):
             metrics = dashboard_service.fetch_metrics()
             if metrics:
                 logging.info("Fetched metrics successfully")
+                
+                # Add config_reset flag to metrics from the config
+                config = load_config()
+                metrics["config_reset"] = config.get("config_reset", False)
+                logging.info(f"Added config_reset flag to metrics: {metrics.get('config_reset')}")
     
                 # First check for notifications by comparing new metrics with old cached metrics
                 notification_service.check_and_generate_notifications(metrics, cached_metrics)
     
                 # Then update cached metrics after comparison
                 cached_metrics = metrics
+                
+                # Clear the config_reset flag after it's been used
+                if metrics.get("config_reset"):
+                    config = load_config()
+                    if "config_reset" in config:
+                        del config["config_reset"]
+                        save_config(config)
+                        logging.info("Cleared config_reset flag from configuration after use")
     
                 # Update state history (only once)
                 state_manager.update_metrics_history(metrics)
@@ -771,7 +784,7 @@ def get_config():
 @app.route("/api/config", methods=["POST"])
 def update_config():
     """API endpoint to update configuration."""
-    global dashboard_service, worker_service  # Add this to access the global dashboard_service
+    global dashboard_service, worker_service
     
     try:
         # Get the request data
@@ -783,11 +796,19 @@ def update_config():
             logging.error("Invalid configuration format")
             return jsonify({"error": "Invalid configuration format"}), 400
             
+        # Get current config to check if currency is changing
+        current_config = load_config()
+        currency_changed = (
+            "currency" in new_config and 
+            new_config.get("currency") != current_config.get("currency", "USD")
+        )
+        
         # Required fields and default values
         defaults = {
             "wallet": "yourwallethere",
             "power_cost": 0.0,
-            "power_usage": 0.0
+            "power_usage": 0.0,
+            "currency": "USD"  # Add default currency
         }
         
         # Merge new config with defaults for any missing fields
@@ -802,13 +823,23 @@ def update_config():
             dashboard_service = MiningDashboardService(
                 new_config.get("power_cost", 0.0),
                 new_config.get("power_usage", 0.0),
-                new_config.get("wallet")
+                new_config.get("wallet"),
+                network_fee=new_config.get("network_fee", 0.0)  # Include network fee
             )
             logging.info(f"Dashboard service reinitialized with new wallet: {new_config.get('wallet')}")
 
             # Update worker service to use the new dashboard service (with the updated wallet)
             worker_service.set_dashboard_service(dashboard_service)
             logging.info(f"Worker service updated with the new dashboard service")
+            
+            # If currency changed, update notifications to use the new currency
+            if currency_changed:
+                try:
+                    logging.info(f"Currency changed from {current_config.get('currency', 'USD')} to {new_config['currency']}")
+                    updated_count = notification_service.update_notification_currency()
+                    logging.info(f"Updated {updated_count} notifications to use {new_config['currency']} currency")
+                except Exception as e:
+                    logging.error(f"Error updating notification currency: {e}")
             
             # Force a metrics update to reflect the new configuration
             update_metrics_job(force=True)

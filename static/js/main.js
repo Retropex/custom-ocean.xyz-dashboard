@@ -1634,7 +1634,7 @@ function calculatePoolFeeInSats(poolFeePercentage, lastBlockEarnings) {
     return -Math.round(feeAmount);
 }
 
-// Main UI update function with hashrate normalization
+// Main UI update function with currency support
 function updateUI() {
     function ensureElementStyles() {
         // Create a style element if it doesn't exist
@@ -1735,15 +1735,31 @@ function updateUI() {
     try {
         const data = latestMetrics;
 
+        // Get currency and exchange rate information
+        const currency = data.currency || 'USD';
+        const exchangeRate = data.exchange_rates && data.exchange_rates[currency] ?
+            data.exchange_rates[currency] : 1.0;
+
+        // Update currency-related labels
+        const earningsHeader = document.querySelector('.card-header');
+        if (earningsHeader && earningsHeader.textContent.includes("EARNINGS")) {
+            // Find the card header that says "USD EARNINGS" and update it
+            const headers = document.querySelectorAll('.card-header');
+            headers.forEach(header => {
+                if (header.textContent.includes("EARNINGS") &&
+                    header.textContent.match(/[A-Z]{3} EARNINGS/)) {
+                    header.textContent = `${currency} EARNINGS`;
+                }
+            });
+        }
+
         // If this is the initial load, force a reset of all arrows
         if (initialLoad) {
             arrowIndicator.forceApplyArrows();
             initialLoad = false;
         }
 
-        // Cache jQuery selectors for performance and use safe update methods
         // Format each hashrate with proper normalization
-
         // Pool Hashrate
         let formattedPoolHashrate = "N/A";
         if (data.pool_total_hashrate != null) {
@@ -2079,9 +2095,15 @@ function updateUI() {
         // Update other non-hashrate metrics
         updateElementText("block_number", numberWithCommas(data.block_number));
 
-        updateElementText("btc_price",
-            data.btc_price != null ? "$" + numberWithCommas(parseFloat(data.btc_price).toFixed(2)) : "N/A"
-        );
+        // Update BTC price with currency conversion and symbol
+        if (data.btc_price != null) {
+            const btcPriceValue = data.btc_price * exchangeRate;
+            const symbol = getCurrencySymbol(currency);
+
+            updateElementText("btc_price", formatCurrencyValue(btcPriceValue, currency));
+        } else {
+            updateElementText("btc_price", formatCurrencyValue(0, currency));
+        }
 
         // Update last block earnings
         if (data.last_block_earnings !== undefined) {
@@ -2103,37 +2125,51 @@ function updateUI() {
         }
         updateElementText("difficulty", numberWithCommas(Math.round(data.difficulty)));
 
-        // Daily revenue
-        updateElementText("daily_revenue", "$" + numberWithCommas(data.daily_revenue.toFixed(2)));
+        // Daily revenue with currency conversion
+        if (data.daily_revenue != null) {
+            const dailyRevenue = data.daily_revenue * exchangeRate;
+            updateElementText("daily_revenue", formatCurrencyValue(dailyRevenue, currency));
+        } else {
+            updateElementText("daily_revenue", formatCurrencyValue(0, currency));
+        }
 
-        // Daily power cost
-        updateElementText("daily_power_cost", "$" + numberWithCommas(data.daily_power_cost.toFixed(2)));
+        // Daily power cost with currency conversion
+        if (data.daily_power_cost != null) {
+            const dailyPowerCost = data.daily_power_cost * exchangeRate;
+            updateElementText("daily_power_cost", formatCurrencyValue(dailyPowerCost, currency));
+        } else {
+            updateElementText("daily_power_cost", formatCurrencyValue(0, currency));
+        }
 
-        // Daily profit USD - Add red color if negative
-        const dailyProfitUSD = data.daily_profit_usd;
-        const dailyProfitElement = document.getElementById("daily_profit_usd");
-        if (dailyProfitElement) {
-            dailyProfitElement.textContent = "$" + numberWithCommas(dailyProfitUSD.toFixed(2));
-            if (dailyProfitUSD < 0) {
-                // Use setAttribute to properly set the style with !important
-                dailyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important;");
-            } else {
-                // Clear the style attribute completely instead of setting it to empty
-                dailyProfitElement.removeAttribute("style");
+        // Daily profit with currency conversion and color
+        if (data.daily_profit_usd != null) {
+            const dailyProfit = data.daily_profit_usd * exchangeRate;
+            const dailyProfitElement = document.getElementById("daily_profit_usd");
+            if (dailyProfitElement) {
+                dailyProfitElement.textContent = formatCurrencyValue(dailyProfit, currency);
+                if (dailyProfit < 0) {
+                    // Use setAttribute to properly set the style with !important
+                    dailyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important;");
+                } else {
+                    // Clear the style attribute completely
+                    dailyProfitElement.removeAttribute("style");
+                }
             }
         }
 
-        // Monthly profit USD - Add red color if negative
-        const monthlyProfitUSD = data.monthly_profit_usd;
-        const monthlyProfitElement = document.getElementById("monthly_profit_usd");
-        if (monthlyProfitElement) {
-            monthlyProfitElement.textContent = "$" + numberWithCommas(monthlyProfitUSD.toFixed(2));
-            if (monthlyProfitUSD < 0) {
-                // Use setAttribute to properly set the style with !important
-                monthlyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important;");
-            } else {
-                // Clear the style attribute completely
-                monthlyProfitElement.removeAttribute("style");
+        // Monthly profit with currency conversion and color
+        if (data.monthly_profit_usd != null) {
+            const monthlyProfit = data.monthly_profit_usd * exchangeRate;
+            const monthlyProfitElement = document.getElementById("monthly_profit_usd");
+            if (monthlyProfitElement) {
+                monthlyProfitElement.textContent = formatCurrencyValue(monthlyProfit, currency);
+                if (monthlyProfit < 0) {
+                    // Use setAttribute to properly set the style with !important
+                    monthlyProfitElement.setAttribute("style", "color: #ff5555 !important; font-weight: bold !important;");
+                } else {
+                    // Clear the style attribute completely
+                    monthlyProfitElement.removeAttribute("style");
+                }
             }
         }
 
@@ -2254,7 +2290,6 @@ function updateUI() {
     }
 }
 
-
 // Update unread notifications badge in navigation
 function updateNotificationBadge() {
     $.ajax({
@@ -2348,6 +2383,8 @@ function resetWalletAddress() {
                     .then(config => {
                         // Reset the wallet address to default
                         config.wallet = "yourwallethere";
+                        // Add special flag to indicate config reset
+                        config.config_reset = true;
 
                         // Save the updated configuration
                         return fetch('/api/config', {
@@ -2507,6 +2544,44 @@ function checkAndShowHashrateNotice() {
     } else {
         console.log("Hashrate notice will not be shown: permanently hidden = " +
             permanentlyHidden + ", session hidden = " + sessionHidden);
+    }
+}
+
+// Currency conversion functions
+function getCurrencySymbol(currency) {
+    const symbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥',
+        'CAD': 'CA$',
+        'AUD': 'A$',
+        'CNY': '¥',
+        'KRW': '₩',
+        'BRL': 'R$',
+        'CHF': 'Fr'
+    };
+    return symbols[currency] || '$';
+}
+
+function formatCurrencyValue(value, currency) {
+    if (value == null || isNaN(value)) return "N/A";
+
+    const symbol = getCurrencySymbol(currency);
+
+    // For JPY and KRW, show without decimal places
+    if (currency === 'JPY' || currency === 'KRW') {
+        return `${symbol}${numberWithCommas(Math.round(value))}`;
+    }
+
+    return `${symbol}${numberWithCommas(value.toFixed(2))}`;
+}
+
+// Update the BTC price and earnings card header with the selected currency
+function updateCurrencyLabels(currency) {
+    const earningsHeader = document.querySelector('.card-header:contains("USD EARNINGS")');
+    if (earningsHeader) {
+        earningsHeader.textContent = `${currency} EARNINGS`;
     }
 }
 

@@ -110,6 +110,27 @@ v.21
             <input type="text" id="wallet-address" placeholder="bc1..." value="">
         </div>
         <div class="form-group">
+            <label for="currency">
+                Preferred Currency
+                <span class="tooltip">
+                    ?
+                    <span class="tooltip-text">Currency for displaying BTC value and earnings</span>
+                </span>
+            </label>
+            <select id="currency" class="form-control">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="JPY">JPY (¥)</option>
+                <option value="CAD">CAD ($)</option>
+                <option value="AUD">AUD ($)</option>
+                <option value="CNY">CNY (¥)</option>
+                <option value="KRW">KRW (₩)</option>
+                <option value="BRL">BRL (R$)</option>
+                <option value="CHF">CHF (Fr)</option>
+            </select>
+        </div>
+        <div class="form-group">
             <label for="power-cost">
                 Power Cost ($/kWh)
                 <span class="tooltip">
@@ -281,20 +302,22 @@ v.21
             loadTimezoneFromConfig();
         });
 
-        // Update saveConfig to include network fee
+        // Update saveConfig to include currency
         function saveConfig() {
             const wallet = document.getElementById('wallet-address').value.trim();
             const powerCost = parseFloat(document.getElementById('power-cost').value) || 0;
             const powerUsage = parseFloat(document.getElementById('power-usage').value) || 0;
             const timezone = document.getElementById('timezone').value;
             const networkFee = parseFloat(document.getElementById('network-fee').value) || 0;
+            const currency = document.getElementById('currency').value;
 
             const updatedConfig = {
                 wallet: wallet || (currentConfig ? currentConfig.wallet : ""),
                 power_cost: powerCost,
                 power_usage: powerUsage,
                 timezone: timezone,
-                network_fee: networkFee
+                network_fee: networkFee,
+                currency: currency
             };
 
             return fetch('/api/config', {
@@ -345,7 +368,7 @@ v.21
             power_usage: 0.0
         };
 
-        // Update loadConfig function to include network fee
+        // Update loadConfig function to handle currency
         function loadConfig() {
             return new Promise((resolve, reject) => {
                 fetch('/api/config?nocache=' + new Date().getTime())
@@ -364,6 +387,12 @@ v.21
                         document.getElementById('power-cost').value = currentConfig.power_cost || "";
                         document.getElementById('power-usage').value = currentConfig.power_usage || "";
                         document.getElementById('network-fee').value = currentConfig.network_fee || "";
+
+                        // Set currency dropdown value if available
+                        if (currentConfig.currency) {
+                            document.getElementById('currency').value = currentConfig.currency;
+                        }
+
                         configLoaded = true;
                         resolve(currentConfig);
                     })
@@ -374,13 +403,16 @@ v.21
                             wallet: "yourwallethere",
                             power_cost: 0.0,
                             power_usage: 0.0,
-                            network_fee: 0.0
+                            network_fee: 0.0,
+                            currency: "USD"
                         };
 
                         document.getElementById('wallet-address').value = currentConfig.wallet || "";
                         document.getElementById('power-cost').value = currentConfig.power_cost || "";
                         document.getElementById('power-usage').value = currentConfig.power_usage || "";
                         document.getElementById('network-fee').value = currentConfig.network_fee || "";
+                        document.getElementById('currency').value = currentConfig.currency || "USD";
+
                         resolve(currentConfig);
                     });
             });

@@ -164,6 +164,18 @@ class MiningDashboardService:
             metrics["server_timestamp"] = datetime.now(ZoneInfo(get_timezone())).isoformat()
             metrics["server_start_time"] = datetime.now(ZoneInfo(get_timezone())).isoformat()
 
+            # Get the configured currency
+            from config import load_config
+            config = load_config()
+            selected_currency = config.get("currency", "USD")
+
+            # Fetch exchange rates
+            exchange_rates = self.fetch_exchange_rates()
+
+            # Add to metrics
+            metrics["currency"] = selected_currency
+            metrics["exchange_rates"] = exchange_rates
+
             # Log execution time
             execution_time = time.time() - start_time
             metrics["execution_time"] = execution_time
@@ -451,6 +463,32 @@ class MiningDashboardService:
         except Exception as e:
             logging.error(f"Error fetching {url}: {e}")
             return None
+
+    # Add the fetch_exchange_rates method after the fetch_url method
+    def fetch_exchange_rates(self, base_currency="USD"):
+        """
+        Fetch currency exchange rates from a public API.
+    
+        Args:
+            base_currency (str): Base currency for rates (default: USD)
+        
+        Returns:
+            dict: Exchange rates for supported currencies
+        """
+        try:
+            # Use exchangerate-api for currency rates
+            url = f"https://api.exchangerate-api.com/v4/latest/{base_currency}"
+            response = self.session.get(url, timeout=5)
+        
+            if response.ok:
+                data = response.json()
+                return data.get('rates', {})
+            else:
+                logging.error(f"Failed to fetch exchange rates: {response.status_code}")
+                return {}
+        except Exception as e:
+            logging.error(f"Error fetching exchange rates: {e}")
+            return {}
 
     def get_bitcoin_stats(self):
         """

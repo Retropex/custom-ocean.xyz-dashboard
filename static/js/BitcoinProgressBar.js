@@ -397,8 +397,12 @@ const BitcoinMinuteRefresh = (function () {
       <div class="terminal-header">
         <div class="terminal-title">SYSTEM MONITOR v.3</div>
         <div class="terminal-controls">
-          <div class="terminal-dot minimize" title="Minimize" onclick="BitcoinMinuteRefresh.toggleTerminal()"></div>
-          <div class="terminal-dot close" title="Close" onclick="BitcoinMinuteRefresh.hideTerminal()"></div>
+          <div class="terminal-dot minimize" title="Minimize" onclick="BitcoinMinuteRefresh.toggleTerminal()">
+            <span class="control-symbol">-</span>
+          </div>
+          <div class="terminal-dot close" title="Close" onclick="BitcoinMinuteRefresh.hideTerminal()">
+            <span class="control-symbol">x</span>
+          </div>
         </div>
       </div>
       <div class="terminal-content">
@@ -517,20 +521,43 @@ const BitcoinMinuteRefresh = (function () {
       }
       
       .terminal-dot {
-        width: 8px;
-        height: 8px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
         background-color: #555;
         cursor: pointer;
         transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      
+      .control-symbol {
+        color: #333;
+        font-size: 9px;
+        font-weight: bold;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        line-height: 1;
       }
       
       .terminal-dot.minimize:hover {
         background-color: #ffcc00;
       }
       
+      .terminal-dot.minimize:hover .control-symbol {
+        color: #664e00;
+      }
+      
       .terminal-dot.close:hover {
         background-color: #ff3b30;
+      }
+      
+      .terminal-dot.close:hover .control-symbol {
+        color: #7a0200;
       }
       
       /* Terminal Content */

@@ -345,24 +345,41 @@ if (window['chartjs-plugin-annotation']) {
 
 // Hashrate Normalization Utilities
 // Enhanced normalizeHashrate function with better error handling for units
-function normalizeHashrate(value, unit) {
-    if (!value || isNaN(value)) return 0;
+/**
+ * Normalizes hashrate values to TH/s (terahashes per second) for consistent comparison
+ * @param {number|string} value - The hashrate value to normalize
+ * @param {string} unit - The unit of the provided hashrate (e.g., 'ph/s', 'th/s', 'gh/s')
+ * @param {boolean} [debug=false] - Whether to output detailed debugging information
+ * @returns {number} - The normalized hashrate value in TH/s
+ */
+function normalizeHashrate(value, unit, debug = false) {
+    // Handle null, undefined, empty strings or non-numeric values
+    if (value === null || value === undefined || value === '' || isNaN(parseFloat(value))) {
+        if (debug) console.warn(`Invalid hashrate value: ${value}`);
+        return 0;
+    }
 
-    // Validate and normalize input value
+    // Convert to number and handle scientific notation (e.g., "1.23e+5")
     value = parseFloat(value);
 
     // Standardize unit handling with a lookup table
     const unit_normalized = (unit || 'th/s').toLowerCase().trim();
 
+    // Store original values for logging
+    const originalValue = value;
+    const originalUnit = unit;
+
     // Lookup table for conversion factors (all relative to TH/s)
     const unitConversions = {
-        'ph/s': 1000,
-        'p/s': 1000,
-        'p': 1000,
-        'petahash': 1000,
-        'petahash/s': 1000,
-        'peta': 1000,
+        // Zettahash (ZH/s) - 1 ZH/s = 1,000,000,000 TH/s
+        'zh/s': 1000000000,
+        'z/s': 1000000000,
+        'z': 1000000000,
+        'zettahash': 1000000000,
+        'zettahash/s': 1000000000,
+        'zetta': 1000000000,
 
+        // Exahash (EH/s) - 1 EH/s = 1,000,000 TH/s
         'eh/s': 1000000,
         'e/s': 1000000,
         'e': 1000000,
@@ -370,6 +387,15 @@ function normalizeHashrate(value, unit) {
         'exahash/s': 1000000,
         'exa': 1000000,
 
+        // Petahash (PH/s) - 1 PH/s = 1,000 TH/s
+        'ph/s': 1000,
+        'p/s': 1000,
+        'p': 1000,
+        'petahash': 1000,
+        'petahash/s': 1000,
+        'peta': 1000,
+
+        // Terahash (TH/s) - Base unit
         'th/s': 1,
         't/s': 1,
         't': 1,
@@ -377,6 +403,7 @@ function normalizeHashrate(value, unit) {
         'terahash/s': 1,
         'tera': 1,
 
+        // Gigahash (GH/s) - 1 TH/s = 1,000 GH/s
         'gh/s': 1 / 1000,
         'g/s': 1 / 1000,
         'g': 1 / 1000,
@@ -384,6 +411,7 @@ function normalizeHashrate(value, unit) {
         'gigahash/s': 1 / 1000,
         'giga': 1 / 1000,
 
+        // Megahash (MH/s) - 1 TH/s = 1,000,000 MH/s
         'mh/s': 1 / 1000000,
         'm/s': 1 / 1000000,
         'm': 1 / 1000000,
@@ -391,6 +419,7 @@ function normalizeHashrate(value, unit) {
         'megahash/s': 1 / 1000000,
         'mega': 1 / 1000000,
 
+        // Kilohash (KH/s) - 1 TH/s = 1,000,000,000 KH/s
         'kh/s': 1 / 1000000000,
         'k/s': 1 / 1000000000,
         'k': 1 / 1000000000,
@@ -398,44 +427,72 @@ function normalizeHashrate(value, unit) {
         'kilohash/s': 1 / 1000000000,
         'kilo': 1 / 1000000000,
 
+        // Hash (H/s) - 1 TH/s = 1,000,000,000,000 H/s
         'h/s': 1 / 1000000000000,
         'h': 1 / 1000000000000,
         'hash': 1 / 1000000000000,
         'hash/s': 1 / 1000000000000
     };
 
-    // Try to find the conversion factor
     let conversionFactor = null;
+    let matchedUnit = null;
 
-    // First try direct lookup
+    // Direct lookup for exact matches
     if (unitConversions.hasOwnProperty(unit_normalized)) {
         conversionFactor = unitConversions[unit_normalized];
+        matchedUnit = unit_normalized;
     } else {
-        // If direct lookup fails, try a fuzzy match
+        // Fuzzy matching for non-exact matches
         for (const knownUnit in unitConversions) {
             if (unit_normalized.includes(knownUnit) || knownUnit.includes(unit_normalized)) {
-                // Log the unit correction for debugging
-                console.log(`Fuzzy matching unit: "${unit}" → interpreted as "${knownUnit}" (conversion: ${unitConversions[knownUnit]})`);
                 conversionFactor = unitConversions[knownUnit];
+                matchedUnit = knownUnit;
+
+                if (debug) {
+                    console.log(`Fuzzy matching unit: "${unit}" → interpreted as "${knownUnit}" (conversion: ${unitConversions[knownUnit]})`);
+                }
                 break;
             }
         }
     }
 
-    // If no conversion factor found, assume TH/s but log a warning
+    // Handle unknown units
     if (conversionFactor === null) {
         console.warn(`Unrecognized hashrate unit: "${unit}", assuming TH/s. Value: ${value}`);
-        // Add additional info to help diagnose incorrect units
+
+        // Automatically detect and suggest the appropriate unit based on magnitude
         if (value > 1000) {
             console.warn(`NOTE: Value ${value} is quite large for TH/s. Could it be PH/s?`);
+        } else if (value > 1000000) {
+            console.warn(`NOTE: Value ${value} is extremely large for TH/s. Could it be EH/s?`);
         } else if (value < 0.001) {
             console.warn(`NOTE: Value ${value} is quite small for TH/s. Could it be GH/s or MH/s?`);
         }
-        return value; // Assume TH/s
+
+        // Assume TH/s as fallback
+        conversionFactor = 1;
+        matchedUnit = 'th/s';
     }
 
-    // Apply conversion and return normalized value
-    return value * conversionFactor;
+    // Calculate normalized value
+    const normalizedValue = value * conversionFactor;
+
+    // Log abnormally large conversions for debugging
+    if ((normalizedValue > 1000000 || normalizedValue < 0.000001) && normalizedValue !== 0) {
+        console.log(`Large scale conversion detected: ${originalValue} ${originalUnit} → ${normalizedValue.toExponential(2)} TH/s`);
+    }
+
+    // Extra debugging for very large values to help track the Redis storage issue
+    if (debug && originalValue > 900000 && matchedUnit === 'th/s') {
+        console.group('High Hashrate Debug Info');
+        console.log(`Original: ${originalValue} ${originalUnit}`);
+        console.log(`Normalized: ${normalizedValue} TH/s`);
+        console.log(`Should be displayed as: ${(normalizedValue / 1000).toFixed(2)} PH/s`);
+        console.log('Call stack:', new Error().stack);
+        console.groupEnd();
+    }
+
+    return normalizedValue;
 }
 
 // Helper function to format hashrate values for display
@@ -1306,183 +1363,294 @@ function updateChartWithNormalizedData(chart, data) {
             }
         }
 
-        // Process history data with enhanced validation and error handling
+        /**
+         * Process history data with comprehensive validation, unit normalization, and performance optimizations
+         * @param {Object} data - The metrics data containing hashrate history
+         * @param {Object} chart - The Chart.js chart instance to update
+         * @param {boolean} useHashrate3hr - Whether to use 3hr average data instead of 60sec data
+         * @param {number} normalizedAvg - The normalized 24hr average hashrate for reference
+         */
         if (data.arrow_history && data.arrow_history.hashrate_60sec) {
             // Validate history data
             try {
-                // Log 60sec data
-                console.log("60sec history data received:", data.arrow_history.hashrate_60sec);
+                const perfStart = performance.now(); // Performance measurement
 
-                // Also log 3hr data if available
-                if (data.arrow_history.hashrate_3hr) {
-                    console.log("3hr history data received:", data.arrow_history.hashrate_3hr);
+                // Determine which history data to use (3hr or 60sec) with proper fallback
+                let historyData;
+                let dataSource;
+
+                if (useHashrate3hr && data.arrow_history.hashrate_3hr && data.arrow_history.hashrate_3hr.length > 0) {
+                    historyData = data.arrow_history.hashrate_3hr;
+                    dataSource = "3hr";
+                    chart.data.datasets[0].label = 'Hashrate Trend (3HR AVG)';
                 } else {
-                    console.log("3hr history data not available in API response");
+                    historyData = data.arrow_history.hashrate_60sec;
+                    dataSource = "60sec";
+                    chart.data.datasets[0].label = 'Hashrate Trend (60SEC AVG)';
+
+                    // If we wanted 3hr data but it wasn't available, log a warning
+                    if (useHashrate3hr) {
+                        console.warn("3hr data requested but not available, falling back to 60sec data");
+                    }
                 }
 
-                // If we're using 3hr average, try to use that history if available
-                const historyData = useHashrate3hr && data.arrow_history.hashrate_3hr ?
-                    data.arrow_history.hashrate_3hr : data.arrow_history.hashrate_60sec;
-
-                console.log("Using history data:", useHashrate3hr ? "3hr data" : "60sec data");
+                console.log(`Using ${dataSource} history data with ${historyData?.length || 0} points`);
 
                 if (historyData && historyData.length > 0) {
-                    // Format time labels
-                    chart.data.labels = historyData.map(item => {
+                    // Pre-process history data to filter out invalid entries
+                    const validHistoryData = historyData.filter(item => {
+                        return item &&
+                            (typeof item.value !== 'undefined') &&
+                            !isNaN(parseFloat(item.value)) &&
+                            (parseFloat(item.value) >= 0) &&
+                            typeof item.time === 'string';
+                    });
+
+                    if (validHistoryData.length < historyData.length) {
+                        console.warn(`Filtered out ${historyData.length - validHistoryData.length} invalid data points`);
+                    }
+
+                    if (validHistoryData.length === 0) {
+                        console.warn("No valid history data points after filtering");
+                        useSingleDataPoint();
+                        return;
+                    }
+
+                    // Format time labels more efficiently (do this once, not in a map callback)
+                    const timeZone = dashboardTimezone || 'America/Los_Angeles';
+                    const now = new Date();
+                    const yearMonthDay = {
+                        year: now.getFullYear(),
+                        month: now.getMonth(),
+                        day: now.getDate()
+                    };
+
+                    // Create time formatter function with consistent options
+                    const timeFormatter = new Intl.DateTimeFormat('en-US', {
+                        timeZone: timeZone,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+
+                    // Format all time labels at once
+                    const formattedLabels = validHistoryData.map(item => {
                         const timeStr = item.time;
                         try {
-                            // Parse and format the time (existing code)...
-                            let timeParts;
+                            // Parse time efficiently
+                            let hours = 0, minutes = 0, seconds = 0;
+
                             if (timeStr.length === 8 && timeStr.indexOf(':') !== -1) {
                                 // Format: HH:MM:SS
-                                timeParts = timeStr.split(':');
+                                const parts = timeStr.split(':');
+                                hours = parseInt(parts[0], 10);
+                                minutes = parseInt(parts[1], 10);
+                                seconds = parseInt(parts[2], 10);
                             } else if (timeStr.length === 5 && timeStr.indexOf(':') !== -1) {
                                 // Format: HH:MM
-                                timeParts = timeStr.split(':');
-                                timeParts.push('00'); // Add seconds
+                                const parts = timeStr.split(':');
+                                hours = parseInt(parts[0], 10);
+                                minutes = parseInt(parts[1], 10);
                             } else {
-                                return timeStr; // Use as-is if format is unexpected
+                                return timeStr; // Use original if format is unexpected
                             }
 
-                            // Format in 12-hour time with timezone support
-                            const now = new Date();
-                            const timeDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
-                                parseInt(timeParts[0]), parseInt(timeParts[1]), parseInt(timeParts[2] || 0));
+                            // Create time date with validation
+                            if (isNaN(hours) || isNaN(minutes) || isNaN(seconds) ||
+                                hours < 0 || hours > 23 || minutes < 0 || minutes > 59 || seconds < 0 || seconds > 59) {
+                                return timeStr; // Use original for invalid times
+                            }
 
-                            let formattedTime = timeDate.toLocaleTimeString('en-US', {
-                                timeZone: dashboardTimezone || 'America/Los_Angeles',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                            });
+                            const timeDate = new Date(yearMonthDay.year, yearMonthDay.month, yearMonthDay.day,
+                                hours, minutes, seconds);
 
-                            // Remove the AM/PM part
-                            formattedTime = formattedTime.replace(/\s[AP]M$/i, '');
-                            return formattedTime;
+                            // Format using the formatter
+                            const formatted = timeFormatter.format(timeDate);
+                            return formatted.replace(/\s[AP]M$/i, ''); // Remove AM/PM
                         } catch (e) {
-                            console.error("Error formatting time:", e, timeStr);
+                            console.error("Time formatting error:", e);
                             return timeStr; // Use original on error
                         }
                     });
 
-                    // Process and normalize hashrate values with validation
+                    chart.data.labels = formattedLabels;
+
+                    // Process and normalize hashrate values with validation (optimize by avoiding multiple iterations)
                     const hashrateValues = [];
-                    const validatedData = historyData.map((item, index) => {
+                    const validatedData = new Array(validHistoryData.length);
+
+                    // Enhanced unit validation
+                    const validUnits = new Set(['th/s', 'ph/s', 'eh/s', 'gh/s', 'mh/s', 'zh/s']);
+
+                    // Process all data points with error boundaries around each item
+                    for (let i = 0; i < validHistoryData.length; i++) {
                         try {
+                            const item = validHistoryData[i];
+
                             // Safety conversion in case value is a string
-                            const val = parseFloat(item.value || 0);
-                            if (isNaN(val)) {
-                                console.warn(`Invalid value at index ${index}: ${item.value}`);
-                                return 0;
+                            const val = parseFloat(item.value);
+
+                            // Get unit with better validation
+                            let unit = (item.unit || 'th/s').toLowerCase().trim();
+
+                            // Use storeHashrateWithUnit to properly handle unit conversions for large values
+                            // This increases chart precision by storing values in appropriate units
+                            if (typeof window.storeHashrateWithUnit === 'function') {
+                                // Use our specialized function if available
+                                const storedFormat = window.storeHashrateWithUnit(val, unit);
+                                const normalizedValue = normalizeHashrate(val, unit);
+
+                                // Store the properly adjusted values for tooltip display
+                                item.storageValue = storedFormat.value;
+                                item.storageUnit = storedFormat.unit;
+                                item.originalValue = val;
+                                item.originalUnit = unit;
+
+                                validatedData[i] = normalizedValue;
+
+                                // Collect valid values for statistics
+                                if (normalizedValue > 0) {
+                                    hashrateValues.push(normalizedValue);
+                                }
+                            } else {
+                                // Original approach if storeHashrateWithUnit isn't available
+                                const normalizedValue = normalizeHashrate(val, unit);
+
+                                // Store original values for tooltip reference
+                                item.originalValue = val;
+                                item.originalUnit = unit;
+
+                                validatedData[i] = normalizedValue;
+
+                                // Collect valid values for statistics
+                                if (normalizedValue > 0) {
+                                    hashrateValues.push(normalizedValue);
+                                }
                             }
-
-                            // Validate the unit
-                            const unit = item.unit || 'th/s';
-                            const normalizedValue = normalizeHashrate(val, unit);
-
-                            // Collect valid values for statistics
-                            if (normalizedValue > 0) {
-                                hashrateValues.push(normalizedValue);
-                            }
-
-                            return normalizedValue;
                         } catch (err) {
-                            console.error(`Error processing hashrate at index ${index}:`, err);
-                            return 0;
-                        }
-                    });
-
-                    chart.data.datasets[0].data = validatedData;
-
-                    // Calculate statistics for anomaly detection
-                    if (hashrateValues.length > 1) {
-                        const mean = hashrateValues.reduce((sum, val) => sum + val, 0) / hashrateValues.length;
-                        const max = Math.max(...hashrateValues);
-                        const min = Math.min(...hashrateValues);
-
-                        // Check for outliers that might indicate incorrect units
-                        if (max > mean * 10 || min < mean / 10) {
-                            console.warn("WARNING: Wide hashrate variance detected in chart data. Possible unit inconsistency.");
-                            console.warn(`Min: ${min.toFixed(2)} TH/s, Max: ${max.toFixed(2)} TH/s, Mean: ${mean.toFixed(2)} TH/s`);
+                            console.error(`Error processing hashrate at index ${i}:`, err);
+                            validatedData[i] = 0; // Use 0 as a safe fallback
                         }
                     }
 
-                    // Update chart dataset label to indicate which average we're displaying
-                    chart.data.datasets[0].label = useHashrate3hr ?
-                        'Hashrate Trend (3HR AVG)' : 'Hashrate Trend (60SEC AVG)';
+                    // Assign the processed data to chart
+                    chart.data.datasets[0].data = validatedData;
+                    chart.originalData = validHistoryData; // Store for tooltip reference
 
-                    // Calculate appropriate y-axis range with safeguards for outliers and ensure 24hr avg line is visible
-                    const values = chart.data.datasets[0].data.filter(v => !isNaN(v) && v !== null && v > 0);
-                    if (values.length > 0) {
-                        const max = Math.max(...values);
-                        const min = Math.min(...values) || 0;
+                    // Update tooltip callback to display proper units
+                    chart.options.plugins.tooltip.callbacks.label = function (context) {
+                        const index = context.dataIndex;
+                        const originalData = chart.originalData?.[index];
 
-                        // MODIFICATION: When in low hashrate mode, ensure the y-axis includes the 24hr average
-                        if (useHashrate3hr && normalizedAvg > 0) {
-                            // Ensure the 24-hour average is visible on the chart
-                            const yMin = Math.min(min * 0.8, normalizedAvg * 0.5);
-                            const yMax = Math.max(max * 1.2, normalizedAvg * 1.5);
-
-                            chart.options.scales.y.min = yMin;
-                            chart.options.scales.y.max = yMax;
-                            console.log(`Low hashrate mode: Adjusting y-axis to include 24hr avg: [${yMin.toFixed(2)}, ${yMax.toFixed(2)}]`);
-                        } else {
-                            // Normal mode scaling
-                            chart.options.scales.y.min = min * 0.8;
-                            chart.options.scales.y.max = max * 1.2;
-                        }
-
-                        // Set appropriate step size based on range
-                        const range = chart.options.scales.y.max - chart.options.scales.y.min;
-
-                        // Calculate an appropriate stepSize that won't exceed Chart.js tick limits
-                        // Aim for approximately 5-10 ticks (Chart.js recommends ~5-6 ticks for readability)
-                        let stepSize;
-                        const targetTicks = 6;  // Target number of ticks we want to display
-
-                        if (range <= 0.1) {
-                            // For very small ranges (< 0.1 TH/s)
-                            stepSize = 0.01;
-                        } else if (range <= 1) {
-                            // For small ranges (0.1 - 1 TH/s)
-                            stepSize = 0.1;
-                        } else if (range <= 10) {
-                            // For medium ranges (1 - 10 TH/s)
-                            stepSize = 1;
-                        } else if (range <= 50) {
-                            stepSize = 5;
-                        } else if (range <= 100) {
-                            stepSize = 10;
-                        } else if (range <= 500) {
-                            stepSize = 50;
-                        } else if (range <= 1000) {
-                            stepSize = 100;
-                        } else if (range <= 5000) {
-                            stepSize = 500;
-                        } else {
-                            // For very large ranges, calculate stepSize that will produce ~targetTicks ticks
-                            stepSize = Math.ceil(range / targetTicks);
-
-                            // Round to a nice number (nearest power of 10 multiple)
-                            const magnitude = Math.pow(10, Math.floor(Math.log10(stepSize)));
-                            stepSize = Math.ceil(stepSize / magnitude) * magnitude;
-
-                            // Safety check for extremely large ranges
-                            if (range / stepSize > 1000) {
-                                console.warn(`Y-axis range (${range.toFixed(2)}) requires extremely large stepSize. 
-                                             Adjusting to limit ticks to 1000.`);
-                                stepSize = Math.ceil(range / 1000);
+                        if (originalData) {
+                            if (originalData.storageValue !== undefined && originalData.storageUnit) {
+                                // Use the optimized storage value/unit if available
+                                return `HASHRATE: ${originalData.storageValue} ${originalData.storageUnit.toUpperCase()}`;
+                            }
+                            else if (originalData.originalValue !== undefined && originalData.originalUnit) {
+                                // Fall back to original values 
+                                return `HASHRATE: ${originalData.originalValue} ${originalData.originalUnit.toUpperCase()}`;
                             }
                         }
+
+                        // Last resort fallback
+                        return 'HASHRATE: ' + formatHashrateForDisplay(context.raw).toUpperCase();
+                    };
+
+                    // Calculate statistics for anomaly detection with optimization
+                    if (hashrateValues.length > 1) {
+                        // Calculate mean, min, max in a single pass for efficiency
+                        let sum = 0, min = Infinity, max = -Infinity;
+
+                        for (let i = 0; i < hashrateValues.length; i++) {
+                            const val = hashrateValues[i];
+                            sum += val;
+                            if (val < min) min = val;
+                            if (val > max) max = val;
+                        }
+
+                        const mean = sum / hashrateValues.length;
+
+                        // Enhanced outlier detection
+                        const standardDeviation = calculateStandardDeviation(hashrateValues, mean);
+                        const outlierThreshold = 3; // Standard deviations
+
+                        // Check for outliers using both range and statistical methods
+                        const hasOutliersByRange = (max > mean * 10 || min < mean / 10);
+                        const hasOutliersByStats = hashrateValues.some(v => Math.abs(v - mean) > outlierThreshold * standardDeviation);
+
+                        // Log more helpful diagnostics for outliers
+                        if (hasOutliersByRange || hasOutliersByStats) {
+                            console.warn("WARNING: Hashrate variance detected in chart data. Possible unit inconsistency.");
+                            console.warn(`Stats: Min: ${min.toFixed(2)}, Max: ${max.toFixed(2)}, Mean: ${mean.toFixed(2)}, StdDev: ${standardDeviation.toFixed(2)} TH/s`);
+
+                            // Give more specific guidance
+                            if (max > 1000 && min < 10) {
+                                console.warn("ADVICE: Data contains mixed units (likely TH/s and PH/s). Check API response consistency.");
+                            }
+                        }
+
+                        // Log performance timing for large datasets
+                        if (hashrateValues.length > 100) {
+                            const perfEnd = performance.now();
+                            console.log(`Processed ${hashrateValues.length} hashrate points in ${(perfEnd - perfStart).toFixed(1)}ms`);
+                        }
+                    }
+
+                    // Find filtered valid values for y-axis limits (more efficient than creating a new array)
+                    let activeValues = 0, yMin = Infinity, yMax = -Infinity;
+                    for (let i = 0; i < validatedData.length; i++) {
+                        const v = validatedData[i];
+                        if (!isNaN(v) && v !== null && v > 0) {
+                            activeValues++;
+                            if (v < yMin) yMin = v;
+                            if (v > yMax) yMax = v;
+                        }
+                    }
+
+                    if (activeValues > 0) {
+                        // Optimized y-axis range calculation with padding
+                        const padding = useHashrate3hr ? 0.5 : 0.2; // More padding in low hashrate mode
+
+                        // When in low hashrate mode, ensure the y-axis includes the 24hr average
+                        if (useHashrate3hr && normalizedAvg > 0) {
+                            // Ensure the 24-hour average is visible with adequate padding
+                            const minPadding = normalizedAvg * padding;
+                            const maxPadding = normalizedAvg * padding;
+
+                            chart.options.scales.y.min = Math.min(yMin * (1 - padding), normalizedAvg - minPadding);
+                            chart.options.scales.y.max = Math.max(yMax * (1 + padding), normalizedAvg + maxPadding);
+
+                            console.log(`Low hashrate mode: Y-axis range [${chart.options.scales.y.min.toFixed(2)}, ${chart.options.scales.y.max.toFixed(2)}] TH/s`);
+                        } else {
+                            // Normal mode scaling with smarter padding (less padding for large ranges)
+                            const dynamicPadding = Math.min(0.2, 10 / yMax); // Reduce padding as max increases
+                            chart.options.scales.y.min = Math.max(0, yMin * (1 - dynamicPadding)); // Never go below zero
+                            chart.options.scales.y.max = yMax * (1 + dynamicPadding);
+                        }
+
+                        // Set appropriate step size based on range - improved algorithm
+                        const range = chart.options.scales.y.max - chart.options.scales.y.min;
+
+                        // Dynamic target ticks based on chart height for better readability
+                        const chartHeight = chart.height || 300;
+                        const targetTicks = Math.max(4, Math.min(8, Math.floor(chartHeight / 50)));
+
+                        // Calculate ideal step size
+                        const rawStepSize = range / targetTicks;
+
+                        // Find a "nice" step size that's close to the raw step size
+                        const stepSize = calculateNiceStepSize(rawStepSize);
 
                         // Set the calculated stepSize
                         chart.options.scales.y.ticks.stepSize = stepSize;
 
-                        // Log the chosen stepSize for debugging
-                        console.log(`Y-axis range: ${range.toFixed(2)}, using stepSize: ${stepSize}`);
+                        // Log the chosen stepSize 
+                        console.log(`Y-axis range: ${range.toFixed(2)} TH/s, using stepSize: ${stepSize} (target ticks: ${targetTicks})`);
                     }
                 } else {
-                    console.warn("No valid history data items available");
+                    console.warn("No history data items available");
+                    useSingleDataPoint();
                 }
             } catch (historyError) {
                 console.error("Error processing hashrate history data:", historyError);
@@ -1492,6 +1660,48 @@ function updateChartWithNormalizedData(chart, data) {
         } else {
             // No history data, use single datapoint
             useSingleDataPoint();
+        }
+
+        /**
+         * Calculate standard deviation of an array of values
+         * @param {Array<number>} values - Array of numeric values
+         * @param {number} mean - Pre-calculated mean (optional)
+         * @returns {number} - Standard deviation
+         */
+        function calculateStandardDeviation(values, precalculatedMean = null) {
+            if (!values || values.length <= 1) return 0;
+
+            // Calculate mean if not provided
+            const mean = precalculatedMean !== null ? precalculatedMean :
+                values.reduce((sum, val) => sum + val, 0) / values.length;
+
+            // Calculate sum of squared differences
+            const squaredDiffSum = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0);
+
+            // Calculate standard deviation
+            return Math.sqrt(squaredDiffSum / values.length);
+        }
+
+        /**
+         * Calculate a "nice" step size close to the raw step size
+         * @param {number} rawStepSize - The mathematically ideal step size
+         * @returns {number} - A rounded, human-friendly step size
+         */
+        function calculateNiceStepSize(rawStepSize) {
+            if (rawStepSize <= 0) return 1; // Safety check
+
+            // Get order of magnitude
+            const magnitude = Math.pow(10, Math.floor(Math.log10(rawStepSize)));
+            const normalized = rawStepSize / magnitude;
+
+            // Choose a nice step size
+            let niceStepSize;
+            if (normalized < 1.5) niceStepSize = 1;
+            else if (normalized < 3) niceStepSize = 2;
+            else if (normalized < 7) niceStepSize = 5;
+            else niceStepSize = 10;
+
+            return niceStepSize * magnitude;
         }
 
         // Handle single datapoint display when no history is available

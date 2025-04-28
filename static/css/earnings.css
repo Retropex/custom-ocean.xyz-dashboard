@@ -1,0 +1,560 @@
+﻿/* earnings.css - Enhanced with dashboard styling */
+
+/* Main section styling */
+.earnings-section {
+    margin: 2rem 0;
+}
+
+/* Dashboard title styling */
+.dashboard-title {
+    color: var(--primary-color);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    font-family: var(--header-font);
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px var(--primary-color, rgba(0, 136, 204, 0.5));
+}
+
+/* Stats grid styling for summary cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background-color: #000;
+    padding: 1rem;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
+    position: relative;
+}
+
+    .stat-card h2 {
+        color: var(--primary-color);
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        font-family: var(--header-font);
+    }
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-unit {
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-left: 0.25rem;
+}
+
+.stat-secondary {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.stat-time {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #00dfff; /* Blue color for time values */
+}
+
+/* Card and container styling similar to dashboard */
+.row.equal-height {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+    .row.equal-height > [class*="col-"] {
+        display: flex;
+        margin-bottom: 0.5rem;
+    }
+
+        .row.equal-height > [class*="col-"] .card {
+            width: 100%;
+        }
+
+/* Section headers like dashboard blue headers */
+.earnings-section h2 {
+    background-color: var(--primary-color, #0088cc);
+    color: #000;
+    padding: 0.5rem;
+    font-weight: bold;
+    font-family: var(--header-font);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 5px var(--primary-color, rgba(0, 136, 204, 0.5));
+}
+
+/* Table styling */
+.table-container {
+    overflow-x: auto;
+    margin: 1rem 0;
+    background-color: #000;
+    padding: 0.5rem;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
+    position: relative;
+}
+
+    /* Add scanline effect to tables */
+    .table-container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+        pointer-events: none;
+        z-index: 1;
+    }
+
+.earnings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .earnings-table th, .earnings-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .earnings-table th {
+        background-color: var(--card-header-bg);
+        color: var(--primary-color);
+        font-family: var(--header-font);
+        text-transform: uppercase;
+        font-size: 0.9rem;
+    }
+
+/* Transaction link styling */
+.tx-link {
+    color: #00dfff; /* Blue color from dashboard */
+    text-decoration: none;
+    letter-spacing: 1px;
+}
+
+    .tx-link:hover {
+        text-decoration: underline;
+        text-shadow: 0 0 5px var(--primary-color, rgba(0, 223, 255, 0.7));
+    }
+
+/* Status indicators with color families similar to dashboard */
+.status-indicator {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-confirmed {
+    background-color: rgba(75, 181, 67, 0.15);
+    color: #32CD32; /* Matched with green color family from dashboard */
+}
+
+.status-pending {
+    background-color: rgba(247, 147, 26, 0.15);
+    color: #ffd700; /* Matched with yellow color family from dashboard */
+}
+
+.status-processing {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: #00dfff; /* Matched with blue metrics from dashboard */
+}
+
+/* Metric styling by category - matching dashboard */
+.metric-value {
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+/* Yellow color family - for BTC/sats values */
+#unpaid-sats,
+#total-paid-sats,
+.earnings-table td:nth-child(4) {
+    color: #ffd700;
+}
+
+#unpaid-btc,
+#total-paid-btc,
+.earnings-table td:nth-child(3) {
+    color: #ffd700;
+}
+
+/* Green color family - for earnings/profits */
+#total-paid-usd {
+    color: #32CD32;
+}
+
+/* Green color for fiat currency amount */
+#total-paid-fiat {
+    color: #32CD32; /* Using the same green already in your theme */
+}
+
+.earnings-table td:nth-child(5) {
+    color: #32CD32; /* USD values */
+}
+
+/* Red color family - for fees/costs */
+.earnings-fee,
+.earnings-cost {
+    color: #ff5555 !important;
+}
+
+/* Styling for date fields */
+.earnings-table td:nth-child(1) {
+    color: #00dfff; /* Blue date indicators */
+}
+
+/* Add bounce animations from dashboard */
+@keyframes bounceUp {
+    0% {
+        transform: translateY(0);
+    }
+
+    25% {
+        transform: translateY(-2px);
+    }
+
+    50% {
+        transform: translateY(0);
+    }
+
+    75% {
+        transform: translateY(-2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounceDown {
+    0% {
+        transform: translateY(0);
+    }
+
+    25% {
+        transform: translateY(2px);
+    }
+
+    50% {
+        transform: translateY(0);
+    }
+
+    75% {
+        transform: translateY(2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+.bounce-up {
+    animation: bounceUp 1s infinite;
+}
+
+.bounce-down {
+    animation: bounceDown 1s infinite;
+}
+
+.arrow {
+    display: inline-block;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}
+
+/* Add pulse animation for new payments */
+@keyframes pulse-highlight {
+    0% {
+        background-color: color-mix(in srgb, var(--primary-color, rgba(247, 147, 26, 0.1)) 10%, transparent);
+    }
+
+    50% {
+        background-color: color-mix(in srgb, var(--primary-color, rgba(247, 147, 26, 0.3)) 30%, transparent);
+    }
+
+    100% {
+        background-color: color-mix(in srgb, var(--primary-color, rgba(247, 147, 26, 0.1)) 10%, transparent);
+    }
+}
+
+.new-payment {
+    animation: pulse-highlight 2s infinite;
+}
+
+/* Card body styling consistency */
+.card-body strong {
+    color: var(--primary-color);
+    margin-right: 0.25rem;
+}
+
+.card-body p {
+    margin: 0.25rem 0;
+    line-height: 1.2;
+}
+
+/* Monospace styling for numerical values */
+#payment-count {
+    font-size: 1.5rem;
+}
+
+/* Font styling for Latest payment */
+#latest-payment {
+    color: #00dfff;
+    font-size: 0.9rem;
+}
+
+/* Status label specific styling with uppercase text */
+.status-confirmed,
+.status-pending,
+.status-processing {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+/* Empty state styling */
+.earnings-table tr td[colspan] {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-color);
+    font-style: italic;
+}
+
+/* Pool luck indicators - reused from dashboard */
+.very-lucky {
+    color: #32CD32 !important;
+    font-weight: bold !important;
+}
+
+.lucky {
+    color: #90EE90 !important;
+}
+
+.normal-luck {
+    color: #ffd700 !important;
+}
+
+.unlucky {
+    color: #ff5555 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .earnings-table th, .earnings-table td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .status-indicator {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.3rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Chart container styling for future charts */
+.chart-container {
+    background-color: #000;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    height: 230px;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
+    position: relative;
+}
+
+    .chart-container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+        pointer-events: none;
+        z-index: 1;
+    }
+
+.settings-info {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #888;
+}
+
+.setting-item {
+    margin-left: 20px;
+}
+
+    .setting-item strong {
+        color: var(--accent-color);
+    }
+
+.currency-symbol {
+    display: inline-block;
+    margin-right: 2px;
+}
+
+/* Table styling - Enhanced for mobile */
+.table-container {
+    overflow-x: auto;
+    margin: 1rem 0;
+    background-color: #000;
+    padding: 0.5rem;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
+    position: relative;
+    /* Add momentum-based scrolling for touch devices */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive adjustments - Expanded */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .earnings-table th, .earnings-table td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .status-indicator {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.3rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    /* Additional mobile optimizations */
+    .tx-link {
+        font-size: 0.8rem;
+    }
+
+    .settings-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .setting-item {
+        margin-left: 0;
+        margin-bottom: 5px;
+    }
+}
+
+/* Small phone screens */
+@media (max-width: 480px) {
+    /* Convert payment history table to card-like layout for very small screens */
+    .earnings-table thead {
+        display: none; /* Hide table headers */
+    }
+
+    .earnings-table,
+    .earnings-table tbody,
+    .earnings-table tr {
+        display: block;
+        width: 100%;
+    }
+
+        .earnings-table tr {
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            padding: 8px;
+        }
+
+        .earnings-table td {
+            display: flex;
+            padding: 6px 3px;
+            border: none;
+            border-bottom: 1px solid var(--border-color, #333);
+        }
+
+            .earnings-table td:last-child {
+                border-bottom: none;
+            }
+
+            /* Add labels for each cell */
+            .earnings-table td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                width: 40%;
+                color: var(--primary-color);
+                margin-right: 5%;
+            }
+
+    /* Specific adjustments for payment history */
+    #payment-history-table td:nth-child(1)::before {
+        content: "Date: ";
+    }
+
+    #payment-history-table td:nth-child(2)::before {
+        content: "BTC: ";
+    }
+
+    #payment-history-table td:nth-child(3)::before {
+        content: "Sats: ";
+    }
+
+    #payment-history-table td:nth-child(4)::before {
+        content: "TX: ";
+    }
+
+    #payment-history-table td:nth-child(5)::before {
+        content: "Status: ";
+    }
+
+    /* Monthly summary table */
+    #monthly-summary-table td:nth-child(1)::before {
+        content: "Month: ";
+    }
+
+    #monthly-summary-table td:nth-child(2)::before {
+        content: "Payments: ";
+    }
+
+    #monthly-summary-table td:nth-child(3)::before {
+        content: "BTC: ";
+    }
+
+    #monthly-summary-table td:nth-child(4)::before {
+        content: "Sats: ";
+    }
+
+    #monthly-summary-table td:nth-child(5)::before {
+        content: "Fiat: ";
+    }
+
+    /* Adjust empty state */
+    .earnings-table tr td[colspan] {
+        padding: 1rem;
+    }
+
+    /* Fix truncated transaction links */
+    .tx-link {
+        word-break: break-all;
+        font-size: 0.75rem;
+    }
+}

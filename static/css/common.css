@@ -280,11 +280,12 @@ h1 {
 
 /* Container */
 .container-fluid {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    position: relative;
+    padding-bottom: 6rem;
 }
 
 /* Status indicators */
@@ -482,6 +483,14 @@ h1 {
   }
 }
 
+@media (max-width: 576px) {
+    .nav-link {
+        font-size: 0.8rem; /* Reduce font size for smaller screens */
+        padding: 3px 10px; /* Adjust padding to save space */
+    }
+}
+
+
 /* Navigation badges for notifications */
 .nav-badge {
     background-color: var(--primary-color);
@@ -495,3 +504,4 @@ h1 {
     margin-left: 5px;
     vertical-align: middle;
 }
+

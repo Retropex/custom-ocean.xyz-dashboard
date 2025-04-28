@@ -54,33 +54,33 @@ class WorkerService:
 
     def get_workers_data(self, cached_metrics, force_refresh=False):
         """
-        Get worker data with caching for better performance.
-        
+        Get worker data with caching for better performance and use consistent hashrate values.
+    
         Args:
             cached_metrics (dict): Cached metrics from the dashboard
             force_refresh (bool): Whether to force a refresh of cached data
                 
         Returns:
-            dict: Worker data
+            dict: Worker data with standardized hashrates
         """
         current_time = datetime.now().timestamp()
-        
+    
         # Return cached data if it's still fresh and not forced to refresh
         if not force_refresh and self.worker_data_cache and self.last_worker_data_update and \
         (current_time - self.last_worker_data_update) < self.WORKER_DATA_CACHE_TIMEOUT:
             # Even when using cached data, sync worker count with main dashboard
             if cached_metrics and cached_metrics.get("workers_hashing") is not None:
                 self.sync_worker_counts_with_dashboard(self.worker_data_cache, cached_metrics)
-            
+        
             logging.info("Using cached worker data")
             return self.worker_data_cache
-                
+            
         try:
             # First try to get actual worker data from the dashboard service
             if self.dashboard_service:
                 logging.info("Attempting to fetch real worker data from Ocean.xyz")
                 real_worker_data = self.dashboard_service.get_worker_data()
-                
+            
                 if real_worker_data and real_worker_data.get('workers') and len(real_worker_data['workers']) > 0:
                     # Validate that worker names are not just "Online" or "Offline"
                     valid_names = False
@@ -89,22 +89,22 @@ class WorkerService:
                         if name and name not in ['online', 'offline', 'total', 'worker', 'status']:
                             valid_names = True
                             break
-                    
+                
                     if valid_names:
                         logging.info(f"Successfully retrieved {len(real_worker_data['workers'])} real workers from Ocean.xyz")
-                        
+                    
                         # Add hashrate history if available in cached metrics
                         if cached_metrics and cached_metrics.get("arrow_history") and cached_metrics["arrow_history"].get("hashrate_3hr"):
                             real_worker_data["hashrate_history"] = cached_metrics["arrow_history"]["hashrate_3hr"]
-                        
+                    
                         # Sync with dashboard metrics to ensure consistency
                         if cached_metrics:
                             self.sync_worker_counts_with_dashboard(real_worker_data, cached_metrics)
-                        
+                    
                         # Update cache
                         self.worker_data_cache = real_worker_data
                         self.last_worker_data_update = current_time
-                        
+                    
                         return real_worker_data
                     else:
                         logging.warning("Real worker data had invalid names (like 'online'/'offline'), falling back to simulated data")
@@ -112,93 +112,97 @@ class WorkerService:
                     logging.warning("Real worker data fetch returned no workers, falling back to simulated data")
             else:
                 logging.warning("Dashboard service not available, cannot fetch real worker data")
-            
+        
             # Fallback to simulated data if real data fetch fails or returns no workers
             logging.info("Generating fallback simulated worker data")
             worker_data = self.generate_fallback_data(cached_metrics)
-            
+        
             # Add hashrate history if available in cached metrics
             if cached_metrics and cached_metrics.get("arrow_history") and cached_metrics["arrow_history"].get("hashrate_3hr"):
                 worker_data["hashrate_history"] = cached_metrics["arrow_history"]["hashrate_3hr"]
-            
+        
             # Ensure worker counts match dashboard metrics
             if cached_metrics:
                 self.sync_worker_counts_with_dashboard(worker_data, cached_metrics)
-            
+        
             # Update cache
             self.worker_data_cache = worker_data
             self.last_worker_data_update = current_time
-            
+        
             logging.info(f"Successfully generated fallback worker data: {worker_data['workers_total']} workers")
             return worker_data
-                
+            
         except Exception as e:
             logging.error(f"Error getting worker data: {e}")
             fallback_data = self.generate_fallback_data(cached_metrics)
-            
+        
             # Even on error, try to sync with dashboard metrics
             if cached_metrics:
                 self.sync_worker_counts_with_dashboard(fallback_data, cached_metrics)
-                
+            
             return fallback_data
 
     def sync_worker_counts_with_dashboard(self, worker_data, dashboard_metrics):
         """
         Synchronize worker counts and other metrics between worker data and dashboard metrics.
-        
+    
         Args:
             worker_data (dict): Worker data to be updated
             dashboard_metrics (dict): Dashboard metrics with worker count and other data
         """
         if not worker_data or not dashboard_metrics:
             return
-            
+        
         # Sync worker count
         dashboard_worker_count = dashboard_metrics.get("workers_hashing")
-        
+    
         # Only proceed if dashboard has valid worker count
         if dashboard_worker_count is not None:
             current_worker_count = worker_data.get("workers_total", 0)
-            
+        
             # If counts already match, no need to sync workers count
             if current_worker_count != dashboard_worker_count:
                 logging.info(f"Syncing worker count: worker page({current_worker_count}) → dashboard({dashboard_worker_count})")
-                
+            
                 # Update the total count
                 worker_data["workers_total"] = dashboard_worker_count
-                
+            
                 # Adjust online/offline counts proportionally
                 current_online = worker_data.get("workers_online", 0)
                 current_total = max(1, current_worker_count)  # Avoid division by zero
-                
+            
                 # Calculate ratio of online workers
                 online_ratio = current_online / current_total
-                
+            
                 # Recalculate online and offline counts
                 new_online_count = round(dashboard_worker_count * online_ratio)
                 new_offline_count = dashboard_worker_count - new_online_count
-                
+            
                 # Update the counts
                 worker_data["workers_online"] = new_online_count
                 worker_data["workers_offline"] = new_offline_count
-                
+            
                 logging.info(f"Updated worker counts - Total: {dashboard_worker_count}, Online: {new_online_count}, Offline: {new_offline_count}")
-                
+            
                 # If we have worker instances, try to adjust them as well
                 if "workers" in worker_data and isinstance(worker_data["workers"], list):
                     self.adjust_worker_instances(worker_data, dashboard_worker_count)
-                    
+    
+        # IMPORTANT: Use the dashboard's hashrate values for consistency
+        # This ensures the workers page shows the same hashrate as the main dashboard
+        if dashboard_metrics.get("hashrate_3hr") is not None:
+            worker_data["total_hashrate"] = dashboard_metrics.get("hashrate_3hr")
+            worker_data["hashrate_unit"] = dashboard_metrics.get("hashrate_3hr_unit", "TH/s")
+            logging.info(f"Synced total hashrate from dashboard: {worker_data['total_hashrate']} {worker_data['hashrate_unit']}")
+        
         # Sync daily sats - critical for fixing the daily sats discrepancy
         if dashboard_metrics.get("daily_mined_sats") is not None:
             daily_sats_value = dashboard_metrics.get("daily_mined_sats")
             if daily_sats_value != worker_data.get("daily_sats"):
                 worker_data["daily_sats"] = daily_sats_value
                 logging.info(f"Synced daily sats: {worker_data['daily_sats']}")
-        
+    
         # Sync other important metrics
-        if dashboard_metrics.get("total_hashrate") is not None:
-            worker_data["total_hashrate"] = dashboard_metrics.get("total_hashrate")
-            
         if dashboard_metrics.get("unpaid_earnings") is not None:
             # Attempt to convert string to float if needed
             unpaid_value = dashboard_metrics.get("unpaid_earnings")

@@ -18,7 +18,8 @@ def load_config():
         "power_usage": 0.0,
         "wallet": "yourwallethere",
         "timezone": "America/Los_Angeles",
-        "network_fee": 0.0  # Add default network fee
+        "network_fee": 0.0,  # Add default network fee
+        "currency": "USD" # Default currency
     }
     
     if os.path.exists(CONFIG_FILE):
@@ -94,3 +95,25 @@ def get_value(key, default=None):
     """
     config = load_config()
     return config.get(key, default)
+
+def get_currency():
+    """
+    Get the configured currency with fallback to default.
+    
+    Returns:
+        str: Currency code (e.g., 'USD', 'EUR', etc.)
+    """
+    # First check environment variable (for Docker)
+    import os
+    env_currency = os.environ.get("CURRENCY")
+    if env_currency:
+        return env_currency
+    
+    # Then check config file
+    config = load_config()
+    currency = config.get("currency")
+    if currency:
+        return currency
+    
+    # Default to USD
+    return "USD"

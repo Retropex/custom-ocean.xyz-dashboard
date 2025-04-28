@@ -1,4 +1,4 @@
-"""
+﻿"""
 Data service module for fetching and processing mining data.
 """
 import logging
@@ -489,6 +489,291 @@ class MiningDashboardService:
         except Exception as e:
             logging.error(f"Error fetching exchange rates: {e}")
             return {}
+    
+    def get_payment_history(self, max_pages=5, timeout=30, max_retries=3):
+        """
+        Get payment history data from Ocean.xyz with retry logic.
+
+        Args:
+            max_pages (int): Maximum number of pages to fetch
+            timeout (int): Timeout in seconds for each request
+            max_retries (int): Maximum number of retry attempts
+    
+        Returns:
+            list: List of payment history records
+        """
+        logging.info(f"Fetching payment history data for wallet: {self.wallet}")
+
+        base_url = "https://ocean.xyz"
+        stats_url = f"{base_url}/stats/{self.wallet}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Cache-Control': 'no-cache'
+        }
+
+        all_payments = []
+
+        try:
+            # Start with the main page
+            page_num = 0
+    
+            while page_num < max_pages:
+                url = f"{stats_url}?ppage={page_num}#payouts-fulltable"
+                logging.info(f"Fetching payment history from: {url} (page {page_num+1} of max {max_pages})")
+        
+                # Add retry logic
+                retry_count = 0
+                while retry_count < max_retries:
+                    try:
+                        response = self.session.get(url, headers=headers, timeout=timeout)
+                        if response.ok:
+                            break  # Success, exit retry loop
+                        else:
+                            logging.warning(f"Got status code {response.status_code} fetching page {page_num}, retry {retry_count+1}/{max_retries}")
+                            retry_count += 1
+                            time.sleep(1)  # Wait before retrying
+                    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                        retry_count += 1
+                        logging.warning(f"Request timeout or connection error on page {page_num}, retry {retry_count}/{max_retries}: {e}")
+                        if retry_count >= max_retries:
+                            logging.error(f"Max retries reached for page {page_num}")
+                            if page_num == 0:
+                                # If we can't even get the first page, return empty list
+                                return []
+                            else:
+                                # If we got some data but hit timeout on later pages, just return what we have
+                                logging.info(f"Returning {len(all_payments)} payments collected so far")
+                                return all_payments
+                        time.sleep(2)  # Wait longer between retries
+            
+                # If we've exhausted all retries and still failed, break out of the loop
+                if retry_count >= max_retries and (not 'response' in locals() or not response.ok):
+                    logging.error(f"Failed to fetch payment history page {page_num} after {max_retries} retries")
+                    break
+                
+                soup = BeautifulSoup(response.text, 'html.parser')
+        
+                # Find the payments table
+                payments_table = soup.find('tbody', id='payouts-tablerows')
+                if not payments_table:
+                    logging.warning(f"No payment table found on page {page_num}")
+                    if page_num == 0:
+                        # If we can't find the table on the first page, something is wrong
+                        logging.error("Payment history table not found on main page")
+                        return []
+                    else:
+                        # If we found payments before but not on this page, we've reached the end
+                        break
+        
+                # Find all payment rows
+                payment_rows = payments_table.find_all('tr', class_='table-row')
+                if not payment_rows:
+                    logging.warning(f"No payment rows found on page {page_num}")
+                    break
+            
+                logging.info(f"Found {len(payment_rows)} payment records on page {page_num}")
+        
+                # Process each payment row
+                for row in payment_rows:
+                    cells = row.find_all('td', class_='table-cell')
+            
+                    # Skip rows with insufficient data
+                    if len(cells) < 3:
+                        logging.warning(f"Payment row has too few cells: {len(cells)}")
+                        continue
+                
+                    try:
+                        # Initialize payment record
+                        payment = {
+                            "date": "",
+                            "txid": "",
+                            "amount_btc": 0.0,
+                            "amount_sats": 0,
+                            "status": "confirmed"  # Default status
+                        }
+                
+                        # Extract date from the first cell
+                        date_cell = cells[0]
+                        date_div = date_cell.find('div', class_='date-text')
+                        if date_div:
+                            payment["date"] = date_div.get_text(strip=True)
+                        else:
+                            payment["date"] = date_cell.get_text(strip=True)
+                
+                        # Extract transaction ID from the second cell
+                        tx_cell = cells[1]
+                        tx_link = tx_cell.find('a')
+                        if tx_link and tx_link.has_attr('href'):
+                            tx_href = tx_link['href']
+                            # Extract transaction ID from the href
+                            txid_match = re.search(r'/tx/([a-zA-Z0-9]+)', tx_href)
+                            if txid_match:
+                                payment["txid"] = txid_match.group(1)
+                            else:
+                                # If we can't extract from href, use the text but check for truncation
+                                tx_text = tx_link.get_text(strip=True).replace('⛏️', '').strip()
+                                # Check if this looks like a truncated TXID with ellipsis
+                                if '...' in tx_text:
+                                    # Don't use truncated TXIDs as they're incomplete
+                                    payment["txid"] = ""
+                                    payment["truncated_txid"] = tx_text
+                                else:
+                                    # Only use text content if it's a complete TXID (should be ~64 chars for BTC)
+                                    payment["txid"] = tx_text
+                
+                        # Extract BTC amount from the third cell
+                        amount_cell = cells[2]
+                        amount_text = amount_cell.get_text(strip=True)
+                        # Extract numeric amount from text like "0.01093877 BTC"
+                        amount_match = re.search(r'([\d\.]+)', amount_text)
+                        if amount_match:
+                            try:
+                                payment["amount_btc"] = float(amount_match.group(1))
+                                payment["amount_sats"] = int(round(payment["amount_btc"] * self.sats_per_btc))
+                            except ValueError as e:
+                                logging.warning(f"Could not parse payment amount '{amount_text}': {e}")
+                
+                        # Convert date string to ISO format if possible
+                        try:
+                            parsed_date = datetime.strptime(payment["date"], "%Y-%m-%d %H:%M")
+                            utc_date = parsed_date.replace(tzinfo=ZoneInfo("UTC"))
+                            local_date = utc_date.astimezone(ZoneInfo(get_timezone()))
+                            payment["date_iso"] = local_date.isoformat()
+                        except Exception as e:
+                            logging.warning(f"Could not parse payment date '{payment['date']}': {e}")
+                            payment["date_iso"] = None
+                
+                        all_payments.append(payment)
+                
+                    except Exception as e:
+                        logging.error(f"Error processing payment row: {e}")
+                        continue
+        
+                # If we have no payments after processing the first page, stop
+                if page_num == 0 and not all_payments:
+                    logging.warning("No payment data could be extracted from the first page")
+                    break
+            
+                # Move to the next page
+                page_num += 1
+        
+            logging.info(f"Retrieved {len(all_payments)} payment records across {page_num} pages")
+            return all_payments
+    
+        except Exception as e:
+            logging.error(f"Error fetching payment history: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            return []
+
+    def get_earnings_data(self):
+        """
+        Get comprehensive earnings data from Ocean.xyz with improved error handling.
+
+        Returns:
+            dict: Earnings data including payment history and statistics
+        """
+        try:
+            # Get the payment history with longer timeout and retries
+            payments = self.get_payment_history(max_pages=30, timeout=20, max_retries=3)
+    
+            # Get basic Ocean data for summary metrics (with timeout handling)
+            try:
+                ocean_data = self.get_ocean_data()
+            except Exception as e:
+                logging.error(f"Error fetching ocean data for earnings: {e}")
+                ocean_data = None
+    
+            # Calculate summary statistics
+            total_paid = sum(payment["amount_btc"] for payment in payments)
+            total_paid_sats = sum(payment["amount_sats"] for payment in payments)
+    
+            # Get the latest BTC price with fallback
+            try:
+                _, _, btc_price, _ = self.get_bitcoin_stats()
+                if not btc_price:
+                    btc_price = 75000  # Default value if fetch fails
+            except Exception as e:
+                logging.error(f"Error getting BTC price: {e}")
+                btc_price = 75000  # Default value
+    
+            # Calculate USD value
+            total_paid_usd = round(total_paid * btc_price, 2)
+    
+            # Organize payments by month
+            payments_by_month = {}
+            for payment in payments:
+                if payment.get("date_iso"):
+                    try:
+                        month_key = payment["date_iso"][:7]  # YYYY-MM format
+                        month_name = datetime.strptime(month_key, "%Y-%m").strftime("%B %Y")
+                
+                        if month_key not in payments_by_month:
+                            payments_by_month[month_key] = {
+                                "month": month_key,
+                                "month_name": month_name,
+                                "payments": [],
+                                "total_btc": 0.0,
+                                "total_sats": 0,
+                                "total_usd": 0.0
+                            }
+                        payments_by_month[month_key]["payments"].append(payment)
+                        payments_by_month[month_key]["total_btc"] += payment["amount_btc"]
+                        payments_by_month[month_key]["total_sats"] += payment["amount_sats"]
+                        payments_by_month[month_key]["total_usd"] = round(
+                            payments_by_month[month_key]["total_btc"] * btc_price, 2
+                        )
+                    except Exception as e:
+                        logging.error(f"Error processing payment for monthly grouping: {e}")
+    
+            # Convert to list and sort by month (newest first)
+            monthly_summaries = list(payments_by_month.values())
+            monthly_summaries.sort(key=lambda x: x["month"], reverse=True)
+    
+            # Calculate additional statistics
+            avg_payment = total_paid / len(payments) if payments else 0
+            avg_payment_sats = int(round(avg_payment * self.sats_per_btc)) if avg_payment else 0
+    
+            # Get unpaid earnings from Ocean data
+            unpaid_earnings = ocean_data.unpaid_earnings if ocean_data else None
+            unpaid_earnings_sats = int(round(unpaid_earnings * self.sats_per_btc)) if unpaid_earnings is not None else None
+    
+            # Create result dictionary
+            result = {
+                "payments": payments,
+                "total_payments": len(payments),
+                "total_paid_btc": total_paid,
+                "total_paid_sats": total_paid_sats,
+                "total_paid_usd": total_paid_usd,
+                "avg_payment_btc": avg_payment,
+                "avg_payment_sats": avg_payment_sats,
+                "btc_price": btc_price,
+                "monthly_summaries": monthly_summaries,
+                "unpaid_earnings": unpaid_earnings,
+                "unpaid_earnings_sats": unpaid_earnings_sats,
+                "est_time_to_payout": ocean_data.est_time_to_payout if ocean_data else None,
+                "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
+            }
+    
+            # Add last payment date if available
+            if payments:
+                result["last_payment_date"] = payments[0]["date"]
+                result["last_payment_amount_btc"] = payments[0]["amount_btc"]
+                result["last_payment_amount_sats"] = payments[0]["amount_sats"]
+    
+            return result
+    
+        except Exception as e:
+            logging.error(f"Error fetching earnings data: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            return {
+                "payments": [],
+                "total_payments": 0,
+                "error": str(e),
+                "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
+            }
 
     def get_bitcoin_stats(self):
         """

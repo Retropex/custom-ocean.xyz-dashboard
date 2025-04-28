@@ -1,0 +1,150 @@
+﻿{% extends "base.html" %}
+
+{% block title %}EARNINGS - BTC-OS Dashboard {% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/earnings.css') }}">
+{% endblock %}
+
+{% block header %}EARNINGS MONITOR{% endblock %}
+
+{% block earnings_active %}active{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- User Settings Info -->
+    <div class="settings-info">
+        <span class="setting-item">Currency: <strong id="user-currency">{{ user_currency }}</strong></span>
+        <span class="setting-item">Timezone: <strong id="user-timezone">{{ user_timezone }}</strong></span>
+    </div>
+
+    <!-- Summary Cards Section -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h2>Unpaid Earnings</h2>
+            <div class="stat-value">
+                <span id="unpaid-sats">{{ earnings.unpaid_earnings_sats|default(0)|int|commafy }}</span>
+                <span class="stat-unit">sats</span>
+            </div>
+            <div class="stat-secondary">
+                <span id="unpaid-btc">{{ "%.8f"|format(earnings.unpaid_earnings|default(0)|float) }}</span> BTC
+            </div>
+            <div class="stat-time" id="est-time-payout">{{ earnings.est_time_to_payout|default('Unknown') }}</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Total Paid</h2>
+            <div class="stat-value">
+                <span id="total-paid-sats">{{ earnings.total_paid_sats|default(0)|int|commafy }}</span>
+                <span class="stat-unit">sats</span>
+            </div>
+            <div class="stat-secondary">
+                <span id="total-paid-btc">{{ "%.8f"|format(earnings.total_paid_btc|default(0)|float) }}</span> BTC
+            </div>
+            <div class="stat-secondary" id="total-paid-fiat">
+                <span id="total-paid-currency-symbol">{{ currency_symbols[user_currency] }}</span>{{ "%.2f"|format(earnings.total_paid_fiat|default(0)|float)|commafy }}
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Total Payments</h2>
+            <div class="stat-value">
+                <span id="payment-count">{{ earnings.total_payments|default(0) }}</span>
+            </div>
+            <div class="stat-secondary" id="latest-payment">
+                Latest: {{ earnings.payments[0].date|format_datetime if earnings.payments else 'None' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Summaries Section -->
+    <div class="earnings-section">
+        <h2>Monthly Summary</h2>
+        <div class="table-container">
+            <table class="earnings-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Payments</th>
+                        <th>BTC</th>
+                        <th>Sats</th>
+                        <th>{{ user_currency }}</th>
+                    </tr>
+                </thead>
+                <tbody id="monthly-summary-table">
+                    {% for month in earnings.monthly_summaries %}
+                    <tr>
+                        <td>{{ month.month_name }}</td>
+                        <td>{{ month.payments|length }}</td>
+                        <td>{{ "%.8f"|format(month.total_btc|float) }}</td>
+                        <td>{{ month.total_sats|int|commafy }}</td>
+                        <td><span class="currency-symbol">{{ currency_symbols[user_currency] }}</span>{{ "%.2f"|format(month.total_fiat|float) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">No payment data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Payments History Section -->
+    <div class="earnings-section">
+        <h2>Payment History</h2>
+        <div class="table-container">
+            <table class="earnings-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount (BTC)</th>
+                        <th>Amount (sats)</th>
+                        <th>Transaction ID</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="payment-history-table">
+                    {% for payment in earnings.payments %}
+                    <tr>
+                        <td>{{ payment.date|format_datetime }}</td>
+                        <td>{{ "%.8f"|format(payment.amount_btc|float) }}</td>
+                        <td>{{ payment.amount_sats|int|commafy }}</td>
+                        <td>
+                            {% if payment.txid %}
+                            <a href="https://mempool.guide/tx/{{ payment.txid }}" target="_blank" class="tx-link">
+                                {{ payment.txid[:8] }}...{{ payment.txid[-8:] }}
+                            </a>
+                            {% elif payment.truncated_txid %}
+                            <span class="tx-link truncated" title="Incomplete transaction ID">{{ payment.truncated_txid }}</span>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-indicator status-{{ payment.status }}">{{ payment.status }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">No payment history available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Pass configuration values to JavaScript
+    const userCurrency = "{{ user_currency }}";
+    const userTimezone = "{{ user_timezone }}";
+    const currencySymbol = "{{ currency_symbols[user_currency] }}";
+</script>
+{% endblock %}
+
+{% block javascript %}
+<script src="{{ url_for('static', filename='js/earnings.js') }}"></script>
+{% endblock %}

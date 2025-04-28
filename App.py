@@ -1,4 +1,4 @@
-"""
+﻿"""
 Main application module for the Bitcoin Mining Dashboard.
 """
 import os
@@ -533,7 +533,19 @@ def create_scheduler():
 def commafy(value):
     """Add commas to numbers for better readability."""
     try:
-        return "{:,}".format(int(value))
+        # Check if the value is already a string with decimal places
+        if isinstance(value, str) and '.' in value:
+            # Split by decimal point
+            integer_part, decimal_part = value.split('.')
+            # Format integer part with commas and rejoin with decimal part
+            return "{:,}.{}".format(int(integer_part), decimal_part)
+        elif isinstance(value, (int, float)):
+            # If it's a float, preserve decimal places
+            if isinstance(value, float):
+                return "{:,.2f}".format(value)
+            # If it's an integer, format without decimal places
+            return "{:,}".format(value)
+        return value
     except Exception:
         return value
 
@@ -1226,6 +1238,184 @@ def reset_chart_data():
     except Exception as e:
         logging.error(f"Error resetting chart data: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# First, register the template filter outside of any route function
+# Add this near the top of your file with other template filters
+@app.template_filter('format_datetime')
+def format_datetime(value, timezone=None):
+    """Format a datetime string according to the specified timezone using AM/PM format."""
+    if not value:
+        return "None"
+    
+    import datetime
+    import pytz
+    
+    if timezone is None:
+        # Use default timezone if none provided
+        timezone = get_timezone()
+    
+    try:
+        if isinstance(value, str):
+            # Parse the string to a datetime object
+            dt = datetime.datetime.strptime(value, "%Y-%m-%d %H:%M")
+        else:
+            dt = value
+            
+        # Make datetime timezone aware
+        if dt.tzinfo is None:
+            dt = pytz.UTC.localize(dt)
+            
+        # Convert to user's timezone
+        user_tz = pytz.timezone(timezone)
+        dt = dt.astimezone(user_tz)
+        
+        # Format according to user preference with AM/PM format
+        return dt.strftime("%b %d, %Y %I:%M %p")
+    except ValueError:
+        return value
+
+# Then update your earnings route
+@app.route('/earnings')
+def earnings():
+    """Serve the earnings page with user's currency and timezone preferences."""
+    try:
+        # Get user's currency and timezone preferences
+        from config import get_currency, get_timezone
+        user_currency = get_currency()
+        user_timezone = get_timezone()
+        
+        # Define currency symbols for common currencies
+        currency_symbols = {
+            'USD': '$', 
+            'EUR': '€', 
+            'GBP': '£', 
+            'JPY': '¥',
+            'CAD': 'C$',
+            'AUD': 'A$',
+            'CNY': '¥',
+            'KRW': '₩',
+            'BRL': 'R$',
+            'CHF': 'Fr'
+        }
+        
+        # Add graceful error handling for earnings data
+        try:
+            # Get earnings data with a longer timeout
+            earnings_data = dashboard_service.get_earnings_data()
+        except requests.exceptions.ReadTimeout:
+            logging.warning("Timeout fetching earnings data from ocean.xyz - using cached or fallback data")
+            # Try to use cached metrics as fallback
+            if cached_metrics and 'unpaid_earnings' in cached_metrics:
+                # Create minimal earnings data from cached metrics
+                earnings_data = {
+                    'payments': [],
+                    'total_payments': 0,
+                    'total_paid_btc': 0,
+                    'total_paid_sats': 0,
+                    'total_paid_usd': 0,
+                    'unpaid_earnings': cached_metrics.get('unpaid_earnings', 0),
+                    'unpaid_earnings_sats': int(float(cached_metrics.get('unpaid_earnings', 0)) * 100000000),
+                    'est_time_to_payout': cached_metrics.get('est_time_to_payout', 'Unknown'),
+                    'monthly_summaries': [],
+                    'timestamp': datetime.now(ZoneInfo(user_timezone)).isoformat()
+                }
+            else:
+                # Create empty fallback data
+                earnings_data = {
+                    'payments': [],
+                    'total_payments': 0,
+                    'total_paid_btc': 0,
+                    'total_paid_sats': 0,
+                    'total_paid_usd': 0,
+                    'unpaid_earnings': 0,
+                    'unpaid_earnings_sats': 0,
+                    'est_time_to_payout': 'Unknown',
+                    'monthly_summaries': [],
+                    'timestamp': datetime.now(ZoneInfo(user_timezone)).isoformat()
+                }
+            
+            # Add notification about timeout
+            notification_service.add_notification(
+                "Data fetch timeout",
+                "Unable to fetch payment history data from Ocean.xyz. Showing limited earnings data.",
+                NotificationLevel.WARNING,
+                NotificationCategory.DATA
+            )
+        except Exception as e:
+            logging.error(f"Error fetching earnings data: {e}")
+            # Create empty fallback data
+            earnings_data = {
+                'payments': [],
+                'total_payments': 0,
+                'total_paid_btc': 0,
+                'total_paid_sats': 0,
+                'total_paid_usd': 0,
+                'unpaid_earnings': 0,
+                'unpaid_earnings_sats': 0,
+                'est_time_to_payout': 'Unknown',
+                'monthly_summaries': [],
+                'error': str(e),
+                'timestamp': datetime.now(ZoneInfo(user_timezone)).isoformat()
+            }
+            
+            # Add notification about error
+            notification_service.add_notification(
+                "Error fetching earnings data",
+                f"Error: {str(e)}",
+                NotificationLevel.ERROR,
+                NotificationCategory.DATA
+            )
+        
+        # Convert USD values to user's preferred currency if needed
+        if user_currency != 'USD' and earnings_data:
+            # Get exchange rate
+            try:
+                exchange_rates = dashboard_service.fetch_exchange_rates()
+                exchange_rate = exchange_rates.get(user_currency, 1.0)
+                
+                # Total paid conversion
+                if 'total_paid_usd' in earnings_data:
+                    earnings_data['total_paid_fiat'] = earnings_data['total_paid_usd'] * exchange_rate
+                
+                # Monthly summaries conversion
+                if 'monthly_summaries' in earnings_data:
+                    for month in earnings_data['monthly_summaries']:
+                        if 'total_usd' in month:
+                            month['total_fiat'] = month['total_usd'] * exchange_rate
+            except Exception as e:
+                logging.error(f"Error converting currency: {e}")
+                # Set fiat values equal to USD as fallback
+                if 'total_paid_usd' in earnings_data:
+                    earnings_data['total_paid_fiat'] = earnings_data['total_paid_usd']
+                
+                if 'monthly_summaries' in earnings_data:
+                    for month in earnings_data['monthly_summaries']:
+                        if 'total_usd' in month:
+                            month['total_fiat'] = month['total_usd']
+        else:
+            # If currency is USD, just copy USD values
+            if earnings_data:
+                if 'total_paid_usd' in earnings_data:
+                    earnings_data['total_paid_fiat'] = earnings_data['total_paid_usd']
+                
+                if 'monthly_summaries' in earnings_data:
+                    for month in earnings_data['monthly_summaries']:
+                        if 'total_usd' in month:
+                            month['total_fiat'] = month['total_usd']
+        
+        return render_template(
+            'earnings.html', 
+            earnings=earnings_data,
+            user_currency=user_currency,
+            user_timezone=user_timezone,
+            currency_symbols=currency_symbols,
+            current_time=datetime.now(ZoneInfo(user_timezone)).strftime("%b %d, %Y %I:%M:%S %p")
+        )
+    except Exception as e:
+        logging.error(f"Error rendering earnings page: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
+        return render_template("error.html", message="Failed to load earnings data. Please try again later."), 500
 
 # Add the middleware
 app.wsgi_app = RobustMiddleware(app.wsgi_app)

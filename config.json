@@ -3,5 +3,6 @@
     "power_usage": 0.0,
     "wallet": "yourwallethere",
     "timezone": "America/Los_Angeles",
-    "network_fee": 0.0
+    "network_fee": 0.0,
+    "currency": "USD"
 }

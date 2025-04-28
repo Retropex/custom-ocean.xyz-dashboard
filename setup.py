@@ -61,6 +61,7 @@ FILE_MAPPINGS = {
     'blocks.css': 'static/css/blocks.css',
     'notifications.css': 'static/css/notifications.css',
     'theme-toggle.css': 'static/css/theme-toggle.css',  # Added theme-toggle.css
+    'earnings.css': 'static/css/earnings.css',  # Added earnings.css
     
     # JS files
     'main.js': 'static/js/main.js',
@@ -69,6 +70,7 @@ FILE_MAPPINGS = {
     'BitcoinProgressBar.js': 'static/js/BitcoinProgressBar.js',
     'notifications.js': 'static/js/notifications.js',
     'theme.js': 'static/js/theme.js',  # Added theme.js
+    'earnings.js': 'static/js/earnings.js',  # Added earnings.js
     
     # Template files
     'base.html': 'templates/base.html',
@@ -78,6 +80,7 @@ FILE_MAPPINGS = {
     'error.html': 'templates/error.html',
     'blocks.html': 'templates/blocks.html',
     'notifications.html': 'templates/notifications.html',
+    'earnings.html': 'templates/earnings.html',  # Added earnings.html
 }
 
 # Default configuration
@@ -86,7 +89,8 @@ DEFAULT_CONFIG = {
     "power_usage": 0.0,
     "wallet": "yourwallethere",
     "timezone": "America/Los_Angeles",  # Added default timezone
-    "network_fee": 0.0  # Added default network fee
+    "network_fee": 0.0,  # Added default network fee
+    "currency": "USD"
 }
 
 def parse_arguments():

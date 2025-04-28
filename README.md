@@ -46,6 +46,11 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Block Details**: Examine transaction counts, fees, and mining pool information
 - **Visual Indicators**: Track network difficulty and block discovery times
 
+### Earnings Page
+- **Detailed Earnings Breakdown**: View earnings by time period (daily, weekly, monthly)
+- **Currency Conversion**: Automatically convert earnings to your preferred fiat currency
+- **Historical Data**: Access past earnings data for analysis
+
 ### System Resilience
 - **Connection Recovery**: Automatic reconnection after network interruptions
 - **Backup Polling**: Fallback to traditional polling if real-time connection fails
@@ -145,12 +150,21 @@ For more details, refer to the [docker-compose documentation](https://docs.docke
 - Search and filtering functionality
 - Performance trend mini-charts
 
+### Earnings Page
+- Detailed earnings breakdown by time period
+- Currency conversion for earnings in selected fiat
+- Historical data for earnings analysis
+
 ### Blocks Explorer
 
 - Recent block visualization with mining details
 - Transaction statistics and fee information
 - Mining pool attribution
 - Block details modal with comprehensive data
+
+### Notifications
+- Real-time alerts for important events
+- Notification history with read/unread status
 
 ### System Monitor
 
@@ -184,7 +198,19 @@ Built with a modern stack for reliability and performance:
 - `/api/health`: Returns the health status of the application.
 - `/api/notifications`: Manages notifications for the user.
 - `/api/workers`: Manages worker data and status.
-- `/api/exchange_rates`: Fetches real-time exchange rates for supported currencies.
+- `api/time`: Returns the current server time.
+- `api/timezone`: Returns the current timezone.
+- `api/scheduler-health`: Returns the health status of the scheduler.
+- `api/fix-scheduler`: Fixes the scheduler if it is not running.
+- `api/force-refresh`: Forces a refresh of the data.
+- `api/reset-chart-data`: Resets the chart data.
+- `api/memory-profile`: Returns the memory profile of the application.
+- `api/memory-history`: Returns the memory history of the application.
+- `api/force-gc`: Forces garbage collection to free up memory.
+- `api/notifications/clear`: Clears all notifications.
+- `api/notifications/delete`: Deletes a specific notification.
+- `api/notifications/mark_read`: Marks a notification as read.
+- `api/notifications/unread_count`: Returns the count of unread notifications.
 
 ## Project Structure
 
@@ -206,6 +232,7 @@ DeepSea-Dashboard/
 ├── requirements.txt            # Python dependencies
 ├── Dockerfile                  # Docker configuration
 ├── docker-compose.yml          # Docker Compose configuration
+DeepSea-Dashboard/
 │
 ├── templates/                  # HTML templates
 │   ├── base.html              # Base template with common elements
@@ -214,6 +241,7 @@ DeepSea-Dashboard/
 │   ├── workers.html           # Workers dashboard template
 │   ├── blocks.html            # Bitcoin blocks template
 │   ├── notifications.html     # Notifications template
+│   ├── earnings.html          # Earnings page template
 │   └── error.html             # Error page template
 │
 ├── static/                     # Static assets
@@ -224,6 +252,7 @@ DeepSea-Dashboard/
 │   │   ├── boot.css           # Boot sequence styles
 │   │   ├── blocks.css         # Blocks page styles
 │   │   ├── notifications.css  # Notifications page styles
+│   │   ├── earnings.css       # Earnings page styles
 │   │   ├── error.css          # Error page styles
 │   │   ├── retro-refresh.css  # Floating refresh bar styles
 │   │   └── theme-toggle.css   # Theme toggle styles
@@ -233,6 +262,7 @@ DeepSea-Dashboard/
 │       ├── workers.js         # Workers page functionality
 │       ├── blocks.js          # Blocks page functionality
 │       ├── notifications.js   # Notifications functionality
+│       ├── earnings.js        # Earnings page functionality
 │       ├── block-animation.js # Block mining animation
 │       ├── BitcoinProgressBar.js # System monitor functionality
 │       └── theme.js           # Theme toggle functionality

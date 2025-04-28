@@ -182,10 +182,6 @@
   box-shadow: 0 0 15px rgba(247, 147, 26, 0.7);
   text-transform: uppercase;
 }
-/* Add bottom padding to accommodate minimized system monitor */
-.container-fluid {
-    padding-bottom: 100px !important; /* Enough space for minimized monitor */
-}
 
 /* Add these styles to dashboard.css */
 @keyframes pulse-block-marker {

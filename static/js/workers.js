@@ -227,84 +227,131 @@ function hideLoader() {
     $("#loader").hide();
 }
 
-// Fetch worker data from API with pagination, limiting to 10 pages
+// Fetch worker data with better pagination and progressive loading
 function fetchWorkerData(forceRefresh = false) {
     console.log("Fetching worker data...");
     lastManualRefreshTime = Date.now();
     $('#worker-grid').addClass('loading-fade');
     showLoader();
 
-    const maxPages = 10;
+    // For large datasets, better to use streaming or chunked approach
+    // First fetch just the summary data and first page
+    const initialRequest = $.ajax({
+        url: `/api/workers?summary=true&page=1${forceRefresh ? '&force=true' : ''}`,
+        method: 'GET',
+        dataType: 'json',
+        timeout: 15000
+    });
+
+    initialRequest.then(summaryData => {
+        // Store summary stats immediately to update UI
+        workerData = summaryData || {};
+        workerData.workers = workerData.workers || [];
+
+        // Update summary stats while we load more workers
+        updateSummaryStats();
+        updateMiniChart();
+        updateLastUpdated();
+
+        const totalPages = Math.ceil((workerData.workers_total || 0) / 100); // Assuming 100 workers per page
+        const pagesToFetch = Math.min(totalPages, 20); // Limit to 20 pages max
+
+        if (pagesToFetch <= 1) {
+            // We already have all the data from the first request
+            finishWorkerLoad();
+            return;
+        }
+
+        // Progress indicator
+        const progressBar = $('<div class="worker-load-progress"><div class="progress-bar"></div><div class="progress-text">Loading workers: 1/' + pagesToFetch + '</div></div>');
+        $('#worker-grid').html(progressBar);
+
+        // Load remaining pages in batches to avoid overwhelming the browser
+        loadWorkerPages(2, pagesToFetch, progressBar);
+    }).catch(error => {
+        console.error("Error fetching initial worker data:", error);
+        $('#worker-grid').html('<div class="text-center p-5"><i class="fas fa-exclamation-circle"></i> Error loading workers. <button class="retry-btn">Retry</button></div>');
+        $('.retry-btn').on('click', () => fetchWorkerData(true));
+        hideLoader();
+        $('#worker-grid').removeClass('loading-fade');
+    });
+}
+
+// Load worker pages in batches
+function loadWorkerPages(startPage, totalPages, progressBar) {
+    const BATCH_SIZE = 3; // Number of pages to load in parallel
+    const endPage = Math.min(startPage + BATCH_SIZE - 1, totalPages);
     const requests = [];
 
-    // Create requests for pages 1 through maxPages concurrently
-    for (let page = 1; page <= maxPages; page++) {
-        const apiUrl = `/api/workers?page=${page}${forceRefresh ? '&force=true' : ''}`;
-        requests.push($.ajax({
-            url: apiUrl,
-            method: 'GET',
-            dataType: 'json',
-            timeout: 15000
-        }));
+    for (let page = startPage; page <= endPage; page++) {
+        requests.push(
+            $.ajax({
+                url: `/api/workers?page=${page}`,
+                method: 'GET',
+                dataType: 'json',
+                timeout: 15000
+            })
+        );
     }
 
-    // Process all requests concurrently
     Promise.all(requests)
         .then(pages => {
-            let allWorkers = [];
-            let aggregatedData = null;
-
-            pages.forEach((data, i) => {
-                if (data && data.workers && data.workers.length > 0) {
-                    allWorkers = allWorkers.concat(data.workers);
-                    if (i === 0) {
-                        aggregatedData = data; // preserve stats from first page
-                    }
-                } else {
-                    console.warn(`No workers found on page ${i + 1}`);
+            // Process each page
+            pages.forEach(pageData => {
+                if (pageData && pageData.workers && pageData.workers.length > 0) {
+                    // Append new workers to our list efficiently
+                    workerData.workers = workerData.workers.concat(pageData.workers);
                 }
             });
 
-            // Deduplicate workers if necessary (using worker.name as unique key)
-            const uniqueWorkers = allWorkers.filter((worker, index, self) =>
-                index === self.findIndex((w) => w.name === worker.name)
-            );
+            // Update progress
+            const progress = Math.min(endPage / totalPages * 100, 100);
+            progressBar.find('.progress-bar').css('width', progress + '%');
+            progressBar.find('.progress-text').text(`Loading workers: ${endPage}/${totalPages}`);
 
-            workerData = aggregatedData || {};
-            workerData.workers = uniqueWorkers;
-
-            if (typeof BitcoinMinuteRefresh !== 'undefined' && BitcoinMinuteRefresh.notifyRefresh) {
-                BitcoinMinuteRefresh.notifyRefresh();
+            if (endPage < totalPages) {
+                // Continue with next batch
+                setTimeout(() => loadWorkerPages(endPage + 1, totalPages, progressBar), 100);
+            } else {
+                // All pages loaded
+                finishWorkerLoad();
             }
-
-            updateWorkerGrid();
-            updateSummaryStats();
-            updateMiniChart();
-            updateLastUpdated();
-
-            $('#retry-button').hide();
-            connectionRetryCount = 0;
-            console.log("Worker data updated successfully");
-            $('#worker-grid').removeClass('loading-fade');
         })
         .catch(error => {
-            console.error("Error fetching worker data:", error);
-        })
-        .finally(() => {
-            hideLoader();
+            console.error(`Error fetching worker pages ${startPage}-${endPage}:`, error);
+            // Continue with what we have so far
+            finishWorkerLoad();
         });
 }
 
-// Refresh worker data every 60 seconds
-setInterval(function () {
-    console.log("Refreshing worker data at " + new Date().toLocaleTimeString());
-    fetchWorkerData();
-}, 60000);
+// Finish loading process with optimized rendering
+function finishWorkerLoad() {
+    // Deduplicate workers more efficiently with a Map
+    const uniqueWorkersMap = new Map();
+    workerData.workers.forEach(worker => {
+        if (worker.name) {
+            uniqueWorkersMap.set(worker.name, worker);
+        }
+    });
+    workerData.workers = Array.from(uniqueWorkersMap.values());
 
-// Update the worker grid with data
-function updateWorkerGrid() {
-    console.log("Updating worker grid...");
+    // Notify BitcoinMinuteRefresh
+    if (typeof BitcoinMinuteRefresh !== 'undefined' && BitcoinMinuteRefresh.notifyRefresh) {
+        BitcoinMinuteRefresh.notifyRefresh();
+    }
 
+    // Efficiently render workers with virtualized list approach
+    renderWorkersList();
+
+    $('#retry-button').hide();
+    connectionRetryCount = 0;
+    console.log(`Worker data updated successfully: ${workerData.workers.length} workers`);
+    $('#worker-grid').removeClass('loading-fade');
+    hideLoader();
+}
+
+// Virtualized list rendering for large datasets
+function renderWorkersList() {
     if (!workerData || !workerData.workers) {
         console.error("No worker data available");
         return;
@@ -325,14 +372,114 @@ function updateWorkerGrid() {
         return;
     }
 
-    filteredWorkers.forEach(worker => {
-        const card = createWorkerCard(worker);
-        workerGrid.append(card);
-    });
+    // Performance optimization for large lists
+    if (filteredWorkers.length > 200) {
+        // For very large lists, render in batches
+        const workerBatch = 100;
+        const totalBatches = Math.ceil(filteredWorkers.length / workerBatch);
+
+        console.log(`Rendering ${filteredWorkers.length} workers in ${totalBatches} batches`);
+
+        // Render first batch immediately
+        renderWorkerBatch(filteredWorkers.slice(0, workerBatch), workerGrid);
+
+        // Render remaining batches with setTimeout to avoid UI freezing
+        for (let i = 1; i < totalBatches; i++) {
+            const start = i * workerBatch;
+            const end = Math.min(start + workerBatch, filteredWorkers.length);
+
+            setTimeout(() => {
+                renderWorkerBatch(filteredWorkers.slice(start, end), workerGrid);
+
+                // Update "loading more" message with progress
+                const loadingMsg = workerGrid.find('.loading-more-workers');
+                if (loadingMsg.length) {
+                    if (i === totalBatches - 1) {
+                        loadingMsg.remove();
+                    } else {
+                        loadingMsg.text(`Loading more workers... ${Math.min((i + 1) * workerBatch, filteredWorkers.length)}/${filteredWorkers.length}`);
+                    }
+                }
+            }, i * 50); // 50ms delay between batches
+        }
+
+        // Add "loading more" indicator at the bottom
+        if (totalBatches > 1) {
+            workerGrid.append(`<div class="loading-more-workers">Loading more workers... ${workerBatch}/${filteredWorkers.length}</div>`);
+        }
+    } else {
+        // For smaller lists, render all at once
+        renderWorkerBatch(filteredWorkers, workerGrid);
+    }
 }
 
-// Create worker card element
-function createWorkerCard(worker) {
+// Render a batch of workers efficiently
+function renderWorkerBatch(workers, container) {
+    // Create a document fragment for better performance
+    const fragment = document.createDocumentFragment();
+
+    // Calculate max hashrate once for this batch
+    const maxHashrate = calculateMaxHashrate();
+
+    workers.forEach(worker => {
+        const card = createWorkerCard(worker, maxHashrate);
+        fragment.appendChild(card[0]);
+    });
+
+    container.append(fragment);
+}
+
+// Calculate max hashrate once to avoid recalculating for each worker
+function calculateMaxHashrate() {
+    let maxHashrate = 125; // Default fallback
+
+    // First check if global hashrate data is available
+    if (workerData && workerData.hashrate_24hr) {
+        const globalHashrate = normalizeHashrate(workerData.hashrate_24hr, workerData.hashrate_24hr_unit || 'th/s');
+        if (globalHashrate > 0) {
+            return Math.max(5, globalHashrate * 1.2);
+        }
+    }
+
+    // If no global data, calculate from workers efficiently
+    if (workerData && workerData.workers && workerData.workers.length > 0) {
+        const onlineWorkers = workerData.workers.filter(w => w.status === 'online');
+
+        if (onlineWorkers.length > 0) {
+            let maxWorkerHashrate = 0;
+
+            // Find maximum hashrate without logging every worker
+            onlineWorkers.forEach(w => {
+                const hashrateValue = w.hashrate_24hr || w.hashrate_3hr || 0;
+                const hashrateUnit = w.hashrate_24hr ?
+                    (w.hashrate_24hr_unit || 'th/s') :
+                    (w.hashrate_3hr_unit || 'th/s');
+                const normalizedRate = normalizeHashrate(hashrateValue, hashrateUnit);
+
+                if (normalizedRate > maxWorkerHashrate) {
+                    maxWorkerHashrate = normalizedRate;
+                }
+            });
+
+            if (maxWorkerHashrate > 0) {
+                return Math.max(5, maxWorkerHashrate * 1.2);
+            }
+        }
+    }
+
+    // Fallback to total hashrate
+    if (workerData && workerData.total_hashrate) {
+        const totalHashrate = normalizeHashrate(workerData.total_hashrate, workerData.hashrate_unit || 'th/s');
+        if (totalHashrate > 0) {
+            return Math.max(5, totalHashrate * 1.2);
+        }
+    }
+
+    return maxHashrate;
+}
+
+// Optimized worker card creation (removed debug logging)
+function createWorkerCard(worker, maxHashrate) {
     const card = $('<div class="worker-card"></div>');
 
     card.addClass(worker.status === 'online' ? 'worker-card-online' : 'worker-card-offline');
@@ -340,7 +487,7 @@ function createWorkerCard(worker) {
     card.append(`<div class="worker-name">${worker.name}</div>`);
     card.append(`<div class="status-badge ${worker.status === 'online' ? 'status-badge-online' : 'status-badge-offline'}">${worker.status.toUpperCase()}</div>`);
 
-    const maxHashrate = 125; // TH/s - adjust based on your fleet
+    // Use 3hr hashrate for display as in original code
     const normalizedHashrate = normalizeHashrate(worker.hashrate_3hr, worker.hashrate_3hr_unit || 'th/s');
     const hashratePercent = Math.min(100, (normalizedHashrate / maxHashrate) * 100);
     const formattedHashrate = formatHashrateForDisplay(worker.hashrate_3hr, worker.hashrate_3hr_unit || 'th/s');
@@ -358,15 +505,8 @@ function createWorkerCard(worker) {
     // Format the last share using the proper method for timezone conversion
     let formattedLastShare = 'N/A';
     if (worker.last_share && typeof worker.last_share === 'string') {
-        // This is a more reliable method for timezone conversion
         try {
-            // The worker.last_share is likely in format "YYYY-MM-DD HH:MM"
-            // We need to consider it as UTC and convert to the configured timezone
-
-            // Create a proper date object, ensuring UTC interpretation
-            const dateWithoutTZ = new Date(worker.last_share + 'Z'); // Adding Z to treat as UTC
-
-            // Format it according to the configured timezone
+            const dateWithoutTZ = new Date(worker.last_share + 'Z');
             formattedLastShare = dateWithoutTZ.toLocaleString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -374,8 +514,7 @@ function createWorkerCard(worker) {
                 timeZone: window.dashboardTimezone || 'America/Los_Angeles'
             });
         } catch (e) {
-            console.error("Error formatting last share time:", e, worker.last_share);
-            formattedLastShare = worker.last_share; // Fallback to original value
+            formattedLastShare = worker.last_share;
         }
     }
 

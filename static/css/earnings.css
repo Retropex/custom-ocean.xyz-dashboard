@@ -1,21 +1,51 @@
-﻿/* earnings.css - Enhanced with dashboard styling */
+﻿/* earnings.css - Clean theme-switching friendly version */
+
+/* Color variables - Defined at root level for global access */
+:root {
+    /* Shared colors for both themes */
+    --yellow-color: #ffd700;
+    --green-color: #32CD32;
+    --light-green-color: #90EE90;
+    --red-color: #ff5555;
+    --accent-color: #00dfff;
+    --accent-color-rgb: 0, 223, 255;
+    --bg-color: #000;
+    --card-header-bg: #000;
+}
+
+/* Theme-specific variables */
+html.bitcoin-theme {
+    --primary-color: #f2a900;
+    --primary-color-rgb: 242, 169, 0;
+    --border-color: #333;
+    --primary-gradient-end: #bf7d00; /* Darker orange */
+}
+
+html.deepsea-theme {
+    --primary-color: #0088cc;
+    --primary-color-rgb: 0, 136, 204;
+    --border-color: #224;
+    --primary-gradient-end: #006699; /* Darker blue */
+}
+
+/* ===== LAYOUT COMPONENTS ===== */
 
 /* Main section styling */
 .earnings-section {
     margin: 2rem 0;
 }
 
-/* Dashboard title styling */
-.dashboard-title {
-    color: var(--primary-color);
-    text-transform: uppercase;
-    margin-bottom: 1.5rem;
-    font-family: var(--header-font);
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px var(--primary-color, rgba(0, 136, 204, 0.5));
-}
+    /* Section headers */
+    .earnings-section h2 {
+        color: white;
+        padding: 0.5rem;
+        font-weight: bold;
+        font-family: var(--header-font);
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
 
-/* Stats grid styling for summary cards */
+/* Stats grid for summary cards */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -23,32 +53,46 @@
     margin-bottom: 2rem;
 }
 
+/* ===== CARD STYLING ===== */
+
+/* Stat card - Blue background with white text */
 .stat-card {
-    background-color: #000;
+    color: white;
     padding: 1rem;
     border: 1px solid var(--primary-color);
-    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3);
     position: relative;
 }
 
     .stat-card h2 {
-        color: var(--primary-color);
+        padding: 0.5rem;
+        color: white;
         font-size: 1.2rem;
         margin-bottom: 0.5rem;
         text-transform: uppercase;
         font-family: var(--header-font);
     }
 
+/* Card content elements */
 .stat-value {
     font-size: 1.8rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
 }
 
+.stat-card .stat-value {
+    color: white;
+}
+
 .stat-unit {
     font-size: 1rem;
     color: var(--text-color);
     margin-left: 0.25rem;
+}
+
+.stat-card .stat-unit,
+.stat-card .stat-secondary {
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .stat-secondary {
@@ -59,50 +103,27 @@
 .stat-time {
     margin-top: 0.5rem;
     font-size: 0.9rem;
-    color: #00dfff; /* Blue color for time values */
+    color: var(--accent-color, #00dfff);
 }
 
-/* Card and container styling similar to dashboard */
-.row.equal-height {
-    display: flex;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
+.stat-card .stat-time {
+    color: var(--accent-color, #a0ffff);
 }
 
-    .row.equal-height > [class*="col-"] {
-        display: flex;
-        margin-bottom: 0.5rem;
-    }
+/* ===== TABLE STYLING ===== */
 
-        .row.equal-height > [class*="col-"] .card {
-            width: 100%;
-        }
-
-/* Section headers like dashboard blue headers */
-.earnings-section h2 {
-    background-color: var(--primary-color, #0088cc);
-    color: #000;
-    padding: 0.5rem;
-    font-weight: bold;
-    font-family: var(--header-font);
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 0 5px var(--primary-color, rgba(0, 136, 204, 0.5));
-}
-
-/* Table styling */
 .table-container {
     overflow-x: auto;
     margin: 1rem 0;
-    background-color: #000;
+    background-color: var(--bg-color);
     padding: 0.5rem;
     border: 1px solid var(--primary-color);
-    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2);
     position: relative;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
-    /* Add scanline effect to tables */
+    /* Scanline effect for tables */
     .table-container::after {
         content: '';
         position: absolute;
@@ -110,7 +131,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
         pointer-events: none;
         z-index: 1;
     }
@@ -120,7 +141,8 @@
     border-collapse: collapse;
 }
 
-    .earnings-table th, .earnings-table td {
+    .earnings-table th,
+    .earnings-table td {
         padding: 0.75rem;
         text-align: left;
         border-bottom: 1px solid var(--border-color);
@@ -134,19 +156,59 @@
         font-size: 0.9rem;
     }
 
-/* Transaction link styling */
+    /* Empty state message */
+    .earnings-table tr td[colspan] {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-color);
+        font-style: italic;
+    }
+
+    /* ===== SPECIFIC DATA COLORS ===== */
+
+    /* Yellow color - BTC/sats values */
+    #unpaid-sats,
+    #total-paid-sats,
+    .earnings-table td:nth-child(4),
+    #unpaid-btc,
+    #total-paid-btc,
+    .earnings-table td:nth-child(3) {
+        color: var(--yellow-color);
+    }
+
+    /* Green color - Earnings/profits */
+    #total-paid-usd,
+    #total-paid-fiat,
+    .earnings-table td:nth-child(5) {
+        color: var(--green-color);
+    }
+
+/* Red color - Fees/costs */
+.earnings-fee,
+.earnings-cost {
+    color: var(--red-color) !important;
+}
+
+/* Blue color - Dates */
+.earnings-table td:nth-child(1) {
+    color: var(--accent-color);
+}
+
+/* ===== MISC ELEMENTS ===== */
+
+/* Transaction links */
 .tx-link {
-    color: #00dfff; /* Blue color from dashboard */
+    color: var(--accent-color);
     text-decoration: none;
     letter-spacing: 1px;
 }
 
     .tx-link:hover {
         text-decoration: underline;
-        text-shadow: 0 0 5px var(--primary-color, rgba(0, 223, 255, 0.7));
+        text-shadow: 0 0 5px rgba(var(--accent-color-rgb), 0.7);
     }
 
-/* Status indicators with color families similar to dashboard */
+/* Status indicators */
 .status-label {
     display: inline-block;
     padding: 0.25rem 0.5rem;
@@ -155,68 +217,81 @@
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1px;
+    text-align: center;
 }
 
 .status-confirmed {
     background-color: rgba(75, 181, 67, 0.15);
-    color: #32CD32; /* Matched with green color family from dashboard */
+    color: var(--green-color);
 }
 
 .status-pending {
     background-color: rgba(247, 147, 26, 0.15);
-    color: #ffd700; /* Matched with yellow color family from dashboard */
+    color: var(--yellow-color);
 }
 
 .status-processing {
     background-color: rgba(52, 152, 219, 0.15);
-    color: #00dfff; /* Matched with blue metrics from dashboard */
+    color: var(--accent-color);
 }
 
-/* Metric styling by category - matching dashboard */
-.metric-value {
-    color: var(--text-color);
-    font-weight: bold;
+/* User settings info */
+.settings-info {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #888;
 }
 
-/* Yellow color family - for BTC/sats values */
-#unpaid-sats,
-#total-paid-sats,
-.earnings-table td:nth-child(4) {
-    color: #ffd700;
+.setting-item {
+    margin-left: 20px;
 }
 
-#unpaid-btc,
-#total-paid-btc,
-.earnings-table td:nth-child(3) {
-    color: #ffd700;
+    .setting-item strong {
+        color: var(--accent-color);
+    }
+
+/* Currency symbol */
+.currency-symbol {
+    display: inline-block;
+    margin-right: 2px;
 }
 
-/* Green color family - for earnings/profits */
-#total-paid-usd {
-    color: #32CD32;
+/* ===== SPECIFIC ELEMENT STYLING ===== */
+
+/* Payment count */
+#payment-count {
+    font-size: 1.5rem;
 }
 
-/* Green color for fiat currency amount */
-#total-paid-fiat {
-    color: #32CD32; /* Using the same green already in your theme */
+/* Latest payment timestamp */
+#latest-payment {
+    color: var(--accent-color);
+    font-size: 0.9rem;
 }
 
-.earnings-table td:nth-child(5) {
-    color: #32CD32; /* USD values */
+/* Pool luck indicators */
+.very-lucky {
+    color: var(--green-color) !important;
+    font-weight: bold !important;
 }
 
-/* Red color family - for fees/costs */
-.earnings-fee,
-.earnings-cost {
-    color: #ff5555 !important;
+.lucky {
+    color: var(--light-green-color) !important;
 }
 
-/* Styling for date fields */
-.earnings-table td:nth-child(1) {
-    color: #00dfff; /* Blue date indicators */
+.normal-luck {
+    color: var(--yellow-color) !important;
 }
 
-/* Add bounce animations from dashboard */
+.unlucky {
+    color: var(--red-color) !important;
+}
+
+/* ===== ANIMATIONS ===== */
+
+/* Bounce animations */
 @keyframes bounceUp {
     0% {
         transform: translateY(0);
@@ -269,24 +344,18 @@
     animation: bounceDown 1s infinite;
 }
 
-.arrow {
-    display: inline-block;
-    font-weight: bold;
-    margin-left: 0.5rem;
-}
-
-/* Add pulse animation for new payments */
+/* Pulse animation for new payments */
 @keyframes pulse-highlight {
     0% {
-        background-color: color-mix(in srgb, var(--primary-color, rgba(247, 147, 26, 0.1)) 10%, transparent);
+        background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
     }
 
     50% {
-        background-color: color-mix(in srgb, var(--primary-color, rgba(247, 147, 26, 0.3)) 30%, transparent);
+        background-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
     }
 
     100% {
-        background-color: color-mix(in srgb, var(--primary-color, rgba(247, 147, 26, 0.1)) 10%, transparent);
+        background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
     }
 }
 
@@ -294,92 +363,15 @@
     animation: pulse-highlight 2s infinite;
 }
 
-/* Card body styling consistency */
-.card-body strong {
-    color: var(--primary-color);
-    margin-right: 0.25rem;
-}
+/* ===== FUTURE CHART STYLING ===== */
 
-.card-body p {
-    margin: 0.25rem 0;
-    line-height: 1.2;
-}
-
-/* Monospace styling for numerical values */
-#payment-count {
-    font-size: 1.5rem;
-}
-
-/* Font styling for Latest payment */
-#latest-payment {
-    color: #00dfff;
-    font-size: 0.9rem;
-}
-
-/* Status label specific styling with uppercase text */
-.status-confirmed,
-.status-pending,
-.status-processing {
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
-}
-
-/* Empty state styling */
-.earnings-table tr td[colspan] {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-color);
-    font-style: italic;
-}
-
-/* Pool luck indicators - reused from dashboard */
-.very-lucky {
-    color: #32CD32 !important;
-    font-weight: bold !important;
-}
-
-.lucky {
-    color: #90EE90 !important;
-}
-
-.normal-luck {
-    color: #ffd700 !important;
-}
-
-.unlucky {
-    color: #ff5555 !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .earnings-table th, .earnings-table td {
-        padding: 0.5rem;
-        font-size: 0.85rem;
-    }
-
-    .status-label {
-        font-size: 0.7rem;
-        padding: 0.15rem 0.3rem;
-    }
-
-    .stat-value {
-        font-size: 1.5rem;
-    }
-}
-
-/* Chart container styling for future charts */
 .chart-container {
-    background-color: #000;
+    background-color: var(--bg-color);
     padding: 0.5rem;
     margin-bottom: 1rem;
     height: 230px;
     border: 1px solid var(--primary-color);
-    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2);
     position: relative;
 }
 
@@ -390,52 +382,46 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
         pointer-events: none;
         z-index: 1;
     }
 
-.settings-info {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 15px;
-    font-size: 0.9em;
-    color: #888;
-}
+/* ===== UTILITY CLASSES ===== */
 
-.setting-item {
-    margin-left: 20px;
-}
-
-    .setting-item strong {
-        color: var(--accent-color);
-    }
-
-.currency-symbol {
+.arrow {
     display: inline-block;
-    margin-right: 2px;
+    font-weight: bold;
+    margin-left: 0.5rem;
 }
 
-/* Table styling - Enhanced for mobile */
-.table-container {
-    overflow-x: auto;
-    margin: 1rem 0;
-    background-color: #000;
-    padding: 0.5rem;
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 0 10px var(--primary-color, rgba(247, 147, 26, 0.2));
-    position: relative;
-    /* Add momentum-based scrolling for touch devices */
-    -webkit-overflow-scrolling: touch;
+/* Metric value styling */
+.metric-value {
+    color: var(--text-color);
+    font-weight: bold;
 }
 
-/* Responsive adjustments - Expanded */
+/* Card body general styling */
+.card-body strong {
+    color: var(--primary-color);
+    margin-right: 0.25rem;
+}
+
+.card-body p {
+    margin: 0.25rem 0;
+    line-height: 1.2;
+}
+
+/* ===== RESPONSIVE STYLING ===== */
+
+/* Tablets and smaller desktops */
 @media (max-width: 768px) {
     .stats-grid {
         grid-template-columns: 1fr;
     }
 
-    .earnings-table th, .earnings-table td {
+    .earnings-table th,
+    .earnings-table td {
         padding: 0.5rem;
         font-size: 0.85rem;
     }
@@ -449,7 +435,6 @@
         font-size: 1.5rem;
     }
 
-    /* Additional mobile optimizations */
     .tx-link {
         font-size: 0.8rem;
     }
@@ -465,11 +450,11 @@
     }
 }
 
-/* Small phone screens */
+/* Mobile phones */
 @media (max-width: 480px) {
-    /* Convert payment history table to card-like layout for very small screens */
+    /* Card-like table layout for small screens */
     .earnings-table thead {
-        display: none; /* Hide table headers */
+        display: none;
     }
 
     .earnings-table,
@@ -489,14 +474,14 @@
             display: flex;
             padding: 6px 3px;
             border: none;
-            border-bottom: 1px solid var(--border-color, #333);
+            border-bottom: 1px solid var(--border-color);
         }
 
             .earnings-table td:last-child {
                 border-bottom: none;
             }
 
-            /* Add labels for each cell */
+            /* Responsive labels for table cells */
             .earnings-table td::before {
                 content: attr(data-label);
                 font-weight: bold;
@@ -505,7 +490,7 @@
                 margin-right: 5%;
             }
 
-    /* Specific adjustments for payment history */
+    /* Table-specific cell labels */
     #payment-history-table td:nth-child(1)::before {
         content: "Date: ";
     }
@@ -526,7 +511,6 @@
         content: "Status: ";
     }
 
-    /* Monthly summary table */
     #monthly-summary-table td:nth-child(1)::before {
         content: "Month: ";
     }
@@ -547,14 +531,92 @@
         content: "Fiat: ";
     }
 
-    /* Adjust empty state */
-    .earnings-table tr td[colspan] {
-        padding: 1rem;
-    }
-
     /* Fix truncated transaction links */
     .tx-link {
         word-break: break-all;
         font-size: 0.75rem;
     }
 }
+
+/* Add scanline effect to the main dashboard container */
+.dashboard-container {
+    position: relative;
+    z-index: 0;
+}
+
+    /* Scanline effect for the entire dashboard container */
+    .dashboard-container::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px);
+        pointer-events: none;
+        z-index: -1;
+    }
+
+/* Update stat card with scanline effect */
+.stat-card {
+    color: white;
+    padding: 1rem;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3);
+    position: relative;
+    background-color: var(--bg-color);
+    overflow: hidden;
+}
+
+    /* Add scanline effect to stat cards */
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    /* Ensure h2 headers in stat cards show above scanlines */
+    .stat-card h2 {
+        padding: 0.5rem;
+        color: white;
+        font-size: 1.2rem;
+        margin: -1rem -1rem 0.5rem -1rem;
+        text-transform: uppercase;
+        font-weight: bold;
+        font-family: var(--header-font);
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Ensure content in stat cards shows above scanlines */
+    .stat-card .stat-value,
+    .stat-card .stat-secondary,
+    .stat-card .stat-time,
+    .stat-card .stat-unit {
+        position: relative;
+        z-index: 2;
+    }
+
+/* Add scanline overlay to section headers */
+.earnings-section h2 {
+    position: relative;
+}
+
+    .earnings-section h2::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px);
+        pointer-events: none;
+        z-index: 1;
+    }
+

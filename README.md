@@ -28,6 +28,13 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Payout Monitoring**: View unpaid balance and estimated time to next payout
 - **Pool Fee Analysis**: Monitor pool fee percentages with visual indicator when optimal rates (0.9-1.3%) are detected
 
+### Multi-Currency Support
+- **Flexible Currency Configuration: Set your preferred fiat currency for displaying Bitcoin value and earnings
+- **Wide Currency Selection: Choose from USD, EUR, GBP, JPY, CAD, AUD, CNY, KRW, BRL, CHF and more
+- **Real-Time Exchange Rates: Automatically fetches up-to-date exchange rates from public APIs
+- **Persistent Configuration: Currency preferences saved and restored between sessions
+- **Adaptive Notifications: Financial notifications display in your selected currency
+
 ### Worker Management
 - **Fleet Overview**: Comprehensive view of all mining devices in one interface
 - **Status Monitoring**: Real-time status indicators for online and offline devices
@@ -114,6 +121,7 @@ You can modify the following environment variables in the `docker-compose.yml` f
 - `POWER_USAGE`: Power usage in watts.
 - `NETWORK_FEE`: Additional fees beyond pool fees (e.g., firmware fees).
 - `TIMEZONE`: Local timezone for displaying time information.
+- `CURRENCY`: Preferred fiat currency for earnings display.
 
 Redis data is stored in a persistent volume (`redis_data`), and application logs are saved in the `./logs` directory.
 
@@ -174,6 +182,9 @@ Built with a modern stack for reliability and performance:
 - `/api/available_timezones`: Returns a list of supported timezones.
 - `/api/config`: Fetches or updates the mining configuration.
 - `/api/health`: Returns the health status of the application.
+- `/api/notifications`: Manages notifications for the user.
+- `/api/workers`: Manages worker data and status.
+- `/api/exchange_rates`: Fetches real-time exchange rates for supported currencies.
 
 ## Project Structure
 
@@ -244,6 +255,9 @@ For optimal performance:
 4. Access the health endpoint at `/api/health` for diagnostics
 5. For stale data issues, use the Force Refresh function
 6. Use hotkey Shift+R to clear chart and Redis data (as needed, not required)
+7. Check the currency settings if financial calculations appear incorrect
+8. Verify timezone settings for accurate time displays
+9. Alt + W on Dashboard resets wallet configuration and redirects to Boot sequence
 
 ## License
 

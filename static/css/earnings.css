@@ -147,7 +147,7 @@
     }
 
 /* Status indicators with color families similar to dashboard */
-.status-indicator {
+.status-label {
     display: inline-block;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -362,7 +362,7 @@
         font-size: 0.85rem;
     }
 
-    .status-indicator {
+    .status-label {
         font-size: 0.7rem;
         padding: 0.15rem 0.3rem;
     }
@@ -440,7 +440,7 @@
         font-size: 0.85rem;
     }
 
-    .status-indicator {
+    .status-label {
         font-size: 0.7rem;
         padding: 0.15rem 0.3rem;
     }

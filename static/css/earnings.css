@@ -202,6 +202,7 @@ html.deepsea-theme {
     color: var(--accent-color);
     text-decoration: none;
     letter-spacing: 1px;
+    text-decoration: underline;
 }
 
     .tx-link:hover {

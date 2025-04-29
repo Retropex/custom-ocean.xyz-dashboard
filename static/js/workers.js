@@ -534,31 +534,39 @@ function createWorkerCard(worker, maxHashrate) {
     return card;
 }
 
-// Filter worker data based on current filter state
+// Modified filterWorkers function for better search functionality
+// This will replace the existing filterWorkers function in workers.js
+function filterWorkers() {
+    if (!workerData || !workerData.workers) return;
+    renderWorkersList();
+}
+
+// Update the workers grid when filters change
+function updateWorkerGrid() {
+    renderWorkersList();
+}
+
+// Modified filterWorkersData function to only include 'all', 'online', and 'offline' filters
 function filterWorkersData(workers) {
     if (!workers) return [];
 
     return workers.filter(worker => {
         const workerName = (worker.name || '').toLowerCase();
         const isOnline = worker.status === 'online';
-        const workerType = (worker.type || '').toLowerCase();
 
+        // Modified to only handle 'all', 'online', and 'offline' filters
         const matchesFilter = filterState.currentFilter === 'all' ||
             (filterState.currentFilter === 'online' && isOnline) ||
-            (filterState.currentFilter === 'offline' && !isOnline) ||
-            (filterState.currentFilter === 'asic' && workerType === 'asic') ||
-            (filterState.currentFilter === 'bitaxe' && workerType === 'bitaxe');
+            (filterState.currentFilter === 'offline' && !isOnline);
 
-        const matchesSearch = filterState.searchTerm === '' || workerName.includes(filterState.searchTerm);
+        // Improved search matching to check name, model and type
+        const matchesSearch = filterState.searchTerm === '' ||
+            workerName.includes(filterState.searchTerm) ||
+            (worker.model && worker.model.toLowerCase().includes(filterState.searchTerm)) ||
+            (worker.type && worker.type.toLowerCase().includes(filterState.searchTerm));
 
         return matchesFilter && matchesSearch;
     });
-}
-
-// Apply filter to rendered worker cards
-function filterWorkers() {
-    if (!workerData || !workerData.workers) return;
-    updateWorkerGrid();
 }
 
 // Update summary stats with normalized hashrate display

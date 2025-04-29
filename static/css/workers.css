@@ -20,8 +20,8 @@
 }
 
 .search-box:focus {
-  outline: none;
-  box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
+    outline: none;
+    box-shadow: 0 0 8px var(--primary-color);
 }
 
 .filter-button {

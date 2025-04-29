@@ -13,12 +13,6 @@
 {% block content %}
 <div class="dashboard-container">
 
-    <!-- User Settings Info -->
-    <div class="settings-info">
-        <span class="setting-item">Currency: <strong id="user-currency">{{ user_currency }}</strong></span>
-        <span class="setting-item">Timezone: <strong id="user-timezone">{{ user_timezone }}</strong></span>
-    </div>
-
     <!-- Summary Cards Section -->
     <div class="stats-grid">
         <div class="stat-card">
@@ -134,6 +128,11 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    <!-- User Settings Info -->
+    <div class="settings-info">
+        <span class="setting-item">Currency: <strong id="user-currency">{{ user_currency }}</strong></span>
+        <span class="setting-item">Timezone: <strong id="user-timezone">{{ user_timezone }}</strong></span>
     </div>
 </div>
 

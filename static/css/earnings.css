@@ -51,6 +51,7 @@ html.deepsea-theme {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
+    margin-top: 2rem;
 }
 
 /* ===== CARD STYLING ===== */
@@ -239,7 +240,6 @@ html.deepsea-theme {
 .settings-info {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 15px;
     font-size: 0.9em;
     color: #888;
 }

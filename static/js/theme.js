@@ -53,6 +53,53 @@ window.getCurrentTheme = getCurrentTheme;
 // Use window-scoped variable to prevent conflicts
 window.themeProcessing = false;
 
+// Function to update the dashboard header for theme changes
+function updateDashboardDataText(useDeepSea) {
+    try {
+        const headerElement = document.querySelector('h1.text-center');
+        if (headerElement) {
+            // Get the anchor element inside the h1 (this contains the visible text)
+            const anchorElement = headerElement.querySelector('a');
+            if (!anchorElement) return;
+
+            // Get the current header text
+            let headerText = anchorElement.textContent.trim();
+            let newHeaderText;
+
+            // If switching to DeepSea theme, replace Bitcoin references
+            if (useDeepSea) {
+                newHeaderText = headerText.replace("BTC-OS", "DeepSea");
+                newHeaderText = newHeaderText.replace("BITCOIN", "DEEPSEA");
+            } else {
+                // If switching back to Bitcoin theme, restore original names
+                newHeaderText = headerText.replace("DeepSea", "BTC-OS");
+                newHeaderText = newHeaderText.replace("DEEPSEA", "BITCOIN");
+            }
+
+            // Update the visible text content
+            anchorElement.textContent = newHeaderText;
+
+            // Update the data-text attribute with the modified text
+            if (headerElement.hasAttribute('data-text')) {
+                headerElement.setAttribute('data-text', newHeaderText);
+            }
+
+            // Update page title too
+            if (document.title.includes("Dashboard")) {
+                if (useDeepSea) {
+                    document.title = document.title.replace("BTC-OS", "DeepSea");
+                } else {
+                    document.title = document.title.replace("DeepSea", "BTC-OS");
+                }
+            }
+
+            console.log(`Header updated to: ${newHeaderText}`);
+        }
+    } catch (e) {
+        console.error("Error updating dashboard data-text:", e);
+    }
+}
+
 // Fixed applyDeepSeaTheme function with recursion protection
 function applyDeepSeaTheme() {
     // Check if we're already applying the theme to prevent recursion
@@ -66,6 +113,9 @@ function applyDeepSeaTheme() {
 
     try {
         console.log("Applying DeepSea theme...");
+
+        // Update the data-text attribute for DeepSea theme
+        updateDashboardDataText(true);
 
         // Create or update CSS variables for the DeepSea theme
         const styleElement = document.createElement('style');
@@ -332,6 +382,9 @@ window.applyDeepSeaTheme = applyDeepSeaTheme;
 function toggleTheme() {
     const useDeepSea = localStorage.getItem('useDeepSeaTheme') !== 'true';
 
+    // Update the data-text attribute based on the new theme
+    updateDashboardDataText(useDeepSea);
+
     // Save the new theme preference
     saveThemePreference(useDeepSea);
 
@@ -408,7 +461,7 @@ function initializeDefaultTheme() {
     return false;
 }
 
-// Check for theme preference in localStorage
+// Modified loadThemePreference function to update data-text attribute
 function loadThemePreference() {
     try {
         // Check if it's first startup - if so, set DeepSea as default
@@ -416,9 +469,13 @@ function loadThemePreference() {
 
         // Get theme preference from localStorage
         const themePreference = localStorage.getItem('useDeepSeaTheme');
+        const useDeepSea = themePreference === 'true' || isFirstTime;
+
+        // Update the data-text attribute based on the current theme
+        updateDashboardDataText(useDeepSea);
 
         // Apply theme based on preference
-        if (themePreference === 'true' || isFirstTime) {
+        if (useDeepSea) {
             applyDeepSeaTheme();
         } else {
             // Make sure the toggle button is styled correctly for Bitcoin theme

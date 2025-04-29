@@ -91,25 +91,30 @@
         });
     </script>
     <div class="container-fluid">
+
         <!-- Connection status indicator -->
         <div id="connectionStatus"></div>
 
-        <h1 class="text-center">
+        <!-- First capture the header content in a variable -->
+        {% set header_content %}{% block header %}BTC-OS DASHBOARD{% endblock %}{% endset %}
+
+        <!-- Then use the variable and a separate block for the data-text -->
+        <h1 class="text-center" data-text="{% block header_data_text %}{{ header_content }}{% endblock %}">
             <a href="/" style="text-decoration:none; color:inherit;">
-                {% block header %}BTC-OS DASHBOARD{% endblock %}
+                {{ header_content }}
             </a>
         </h1>
 
         <!-- Top right link -->
         <a href="https://x.com/DJObleezy" id="topRightLink" target="_blank" rel="noopener noreferrer">MADE BY @DJO₿LEEZY</a>
 
-        <!-- Theme toggle button (new) -->
+        <!-- Theme toggle button (new)-->
         <button id="themeToggle" class="theme-toggle-btn">
             <span>Toggle Theme</span>
         </button>
 
         {% block last_updated %}
-        <p class="text-center" id="lastUpdated" style="color: #f7931a; text-transform: uppercase;"><strong>LAST UPDATED:</strong> {{ current_time }}<span id="terminal-cursor"></span></p>
+        <p class="text-center" id="lastUpdated" style="text-transform: uppercase;"><strong>LAST UPDATED:</strong> {{ current_time }}<span id="terminal-cursor"></span></p>
         {% endblock %}
 
         {% block navigation %}
@@ -136,7 +141,7 @@
         <!-- Footer -->
         <footer class="footer text-center">
             <p>Not affiliated with <a href="https://www.Ocean.xyz">Ocean.xyz</a></p>
-            <p>v0.9.5 - Public Beta</p>
+            <p>v0.9.6 - Public Beta</p>
         </footer>
     </div>
 

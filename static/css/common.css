@@ -121,13 +121,91 @@ body {
     text-transform: uppercase;
 }
 
+/* Conditionally apply the Ocean effect based on theme */
+/* Default styling for h1 without the effect */
 h1 {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--primary-color);
-  font-family: var(--header-font);
-  letter-spacing: 1px;
-  animation: flicker 4s infinite;
+    font-size: 24px;
+    font-weight: bold;
+    font-family: var(--header-font);
+    letter-spacing: 1px;
+    position: relative;
+    color: var(--primary-color);
+    overflow: hidden;
+}
+
+/* Apply animation only when DeepSea theme is active */
+html.deepsea-theme h1 {
+    animation: ocean-wave 10s ease-in-out infinite;
+}
+
+    /* Glitchy duplicate layers only for DeepSea theme */
+    html.deepsea-theme h1::before,
+    html.deepsea-theme h1::after {
+        content: attr(data-text); /* Duplicate the text */
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, #0088cc, #00bfff, #0077be, #005f8b, #00bfff);
+        background-size: 300% 300%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        opacity: 0.7;
+        animation: ocean-wave 10s ease-in-out infinite, glitch-offset 3s infinite;
+        pointer-events: none; /* Add this line to fix clickability */
+    }
+
+    html.deepsea-theme h1::before {
+        left: 1px;
+        text-shadow: -1px 0 rgba(0, 255, 255, 0.4);
+        clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+    }
+
+    html.deepsea-theme h1::after {
+        left: -1px;
+        text-shadow: 1px 0 rgba(0, 0, 255, 0.4);
+        clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+    }
+
+/* Apply Bitcoin-specific styling when Bitcoin theme is active */
+html.bitcoin-theme h1 {
+    text-shadow: 0 0 5px rgba(242, 169, 0, 0.5);
+}
+
+/* Smooth ocean wave animation */
+@keyframes ocean-wave {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Subtle glitch offset animation */
+@keyframes glitch-offset {
+    0%, 100% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-1px, 1px);
+    }
+
+    50% {
+        transform: translate(1px, -1px);
+    }
+
+    75% {
+        transform: translate(-0.5px, 0.5px);
+    }
 }
 
 @media (min-width: 768px) {
@@ -156,15 +234,15 @@ h1 {
 }
 
 .nav-link:hover {
-  background-color: var(--primary-color);
-  color: var(--bg-color);
-  box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5);
 }
 
 .nav-link.active {
-  background-color: var(--primary-color);
-  color: var(--bg-color);
-  box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5);
 }
 
 /* Top right link */
@@ -257,6 +335,7 @@ h1 {
 
 /* Last Updated text with subtle animation */
 #lastUpdated {
+  color: var(--primary-color);
   animation: flicker 5s infinite;
   text-align: center;
 }
@@ -266,11 +345,11 @@ h1 {
   display: inline-block;
   width: 10px;
   height: 16px;
-  background-color: #f7931a;
+  background-color: var(--primary-color);
   margin-left: 2px;
   animation: blink 1s step-end infinite;
   vertical-align: middle;
-  box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
+  box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.8);
 }
 
 @keyframes blink {

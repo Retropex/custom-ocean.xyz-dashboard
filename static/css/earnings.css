@@ -548,7 +548,7 @@ html.deepsea-theme {
     /* Scanline effect for the entire dashboard container */
     .dashboard-container::before {
         content: '';
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         right: 0;

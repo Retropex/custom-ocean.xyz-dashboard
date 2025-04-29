@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
 from notification_service import NotificationService, NotificationLevel, NotificationCategory
+from flask import Flask, request
 
 # Import custom modules
 from config import load_config, save_config
@@ -42,6 +43,10 @@ object_counts_history = {}
 
 # Initialize Flask app
 app = Flask(__name__)
+
+@app.context_processor
+def inject_request():
+    return dict(request=request)
 
 # Set up caching using a simple in-memory cache
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 10})

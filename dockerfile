@@ -18,11 +18,12 @@ COPY config.json .
 COPY setup.py .
 
 # Create all necessary directories in one command
-RUN mkdir -p static/css static/js templates logs /app/logs
+RUN mkdir -p static/css static/js static/favicon templates logs /app/logs
 
 # Copy static files and templates
 COPY static/css/*.css static/css/
 COPY static/js/*.js static/js/
+COPY static/favicon/* static/favicon/
 COPY templates/*.html templates/
 
 # Run the setup script to ensure proper organization

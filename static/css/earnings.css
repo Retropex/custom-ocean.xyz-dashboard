@@ -37,7 +37,7 @@ html.deepsea-theme {
 
     /* Section headers */
     .earnings-section h2 {
-        color: white;
+        color: var(--primary-color);
         padding: 0.5rem;
         font-weight: bold;
         font-family: var(--header-font);
@@ -67,7 +67,7 @@ html.deepsea-theme {
 
     .stat-card h2 {
         padding: 0.5rem;
-        color: white;
+        color: var(--primary-color);
         font-size: 1.2rem;
         margin-bottom: 0.5rem;
         text-transform: uppercase;
@@ -585,7 +585,7 @@ html.deepsea-theme {
     /* Ensure h2 headers in stat cards show above scanlines */
     .stat-card h2 {
         padding: 0.5rem;
-        color: white;
+        color: var(--primary-color);
         font-size: 1.2rem;
         margin: -1rem -1rem 0.5rem -1rem;
         text-transform: uppercase;

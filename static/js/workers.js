@@ -227,7 +227,7 @@ function hideLoader() {
     $("#loader").hide();
 }
 
-// Fetch worker data with better pagination and progressive loading
+// Modified to properly fetch and store currency data 
 function fetchWorkerData(forceRefresh = false) {
     console.log("Fetching worker data...");
     lastManualRefreshTime = Date.now();
@@ -248,11 +248,45 @@ function fetchWorkerData(forceRefresh = false) {
         workerData = summaryData || {};
         workerData.workers = workerData.workers || [];
 
-        // Update summary stats while we load more workers
-        updateSummaryStats();
-        updateMiniChart();
-        updateLastUpdated();
+        // If currency data is missing, fetch it separately
+        if (!workerData.currency || !workerData.btc_price) {
+            $.ajax({
+                url: '/api/metrics',
+                method: 'GET',
+                dataType: 'json'
+            }).then(metrics => {
+                if (metrics) {
+                    workerData.currency = metrics.currency || 'USD';
+                    workerData.btc_price = metrics.btc_price || 75000;
+                    workerData.exchange_rates = metrics.exchange_rates || {};
+                }
 
+                // Continue with updates
+                updateSummaryStats();
+                updateMiniChart();
+                updateLastUpdated();
+                continueFetchingWorkers();
+            }).catch(() => {
+                // Even if metrics fetch fails, continue with worker data
+                continueFetchingWorkers();
+            });
+        } else {
+            // We already have currency data, continue directly
+            updateSummaryStats();
+            updateMiniChart();
+            updateLastUpdated();
+            continueFetchingWorkers();
+        }
+    }).catch(error => {
+        console.error("Error fetching initial worker data:", error);
+        $('#worker-grid').html('<div class="text-center p-5"><i class="fas fa-exclamation-circle"></i> Error loading workers. <button class="retry-btn">Retry</button></div>');
+        $('.retry-btn').on('click', () => fetchWorkerData(true));
+        hideLoader();
+        $('#worker-grid').removeClass('loading-fade');
+    });
+
+    // Function to continue fetching additional worker pages
+    function continueFetchingWorkers() {
         const totalPages = Math.ceil((workerData.workers_total || 0) / 100); // Assuming 100 workers per page
         const pagesToFetch = Math.min(totalPages, 20); // Limit to 20 pages max
 
@@ -268,13 +302,7 @@ function fetchWorkerData(forceRefresh = false) {
 
         // Load remaining pages in batches to avoid overwhelming the browser
         loadWorkerPages(2, pagesToFetch, progressBar);
-    }).catch(error => {
-        console.error("Error fetching initial worker data:", error);
-        $('#worker-grid').html('<div class="text-center p-5"><i class="fas fa-exclamation-circle"></i> Error loading workers. <button class="retry-btn">Retry</button></div>');
-        $('.retry-btn').on('click', () => fetchWorkerData(true));
-        hideLoader();
-        $('#worker-grid').removeClass('loading-fade');
-    });
+    }
 }
 
 // Load worker pages in batches
@@ -478,7 +506,49 @@ function calculateMaxHashrate() {
     return maxHashrate;
 }
 
-// Optimized worker card creation (removed debug logging)
+// Helper function to format currency values with HTML entity support
+function formatCurrencyValue(sats) {
+    // Default values
+    let symbol = '$';
+    let value = '0.00';
+
+    try {
+        // Get BTC price and currency info from workerData
+        const btcPrice = workerData.btc_price || 75000;
+        const configCurrency = workerData.currency || 'USD';
+        const exchangeRates = workerData.exchange_rates || {};
+
+        // Convert SATS to BTC then to USD
+        const btcValue = sats / 100000000;
+        let fiatValue = btcValue * btcPrice; // USD value
+
+        // Apply exchange rate if not USD
+        if (configCurrency !== 'USD' && exchangeRates[configCurrency]) {
+            fiatValue *= exchangeRates[configCurrency];
+        }
+
+        // Format the value
+        value = fiatValue.toFixed(2);
+
+        // Set currency symbol using HTML entities or plain ASCII for better compatibility
+        switch (configCurrency) {
+            case 'EUR': symbol = '&euro;'; break;  // HTML entity for Euro
+            case 'GBP': symbol = '&pound;'; break; // HTML entity for Pound
+            case 'JPY': symbol = '&yen;'; break;   // HTML entity for Yen
+            case 'AUD':
+            case 'CAD':
+            case 'NZD':
+            case 'USD': symbol = '$'; break;       // Dollar sign is ASCII
+            default: symbol = configCurrency + ' ';// Fallback to currency code
+        }
+    } catch (e) {
+        console.error('Error formatting currency:', e);
+    }
+
+    return { symbol, value, isHTML: (symbol.indexOf('&') === 0) };
+}
+
+// Modified createWorkerCard function to display only currency value with proper symbol handling
 function createWorkerCard(worker, maxHashrate) {
     const card = $('<div class="worker-card"></div>');
 
@@ -487,7 +557,7 @@ function createWorkerCard(worker, maxHashrate) {
     card.append(`<div class="worker-name">${worker.name}</div>`);
     card.append(`<div class="status-badge ${worker.status === 'online' ? 'status-badge-online' : 'status-badge-offline'}">${worker.status.toUpperCase()}</div>`);
 
-    // Use 3hr hashrate for display as in original code
+    // Use 3hr hashrate for display
     const normalizedHashrate = normalizeHashrate(worker.hashrate_3hr, worker.hashrate_3hr_unit || 'th/s');
     const hashratePercent = Math.min(100, (normalizedHashrate / maxHashrate) * 100);
     const formattedHashrate = formatHashrateForDisplay(worker.hashrate_3hr, worker.hashrate_3hr_unit || 'th/s');
@@ -518,6 +588,21 @@ function createWorkerCard(worker, maxHashrate) {
         }
     }
 
+    // Calculate earnings in SATS and get currency equivalent
+    const earningsSats = Math.floor(worker.earnings * 100000000); // Convert BTC to SATS
+    const currencyData = formatCurrencyValue(earningsSats);
+
+    // Create the value display with proper handling of HTML entities
+    let valueDisplay;
+    if (currencyData.isHTML) {
+        // Create a temporary element to handle the HTML entities
+        const valueElement = $('<div></div>');
+        valueElement.html(`${currencyData.symbol}${currencyData.value}`);
+        valueDisplay = valueElement.html();
+    } else {
+        valueDisplay = `${currencyData.symbol}${currencyData.value}`;
+    }
+
     card.append(`
         <div class="worker-stats">
             <div class="worker-stats-row">
@@ -527,6 +612,10 @@ function createWorkerCard(worker, maxHashrate) {
             <div class="worker-stats-row">
                 <div class="worker-stats-label">Earnings:</div>
                 <div class="green-glow">${worker.earnings.toFixed(8)}</div>
+            </div>
+            <div class="worker-stats-row">
+                <div class="worker-stats-label">Value:</div>
+                <div class="yellow-glow">${valueDisplay}</div>
             </div>
         </div>
     `);

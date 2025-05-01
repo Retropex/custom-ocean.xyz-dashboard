@@ -73,7 +73,7 @@ function updateDashboardDataText(useDeepSea) {
             } else {
                 // If switching back to Bitcoin theme, restore original names
                 newHeaderText = headerText.replace("DeepSea", "BTC-OS");
-                newHeaderText = newHeaderText.replace("DEEPSEA", "BITCOIN");
+                newHeaderText = newHeaderText.replace("DEEPSEA", "BTC-OS");
             }
 
             // Update the visible text content

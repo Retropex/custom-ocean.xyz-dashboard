@@ -23,7 +23,7 @@
 @media screen and (min-width: 768px) {
     #themeToggle,
     .theme-toggle-btn {
-        padding: 6px 12px;
+        padding: 6px 0px 6px 6px;
         font-size: 14px;
         border-radius: 3px;
         letter-spacing: 0.5px;

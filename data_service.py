@@ -165,16 +165,18 @@ class MiningDashboardService:
             metrics["server_start_time"] = datetime.now(ZoneInfo(get_timezone())).isoformat()
 
             # Get the configured currency
-            from config import load_config
-            config = load_config()
-            selected_currency = config.get("currency", "USD")
+            from config import get_currency
+            selected_currency = get_currency()
 
-            # Fetch exchange rates
-            exchange_rates = self.fetch_exchange_rates()
-
-            # Add to metrics
+            # Add currency to metrics
             metrics["currency"] = selected_currency
-            metrics["exchange_rates"] = exchange_rates
+
+            # Only fetch exchange rates if not using USD
+            if selected_currency != "USD":
+                exchange_rates = self.fetch_exchange_rates()
+                metrics["exchange_rates"] = exchange_rates
+            else:
+                metrics["exchange_rates"] = {}
 
             # Log execution time
             execution_time = time.time() - start_time
@@ -467,22 +469,39 @@ class MiningDashboardService:
     # Add the fetch_exchange_rates method after the fetch_url method
     def fetch_exchange_rates(self, base_currency="USD"):
         """
-        Fetch currency exchange rates from a public API.
+        Fetch currency exchange rates from ExchangeRate API using API key.
+        Only fetches when currency is not USD to avoid unnecessary API calls.
     
         Args:
             base_currency (str): Base currency for rates (default: USD)
-        
+    
         Returns:
-            dict: Exchange rates for supported currencies
+            dict: Exchange rates for supported currencies or empty dict if using USD
         """
+        # Get the configured currency
+        from config import get_currency
+        selected_currency = get_currency()
+    
+        # Only fetch exchange rates if not using USD
+        if selected_currency == "USD":
+            logging.info("Using USD currency, skipping exchange rate fetch")
+            return {}
+        
         try:
-            # Use exchangerate-api for currency rates
-            url = f"https://api.exchangerate-api.com/v4/latest/{base_currency}"
+            # Use the provided API key with the v6 exchangerate-api endpoint
+            api_key = "179cbeb07c900f20dde92d3b"
+            url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{base_currency}"
             response = self.session.get(url, timeout=5)
         
             if response.ok:
                 data = response.json()
-                return data.get('rates', {})
+                # Check if the API response has the expected structure
+                if data.get("result") == "success":
+                    logging.info(f"Successfully fetched exchange rates for {selected_currency}")
+                    return data.get("conversion_rates", {})
+                else:
+                    logging.error(f"Exchange rate API returned unsuccessful result: {data.get('error_type', 'Unknown error')}")
+                    return {}
             else:
                 logging.error(f"Failed to fetch exchange rates: {response.status_code}")
                 return {}

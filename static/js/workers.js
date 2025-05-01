@@ -614,7 +614,7 @@ function createWorkerCard(worker, maxHashrate) {
                 <div class="green-glow">${worker.earnings.toFixed(8)}</div>
             </div>
             <div class="worker-stats-row">
-                <div class="worker-stats-label">Value:</div>
+                <div class="worker-stats-label">Fiat Value:</div>
                 <div class="yellow-glow">${valueDisplay}</div>
             </div>
         </div>

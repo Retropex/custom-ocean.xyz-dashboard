@@ -320,7 +320,7 @@
 
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">USD EARNINGS</div>
+            <div class="card-header" id="currency-earnings-header">{{ user_currency|default('') }} EARNINGS</div>
             <div class="card-body">
                 <p>
                     <strong>Daily Revenue:</strong>
@@ -345,7 +345,7 @@
                     <span id="indicator_daily_power_cost"></span>
                 </p>
                 <p>
-                    <strong>Daily Profit (USD):</strong>
+                    <strong>Daily Profit:</strong>
                     <span id="daily_profit_usd" class="metric-value green">
                         {% if metrics and metrics.daily_profit_usd is defined and metrics.daily_profit_usd is not none %}
                         ${{ "%.2f"|format(metrics.daily_profit_usd) }}
@@ -356,7 +356,7 @@
                     <span id="indicator_daily_profit_usd"></span>
                 </p>
                 <p>
-                    <strong>Monthly Profit (USD):</strong>
+                    <strong>Monthly Profit:</strong>
                     <span id="monthly_profit_usd" class="metric-value green">
                         {% if metrics and metrics.monthly_profit_usd is defined and metrics.monthly_profit_usd is not none %}
                         ${{ "%.2f"|format(metrics.monthly_profit_usd) }}

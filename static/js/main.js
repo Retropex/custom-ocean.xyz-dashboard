@@ -1950,18 +1950,21 @@ function updateUI() {
         const exchangeRate = data.exchange_rates && data.exchange_rates[currency] ?
             data.exchange_rates[currency] : 1.0;
 
-        // Update currency-related labels
-        const earningsHeader = document.querySelector('.card-header');
-        if (earningsHeader && earningsHeader.textContent.includes("EARNINGS")) {
-            // Find the card header that says "USD EARNINGS" and update it
-            const headers = document.querySelectorAll('.card-header');
-            headers.forEach(header => {
-                if (header.textContent.includes("EARNINGS") &&
-                    header.textContent.match(/[A-Z]{3} EARNINGS/)) {
+        // Update only the currency earnings header, not SATOSHI EARNINGS
+        function updateDashboardHeaders(currency) {
+            // Find card headers but exclude "SATOSHI EARNINGS"
+            const earningsHeaders = document.querySelectorAll('.card-header');
+            earningsHeaders.forEach(header => {
+                // Check if it's a currency header (contains EARNINGS but isn't SATOSHI EARNINGS)
+                if (header.textContent.includes('EARNINGS') &&
+                    !header.textContent.includes('SATOSHI EARNINGS')) {
                     header.textContent = `${currency} EARNINGS`;
                 }
             });
         }
+
+        // Call this inside the updateUI function where currency is processed
+        updateDashboardHeaders(currency);
 
         // If this is the initial load, force a reset of all arrows
         if (initialLoad) {

@@ -615,7 +615,7 @@ function createWorkerCard(worker, maxHashrate) {
             </div>
             <div class="worker-stats-row">
                 <div class="worker-stats-label">Fiat Value:</div>
-                <div class="yellow-glow">${valueDisplay}</div>
+                <div style="color: limegreen !important;">${valueDisplay}</div>
             </div>
         </div>
     `);

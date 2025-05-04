@@ -1,12 +1,17 @@
-﻿/* Theme Toggle Button with positioning logic similar to topRightLink */
+﻿/**
+ * theme-toggle.css
+ * Styling for theme toggle button and theme-specific elements
+ */
+
+/* ----- THEME TOGGLE BUTTON ----- */
 #themeToggle,
 .theme-toggle-btn {
-    position: absolute; /* Change from fixed to absolute like topRightLink */
+    position: absolute;
     z-index: 1000;
     background: transparent;
     border-width: 1px;
     border-style: solid;
-    font-family: 'VT323', monospace;
+    font-family: var(--terminal-font, 'VT323', monospace);
     transition: all 0.3s ease;
     cursor: pointer;
     white-space: nowrap;
@@ -15,99 +20,30 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    top: 30px; /* Match the top positioning of topRightLink */
-    left: 15px; /* Keep on left side */
+    top: 30px;
+    left: 15px;
 }
 
-/* Desktop specific styling */
-@media screen and (min-width: 768px) {
-    #themeToggle,
-    .theme-toggle-btn {
-        padding: 6px 0px 6px 6px;
-        font-size: 14px;
-        border-radius: 3px;
-        letter-spacing: 0.5px;
+    /* Active and focus states for accessibility */
+    #themeToggle:active,
+    .theme-toggle-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
     }
 
-        /* Add theme icon for desktop view */
-        #themeToggle:before,
-        .theme-toggle-btn:before {
-            content: " ₿|🌊";
-            margin-right: 5px;
-            font-size: 14px;
-        }
-
-        /* Hover effects for desktop */
-        #themeToggle:hover,
-        .theme-toggle-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-}
-
-/* Mobile-specific styling */
-@media screen and (max-width: 767px) {
-    #themeToggle,
-    .theme-toggle-btn {
-        padding: 10px;
-        font-size: 12px;
-        border-radius: 3px;
-        width: 40px;
-        height: 35px;
+    #themeToggle:focus,
+    .theme-toggle-btn:focus {
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3);
+        outline: none;
     }
 
-        /* Use just icon for mobile to save space */
-        #themeToggle:before,
-        .theme-toggle-btn:before {
-            content: " ₿|🌊";
-            margin-right: 0;
-            font-size: 14px;
-        }
-
-        /* Hide text on mobile */
-        #themeToggle span,
-        .theme-toggle-btn span {
-            display: none;
-        }
-
-    /* Adjust position when in portrait mode on very small screens */
-    @media screen and (max-height: 500px) {
-        #themeToggle,
-        .theme-toggle-btn {
-            top: 5px;
-            left: 5px; /* Keep on left side */
-            width: 35px;
-            height: 35px;
-            font-size: 10px;
-        }
-    }
-}
-
-/* The rest of the CSS remains unchanged */
-/* Active state for the button */
-#themeToggle:active,
-.theme-toggle-btn:active {
-    transform: translateY(1px);
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
-}
-
-/* Add RGB values for primary colors */
-html.deepsea-theme {
-    --primary-color: #0088cc;
-    --primary-color-rgb: 0, 136, 204;
-}
-
+/* ----- THEME VARIABLES ----- */
+/* Bitcoin theme (orange) */
 html.bitcoin-theme {
     --primary-color: #f2a900;
     --primary-color-rgb: 242, 169, 0;
 }
 
-/* Theme-specific graph container shadow using CSS variable */
-#graphContainer {
-    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2) !important;
-}
-
-/* Bitcoin theme specific styling (orange) */
 body:not(.deepsea-theme) #themeToggle,
 body:not(.deepsea-theme) .theme-toggle-btn {
     color: #f2a900;
@@ -120,7 +56,17 @@ body:not(.deepsea-theme) .theme-toggle-btn {
         box-shadow: 0 4px 8px rgba(242, 169, 0, 0.3);
     }
 
-/* DeepSea theme specific styling (blue) */
+    body:not(.deepsea-theme) #themeToggle:focus,
+    body:not(.deepsea-theme) .theme-toggle-btn:focus {
+        box-shadow: 0 0 0 3px rgba(242, 169, 0, 0.3);
+    }
+
+/* DeepSea theme (blue) */
+html.deepsea-theme {
+    --primary-color: #0088cc;
+    --primary-color-rgb: 0, 136, 204;
+}
+
 body.deepsea-theme #themeToggle,
 body.deepsea-theme .theme-toggle-btn {
     color: #0088cc;
@@ -133,32 +79,73 @@ body.deepsea-theme .theme-toggle-btn {
         box-shadow: 0 4px 8px rgba(0, 136, 204, 0.3);
     }
 
-/* Transition effect for smoother theme switching */
-#themeToggle,
-.theme-toggle-btn,
-#themeToggle:before,
-.theme-toggle-btn:before {
-    transition: all 0.3s ease;
-}
-
-    /* Accessibility improvements */
-    #themeToggle:focus,
-    .theme-toggle-btn:focus {
-        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3);
-        outline: none;
+    body.deepsea-theme #themeToggle:focus,
+    body.deepsea-theme .theme-toggle-btn:focus {
+        box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.3);
     }
 
-body:not(.deepsea-theme) #themeToggle:focus,
-body:not(.deepsea-theme) .theme-toggle-btn:focus {
-    box-shadow: 0 0 0 3px rgba(242, 169, 0, 0.3);
+/* ----- RESPONSIVE STYLING ----- */
+/* Desktop view */
+@media screen and (min-width: 768px) {
+    #themeToggle,
+    .theme-toggle-btn {
+        padding: 6px 0px 6px 6px;
+        font-size: 14px;
+        border-radius: 3px;
+        letter-spacing: 0.5px;
+    }
+
+        #themeToggle:before,
+        .theme-toggle-btn:before {
+            content: " ₿|🌊";
+            margin-right: 5px;
+            font-size: 14px;
+        }
+
+        #themeToggle:hover,
+        .theme-toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
 }
 
-body.deepsea-theme #themeToggle:focus,
-body.deepsea-theme .theme-toggle-btn:focus {
-    box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.3);
+/* Mobile view */
+@media screen and (max-width: 767px) {
+    #themeToggle,
+    .theme-toggle-btn {
+        padding: 10px;
+        font-size: 12px;
+        border-radius: 3px;
+        width: 40px;
+        height: 35px;
+    }
+
+        #themeToggle:before,
+        .theme-toggle-btn:before {
+            content: " ₿|🌊";
+            margin-right: 0;
+            font-size: 14px;
+        }
+
+        #themeToggle span,
+        .theme-toggle-btn span {
+            display: none;
+        }
 }
 
-/* Add these theme-specific loading styles */
+/* Small mobile and landscape view */
+@media screen and (max-width: 767px) and (max-height: 500px) {
+    #themeToggle,
+    .theme-toggle-btn {
+        top: 5px;
+        left: 5px;
+        width: 35px;
+        height: 35px;
+        font-size: 10px;
+    }
+}
+
+/* ----- THEME LOADING STYLES ----- */
 #theme-loader {
     position: fixed;
     top: 0;
@@ -170,7 +157,7 @@ body.deepsea-theme .theme-toggle-btn:focus {
     justify-content: center;
     align-items: center;
     z-index: 9999;
-    font-family: 'VT323', monospace;
+    font-family: var(--terminal-font, 'VT323', monospace);
 }
 
 html.bitcoin-theme #theme-loader {
@@ -195,6 +182,7 @@ html.deepsea-theme #theme-loader {
     letter-spacing: 1px;
 }
 
+/* ----- ANIMATIONS ----- */
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -213,4 +201,9 @@ html.deepsea-theme #theme-loader {
     50% {
         opacity: 1;
     }
+}
+
+/* Theme-specific graph container */
+#graphContainer {
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2) !important;
 }

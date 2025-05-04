@@ -1,189 +1,45 @@
-/* Specific styles for the main dashboard */
+/**
+ * dashboard.css
+ * Specific styles for the main dashboard page
+ */
+
+/* ----- GRAPH & CHART COMPONENTS ----- */
+.chart-container-relative {
+    position: relative;
+}
 
 #graphContainer {
-  background-color: #000;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  height: 230px;
-  border: 1px solid var(--primary-color);
-  box-shadow: 0 0 10px rgba(247, 147, 26, 0.2);
-  position: relative;
+    background-color: #000;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    height: 230px;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2);
+    position: relative;
 }
 
-/* Add scanline effect to graph */
-#graphContainer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.1),
-    rgba(0, 0, 0, 0.1) 1px,
-    transparent 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  z-index: 1;
+    /* Add scanline effect to graph */
+    #graphContainer::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+        pointer-events: none;
+        z-index: 1;
+    }
+
+/* Fee indicator styling */
+.fee-star {
+    color: gold;
+    margin-left: 4px;
+    font-size: 1.2em;
+    vertical-align: middle;
 }
 
-/* Override for Payout & Misc card */
-#payoutMiscCard {
-  margin-bottom: 0.5rem;
-}
-
-/* Row equal height for card alignment */
-.row.equal-height {
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.row.equal-height > [class*="col-"] {
-  display: flex;
-  margin-bottom: 0.5rem;
-}
-
-.row.equal-height > [class*="col-"] .card {
-  width: 100%;
-}
-
-/* Arrow indicator styles */
-.arrow {
-  display: inline-block;
-  font-weight: bold;
-  margin-left: 0.5rem;
-}
-
-/* Bounce animations for indicators */
-@keyframes bounceUp {
-  0%   { transform: translateY(0); }
-  25%  { transform: translateY(-2px); }
-  50%  { transform: translateY(0); }
-  75%  { transform: translateY(-2px); }
-  100% { transform: translateY(0); }
-}
-
-@keyframes bounceDown {
-  0%   { transform: translateY(0); }
-  25%  { transform: translateY(2px); }
-  50%  { transform: translateY(0); }
-  75%  { transform: translateY(2px); }
-  100% { transform: translateY(0); }
-}
-
-.bounce-up {
-  animation: bounceUp 1s infinite;
-}
-
-.bounce-down {
-  animation: bounceDown 1s infinite;
-}
-
-.chevron {
-  font-size: 0.8rem;
-  position: relative;
-}
-
-/* Refresh timer container */
-#refreshUptime {
-  text-align: center;
-  margin-top: 0.5rem;
-}
-
-#refreshContainer {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-
-#uptimeTimer strong {
-  font-weight: bold;
-}
-
-#uptimeTimer {
-  margin-top: 0;
-}
-
-/* Metric styling by category */
-.metric-value {
-  color: var(--text-color);
-  font-weight: bold;
-}
-
-/* Yellow color family (BTC price, sats metrics, time to payout) */
-#btc_price,
-#daily_mined_sats,
-#monthly_mined_sats,
-#estimated_earnings_per_day_sats,
-#estimated_earnings_next_block_sats,
-#estimated_rewards_in_window_sats,
-#est_time_to_payout { 
-  color: #ffd700; 
-}
-
-/* Green color family (profits, earnings) */
-#unpaid_earnings,
-#daily_revenue,
-#daily_profit_usd,
-#monthly_profit_usd { 
-  color: #32CD32; 
-}
-
-/* Red color family (costs) */
-#daily_power_cost { 
-  color: #ff5555 !important; 
-}
-
-/* White metrics (general stats) */
-.metric-value.white,
-#block_number,
-#network_hashrate,
-#difficulty,
-#workers_hashing,
-#last_share,
-#blocks_found,
-#last_block_height,
-#pool_fees_percentage {
-    color: #ffffff;
-}
-
-/* Blue metrics (time data) */
-#last_block_time {
-  color: #00dfff;
-}
-
-.card-body strong {
-  color: var(--primary-color);
-  margin-right: 0.25rem;
-}
-
-.card-body p {
-  margin: 0.25rem 0;
-  line-height: 1.2;
-}
-
-/* Hidden Congrats Message */
-#congratsMessage {
-  display: none; 
-  position: fixed; 
-  top: 20px; 
-  left: 50%; 
-  transform: translateX(-50%); 
-  z-index: 1000; 
-  background: #f7931a; 
-  color: #000; 
-  padding: 10px; 
-  border-radius: 5px; 
-  box-shadow: 0 0 15px rgba(247, 147, 26, 0.7);
-  text-transform: uppercase;
-}
-
-/* Add these styles to dashboard.css */
+/* Block marker animation */
 @keyframes pulse-block-marker {
     0% {
         transform: translate(-50%, -50%) rotate(45deg) scale(1);
@@ -201,26 +57,265 @@
     }
 }
 
-.chart-container-relative {
+/* ----- LAYOUT & STRUCTURE ----- */
+/* Row equal height for card alignment */
+.row.equal-height {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+    .row.equal-height > [class*="col-"] {
+        display: flex;
+        margin-bottom: 0.5rem;
+    }
+
+        .row.equal-height > [class*="col-"] .card {
+            width: 100%;
+        }
+
+/* Override for Payout & Misc card */
+#payoutMiscCard {
+    margin-bottom: 0.5rem;
+}
+
+/* ----- INDICATORS & STATUS ELEMENTS ----- */
+/* Arrow indicator styles */
+.arrow {
+    display: inline-block;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}
+
+.chevron {
+    font-size: 0.8rem;
     position: relative;
 }
 
-/* Styling for optimal fee indicator */
-.fee-star {
-    color: gold;
-    margin-left: 4px;
-    font-size: 1.2em;
-    vertical-align: middle;
+.bounce-up {
+    animation: bounceUp 1s infinite;
 }
 
-/* Rainbow Glitch animation for DATUM text */
-@keyframes rainbow-shift {
-    0% {
-        color: #ff2a6d;
-        text-shadow: 2px 0 #05d9e8, -2px 0 #ff2a6d, 0 0 10px #ff2a6d;
+.bounce-down {
+    animation: bounceDown 1s infinite;
+}
+
+/* Pool luck indicators */
+.very-lucky {
+    color: #32CD32 !important;
+    font-weight: bold !important;
+}
+
+.lucky {
+    color: #90EE90 !important;
+}
+
+.normal-luck {
+    color: #ffd700 !important;
+}
+
+.unlucky {
+    color: #ff5555 !important;
+}
+
+/* Datum rainbow label */
+.datum-label {
+    position: relative;
+    color: cyan;
+    font-size: 0.95em;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-left: 4px;
+    padding: 2px 5px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    letter-spacing: 2px;
+    display: inline-block;
+    animation: rainbow-shift 8s infinite linear, glitch-anim 3s infinite, pulse-glow 2s infinite;
+    transform-origin: center;
+}
+
+    .datum-label::before,
+    .datum-label::after {
+        content: "DATUM";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 3px;
+        padding: 2px 5px;
+        clip: rect(0, 0, 0, 0);
     }
 
-    10% {
+    .datum-label::before {
+        left: -1px;
+        animation: glitch-frames 2s infinite linear alternate-reverse;
+        text-shadow: -2px 0 #ff2a6d;
+        clip: rect(44px, 450px, 56px, 0);
+    }
+
+    .datum-label::after {
+        left: 1px;
+        animation: glitch-frames 3s infinite linear alternate-reverse;
+        text-shadow: 2px 0 #05d9e8;
+        clip: rect(24px, 450px, 36px, 0);
+    }
+
+    .datum-label:hover {
+        animation-play-state: paused;
+        filter: brightness(1.5);
+        cursor: pointer;
+        transform: scale(1.1);
+        transition: transform 0.2s ease;
+    }
+
+/* ----- REFRESH & UPTIME ELEMENTS ----- */
+#refreshUptime {
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+#refreshContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+#uptimeTimer {
+    margin-top: 0;
+}
+
+    #uptimeTimer strong {
+        font-weight: bold;
+    }
+
+/* ----- METRIC COLOR STYLING ----- */
+.metric-value {
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+/* Yellow color family (BTC price, sats metrics, time to payout) */
+#btc_price,
+#daily_mined_sats,
+#monthly_mined_sats,
+#estimated_earnings_per_day_sats,
+#estimated_earnings_next_block_sats,
+#estimated_rewards_in_window_sats,
+#est_time_to_payout {
+    color: #ffd700;
+}
+
+/* Green color family (profits, earnings) */
+#unpaid_earnings,
+#daily_revenue,
+#daily_profit_usd,
+#monthly_profit_usd {
+    color: #32CD32;
+}
+
+/* Red color family (costs) */
+#daily_power_cost,
+#pool_fees_sats {
+    color: #ff5555 !important;
+}
+
+/* White metrics (general stats) */
+.metric-value.white,
+#block_number,
+#network_hashrate,
+#difficulty,
+#workers_hashing,
+#last_share,
+#blocks_found,
+#last_block_height,
+#pool_fees_percentage {
+    color: #ffffff;
+}
+
+/* Blue metrics (time data) */
+#last_block_time {
+    color: #00dfff;
+}
+
+/* ----- CARD CONTENT STYLING ----- */
+.card-body strong {
+    color: var(--primary-color);
+    margin-right: 0.25rem;
+}
+
+.card-body p {
+    margin: 0.25rem 0;
+    line-height: 1.2;
+}
+
+/* ----- NOTIFICATION ELEMENTS ----- */
+#congratsMessage {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: var(--primary-color);
+    color: #000;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.7);
+    text-transform: uppercase;
+}
+
+/* ----- ANIMATIONS ----- */
+@keyframes bounceUp {
+    0% {
+        transform: translateY(0);
+    }
+
+    25% {
+        transform: translateY(-2px);
+    }
+
+    50% {
+        transform: translateY(0);
+    }
+
+    75% {
+        transform: translateY(-2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounceDown {
+    0% {
+        transform: translateY(0);
+    }
+
+    25% {
+        transform: translateY(2px);
+    }
+
+    50% {
+        transform: translateY(0);
+    }
+
+    75% {
+        transform: translateY(2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes rainbow-shift {
+    0%, 10% {
         color: #ff2a6d;
         text-shadow: 2px 0 #05d9e8, -2px 0 #ff2a6d, 0 0 10px #ff2a6d;
     }
@@ -272,7 +367,7 @@
 }
 
 @keyframes glitch-anim {
-    0% {
+    0%, 10%, 27%, 35%, 52%, 50%, 72%, 80%, 100% {
         transform: none;
         opacity: 1;
     }
@@ -282,29 +377,9 @@
         opacity: 0.75;
     }
 
-    10% {
-        transform: none;
-        opacity: 1;
-    }
-
-    27% {
-        transform: none;
-        opacity: 1;
-    }
-
     30% {
         transform: skew(0.8deg, -0.1deg);
         opacity: 0.75;
-    }
-
-    35% {
-        transform: none;
-        opacity: 1;
-    }
-
-    52% {
-        transform: none;
-        opacity: 1;
     }
 
     55% {
@@ -312,90 +387,21 @@
         opacity: 0.75;
     }
 
-    50% {
-        transform: none;
-        opacity: 1;
-    }
-
-    72% {
-        transform: none;
-        opacity: 1;
-    }
-
     75% {
         transform: skew(0.4deg, 1deg);
         opacity: 0.75;
     }
-
-    80% {
-        transform: none;
-        opacity: 1;
-    }
-
-    100% {
-        transform: none;
-        opacity: 1;
-    }
 }
 
 @keyframes pulse-glow {
-    0% {
+    0%, 100% {
         filter: brightness(1);
     }
 
     50% {
         filter: brightness(1.3);
     }
-
-    100% {
-        filter: brightness(1);
-    }
 }
-
-.datum-label {
-    position: relative;
-    color: cyan;
-    font-size: 0.95em;
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-left: 4px;
-    padding: 2px 5px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
-    letter-spacing: 2px;
-    display: inline-block;
-    animation: rainbow-shift 8s infinite linear, glitch-anim 3s infinite, pulse-glow 2s infinite;
-    transform-origin: center;
-}
-
-    /* Create a glitch effect with duplicated text */
-    .datum-label::before,
-    .datum-label::after {
-        content: "DATUM";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.3);
-        border-radius: 3px;
-        padding: 2px 5px;
-        clip: rect(0, 0, 0, 0);
-    }
-
-    .datum-label::before {
-        left: -1px;
-        animation: glitch-frames 2s infinite linear alternate-reverse;
-        text-shadow: -2px 0 #ff2a6d;
-        clip: rect(44px, 450px, 56px, 0);
-    }
-
-    .datum-label::after {
-        left: 1px;
-        animation: glitch-frames 3s infinite linear alternate-reverse;
-        text-shadow: 2px 0 #05d9e8;
-        clip: rect(24px, 450px, 36px, 0);
-    }
 
 @keyframes glitch-frames {
     0% {
@@ -481,38 +487,4 @@
     100% {
         clip: rect(28px, 450px, 26px, 0);
     }
-}
-
-/* Add some hover effects for interactivity */
-.datum-label:hover {
-    animation-play-state: paused;
-    filter: brightness(1.5);
-    cursor: pointer;
-    transform: scale(1.1);
-    transition: transform 0.2s ease;
-}
-
-/* Pool luck indicators */
-.very-lucky {
-    color: #32CD32 !important;
-    font-weight: bold !important;
-}
-
-.lucky {
-    color: #90EE90 !important;
-}
-
-.normal-luck {
-    color: #ffd700 !important;
-}
-
-.unlucky {
-    color: #ff5555 !important;
-}
-
-/* Ensure the pool fee in SATS is always red regardless of theme */
-#pool_fees_sats {
-    color: #ff5555 !important;
-    font-weight: bold !important;
-    margin-left: 6px;
 }

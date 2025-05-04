@@ -1,4 +1,53 @@
-/* Config form styling - fixed width and hidden by default */
+/**
+ * boot.css
+ * Styling for the system boot sequence and configuration screens
+ */
+
+/* ----- ROOT VARIABLES ----- */
+:root {
+    --bitcoin-color: #f7931a;
+    --bitcoin-rgb: 247, 147, 26;
+    --deepsea-color: #0088cc;
+    --deepsea-rgb: 0, 136, 204;
+    --bg-color: #0a0a0a;
+    --text-color: white;
+    --success-color: #32CD32;
+    --error-color: #ff0000;
+    --terminal-font: 'VT323', monospace;
+}
+
+/* ----- BASE STYLES ----- */
+body {
+    background: linear-gradient(135deg, #121212, #000000);
+    color: var(--bitcoin-color);
+    font-family: var(--terminal-font);
+    font-size: 20px;
+    line-height: 1.4;
+    margin: 0;
+    padding: 10px;
+    overflow-x: hidden;
+    height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+}
+
+    /* CRT Screen Effect */
+    body::before {
+        content: " ";
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none;
+        z-index: 2;
+        opacity: 0.15;
+    }
+
+/* ----- CONFIGURATION FORM ----- */
 #config-form {
     display: none;
     width: 500px;
@@ -6,107 +55,18 @@
     margin: 30px auto;
     padding: 20px;
     background-color: #0d0d0d;
-    border: 1px solid #f7931a;
-    box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+    border: 1px solid var(--bitcoin-color);
+    box-shadow: 0 0 10px rgba(var(--bitcoin-rgb), 0.5);
     border-radius: 4px;
+    z-index: 100;
+    position: relative;
 }
 
-/* Boot text color - updated with theme toggling */
-body:not(.deepsea-theme) #terminal,
-body:not(.deepsea-theme) #output,
-body:not(.deepsea-theme) #prompt-container,
-body:not(.deepsea-theme) #prompt-text,
-body:not(.deepsea-theme) #user-input,
-body:not(.deepsea-theme) #loading-message {
-    color: #f7931a;
-}
-
-/* DeepSea theme text color */
-body.deepsea-theme #terminal,
-body.deepsea-theme #output,
-body.deepsea-theme #prompt-container,
-body.deepsea-theme #prompt-text,
-body.deepsea-theme #user-input,
-body.deepsea-theme #loading-message {
-    color: #0088cc;
-}
-
-/* DeepSea cursor color */
-body.deepsea-theme .cursor,
-body.deepsea-theme .prompt-cursor {
-    background-color: #0088cc;
-    box-shadow: 0 0 5px rgba(0, 136, 204, 0.8);
-}
-
-/* Boot-specific DeepSea theme adjustments */
-body.deepsea-theme #bitcoin-logo {
-    color: #0088cc;
-    border-color: #0088cc;
-    text-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
-    box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
-}
-
-body.deepsea-theme #config-form {
-    border: 1px solid #0088cc;
-    box-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
-}
-
-body.deepsea-theme .config-title {
-    color: #0088cc;
-}
-
-body.deepsea-theme .form-group label {
-    color: #0088cc;
-}
-
-body.deepsea-theme .form-group input,
-body.deepsea-theme .form-group select {
-    border: 1px solid #0088cc;
-}
-
-    body.deepsea-theme .form-group input:focus,
-    body.deepsea-theme .form-group select:focus {
-        box-shadow: 0 0 5px #0088cc;
-    }
-
-body.deepsea-theme .btn {
-    background-color: #0088cc;
-}
-
-    body.deepsea-theme .btn:hover {
-        background-color: #00b3ff;
-    }
-
-body.deepsea-theme .btn-secondary {
-    background-color: #333;
-    color: #0088cc;
-}
-
-body.deepsea-theme .tooltip .tooltip-text {
-    border: 1px solid #0088cc;
-}
-
-body.deepsea-theme .form-group select {
-    background-image: linear-gradient(45deg, transparent 50%, #0088cc 50%), linear-gradient(135deg, #0088cc 50%, transparent 50%);
-}
-
-/* DeepSea skip button */
-body.deepsea-theme #skip-button {
-    background-color: #0088cc;
-    box-shadow: 0 0 8px rgba(0, 136, 204, 0.5);
-}
-
-    body.deepsea-theme #skip-button:hover {
-        background-color: #00b3ff;
-        box-shadow: 0 0 12px rgba(0, 136, 204, 0.7);
-    }
-
-/* Original Bitcoin styling preserved by default */
 .config-title {
     font-size: 24px;
     text-align: center;
     margin-bottom: 20px;
-    color: #f7931a;
+    color: var(--bitcoin-color);
 }
 
 .form-group {
@@ -116,7 +76,7 @@ body.deepsea-theme #skip-button {
     .form-group label {
         display: block;
         margin-bottom: 5px;
-        color: #f7931a;
+        color: var(--bitcoin-color);
     }
 
     .form-group input,
@@ -124,17 +84,29 @@ body.deepsea-theme #skip-button {
         width: 100%;
         padding: 8px;
         background-color: #0d0d0d;
-        border: 1px solid #f7931a;
-        color: #fff;
-        font-family: 'VT323', monospace;
+        border: 1px solid var(--bitcoin-color);
+        color: var(--text-color);
+        font-family: var(--terminal-font);
         font-size: 18px;
     }
 
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
-            box-shadow: 0 0 5px #f7931a;
+            box-shadow: 0 0 5px var(--bitcoin-color);
         }
+
+    /* Style select dropdown with custom arrow */
+    .form-group select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: linear-gradient(45deg, transparent 50%, var(--bitcoin-color) 50%), linear-gradient(135deg, var(--bitcoin-color) 50%, transparent 50%);
+        background-position: calc(100% - 15px) calc(1em + 0px), calc(100% - 10px) calc(1em + 0px);
+        background-size: 5px 5px, 5px 5px;
+        background-repeat: no-repeat;
+        padding-right: 30px;
+    }
 
 .form-actions {
     display: flex;
@@ -144,12 +116,13 @@ body.deepsea-theme #skip-button {
 
 .btn {
     padding: 8px 16px;
-    background-color: #f7931a;
+    background-color: var(--bitcoin-color);
     color: #000;
     border: none;
     cursor: pointer;
-    font-family: 'VT323', monospace;
+    font-family: var(--terminal-font);
     font-size: 18px;
+    transition: all 0.2s ease;
 }
 
     .btn:hover {
@@ -158,9 +131,10 @@ body.deepsea-theme #skip-button {
 
 .btn-secondary {
     background-color: #333;
-    color: #f7931a;
+    color: var(--bitcoin-color);
 }
 
+/* Form message styling */
 #form-message {
     margin-top: 15px;
     padding: 10px;
@@ -170,16 +144,17 @@ body.deepsea-theme #skip-button {
 
 .message-success {
     background-color: rgba(50, 205, 50, 0.2);
-    border: 1px solid #32CD32;
-    color: #32CD32;
+    border: 1px solid var(--success-color);
+    color: var(--success-color);
 }
 
 .message-error {
     background-color: rgba(255, 0, 0, 0.2);
-    border: 1px solid #ff0000;
-    color: #ff0000;
+    border: 1px solid var(--error-color);
+    color: var(--error-color);
 }
 
+/* ----- TOOLTIP STYLING ----- */
 .tooltip {
     position: relative;
     display: inline-block;
@@ -187,7 +162,7 @@ body.deepsea-theme #skip-button {
     width: 14px;
     height: 14px;
     background-color: #333;
-    color: #fff;
+    color: var(--text-color);
     border-radius: 50%;
     text-align: center;
     line-height: 14px;
@@ -199,7 +174,7 @@ body.deepsea-theme #skip-button {
         visibility: hidden;
         width: 200px;
         background-color: #000;
-        color: #fff;
+        color: var(--text-color);
         text-align: center;
         border-radius: 3px;
         padding: 5px;
@@ -211,7 +186,7 @@ body.deepsea-theme #skip-button {
         opacity: 0;
         transition: opacity 0.3s;
         font-size: 14px;
-        border: 1px solid #f7931a;
+        border: 1px solid var(--bitcoin-color);
     }
 
     .tooltip:hover .tooltip-text {
@@ -219,70 +194,278 @@ body.deepsea-theme #skip-button {
         opacity: 1;
     }
 
-/* Style the select dropdown with custom arrow */
-.form-group select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, #f7931a 50%), linear-gradient(135deg, #f7931a 50%, transparent 50%);
-    background-position: calc(100% - 15px) calc(1em + 0px), calc(100% - 10px) calc(1em + 0px);
-    background-size: 5px 5px, 5px 5px;
-    background-repeat: no-repeat;
-    padding-right: 30px;
+/* ----- TERMINAL STYLING ----- */
+#terminal {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    animation: flicker 4s infinite;
+    height: 400px;
+    overflow-y: auto;
+    position: relative;
+    flex: 1;
 }
 
-/* Base styling for the Bitcoin logo */
-#bitcoin-logo {
+#terminal-content {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+.cursor {
+    display: inline-block;
+    width: 10px;
+    height: 16px;
+    background-color: var(--bitcoin-color);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    box-shadow: 0 0 5px rgba(var(--bitcoin-rgb), 0.8);
+}
+
+#prompt-container {
+    display: none;
+    white-space: nowrap;
+}
+
+#prompt-text {
+    color: var(--bitcoin-color);
+    margin-right: 5px;
+    display: inline;
+}
+
+#user-input {
+    background: transparent;
+    border: none;
+    color: var(--bitcoin-color);
+    font-family: var(--terminal-font);
+    font-size: 20px;
+    caret-color: transparent;
+    outline: none;
+    width: 35px;
+    height: 33px;
+    padding: 0;
+    margin: 0;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.prompt-cursor {
+    display: inline-block;
+    width: 10px;
+    height: 16px;
+    background-color: var(--bitcoin-color);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    box-shadow: 0 0 5px rgba(var(--bitcoin-rgb), 0.8);
     position: relative;
+    top: 1px;
+    margin-left: -2px;
+}
+
+/* ----- BITCOIN LOGO ----- */
+#bitcoin-logo {
+    display: block;
+    visibility: hidden;
+    text-align: center;
+    margin: 10px auto;
+    font-size: 10px;
+    line-height: 1;
+    color: var(--bitcoin-color);
+    text-shadow: 0 0 10px rgba(var(--bitcoin-rgb), 0.8);
     white-space: pre;
+    width: 260px;
+    padding: 10px;
+    border: 2px solid var(--bitcoin-color);
+    background-color: #0a0a0a;
+    box-shadow: 0 0 15px rgba(var(--bitcoin-rgb), 0.5);
     font-family: monospace;
-    height: 130px; /* Set fixed height to match original logo */
+    opacity: 0;
+    transition: opacity 1s ease;
+    position: relative;
+    height: 130px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
 }
 
-/* Update the DeepSea theme logo styling */
-body.deepsea-theme #bitcoin-logo {
-    color: transparent; /* Hide original logo */
-    position: relative;
-    text-shadow: none;
-    min-height: 120px; /* Ensure enough height for the new logo */
+/* ----- SKIP BUTTON ----- */
+#skip-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--bitcoin-color);
+    color: #000;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: var(--terminal-font);
+    font-size: 16px;
+    box-shadow: 0 0 8px rgba(var(--bitcoin-rgb), 0.5);
+    transition: all 0.2s ease;
+    z-index: 50;
 }
 
-    /* Add the new DeepSea ASCII art */
+    #skip-button:hover {
+        background-color: #ffa32e;
+        box-shadow: 0 0 12px rgba(var(--bitcoin-rgb), 0.7);
+    }
+
+/* ----- INFO & DEBUG ----- */
+#loading-message {
+    text-align: center;
+    margin-bottom: 10px;
+    color: var(--bitcoin-color);
+}
+
+#debug-info {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    color: #666;
+    font-size: 12px;
+    z-index: 100;
+}
+
+/* ----- COLOR CLASSES ----- */
+.green {
+    color: #39ff14 !important;
+}
+
+.blue {
+    color: #00dfff !important;
+}
+
+.yellow {
+    color: #ffd700 !important;
+}
+
+.white {
+    color: #ffffff !important;
+}
+
+.red {
+    color: #ff2d2d !important;
+}
+
+.magenta {
+    color: #ff2d95 !important;
+}
+
+/* ----- DEEPSEA THEME ----- */
+body.deepsea-theme #terminal,
+body.deepsea-theme #output,
+body.deepsea-theme #prompt-container,
+body.deepsea-theme #prompt-text,
+body.deepsea-theme #user-input,
+body.deepsea-theme #loading-message {
+    color: var(--deepsea-color);
+}
+
+body.deepsea-theme .cursor,
+body.deepsea-theme .prompt-cursor {
+    background-color: var(--deepsea-color);
+    box-shadow: 0 0 5px rgba(var(--deepsea-rgb), 0.8);
+}
+
+body.deepsea-theme #bitcoin-logo {
+    color: transparent;
+    position: relative;
+    text-shadow: none;
+    min-height: 120px;
+    border: 2px solid var(--deepsea-color);
+    box-shadow: 0 0 15px rgba(var(--deepsea-rgb), 0.5);
+}
+
     body.deepsea-theme #bitcoin-logo::after {
         content: " ____                 ____             \A|  _ \\  ___  ___ _ __/ ___|  ___  __ _ \A| | | |/ _ \\/ _ \\ '_ \\___ \\ / _ \\/ _` |\A| |_| |  __/  __/ |_) |__) |  __/ (_| |\A|____/ \\___|\\___|_.__/____/ \\___|\\__,_|\A|_|    ";
         position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%); /* Center perfectly */
-        font-size: 100%; /* Full size */
+        transform: translate(-50%, -50%);
+        font-size: 100%;
         font-weight: bold;
         line-height: 1.2;
-        color: #0088cc;
+        color: var(--deepsea-color);
         white-space: pre;
         display: block;
-        text-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
+        text-shadow: 0 0 10px rgba(var(--deepsea-rgb), 0.5);
         font-family: monospace;
         z-index: 1;
         padding: 10px 0;
     }
 
-    /* Add "DeepSea" version info */
     body.deepsea-theme #bitcoin-logo::before {
         content: "v.21";
         position: absolute;
         bottom: 0;
         right: 10px;
-        color: #0088cc;
+        color: var(--deepsea-color);
         font-size: 16px;
-        text-shadow: 0 0 5px rgba(0, 136, 204, 0.5);
-        font-family: 'VT323', monospace;
-        z-index: 2; /* Ensure version displays on top */
+        text-shadow: 0 0 5px rgba(var(--deepsea-rgb), 0.5);
+        font-family: var(--terminal-font);
+        z-index: 2;
     }
-/* Ocean Wave Ripple Effect for DeepSea Theme */
+
+body.deepsea-theme #config-form {
+    border: 1px solid var(--deepsea-color);
+    box-shadow: 0 0 10px rgba(var(--deepsea-rgb), 0.5);
+}
+
+body.deepsea-theme .config-title {
+    color: var(--deepsea-color);
+}
+
+body.deepsea-theme .form-group label {
+    color: var(--deepsea-color);
+}
+
+body.deepsea-theme .form-group input,
+body.deepsea-theme .form-group select {
+    border: 1px solid var(--deepsea-color);
+}
+
+    body.deepsea-theme .form-group input:focus,
+    body.deepsea-theme .form-group select:focus {
+        box-shadow: 0 0 5px var(--deepsea-color);
+    }
+
+body.deepsea-theme .btn {
+    background-color: var(--deepsea-color);
+}
+
+    body.deepsea-theme .btn:hover {
+        background-color: #00b3ff;
+    }
+
+body.deepsea-theme .btn-secondary {
+    background-color: #333;
+    color: var(--deepsea-color);
+}
+
+body.deepsea-theme .tooltip .tooltip-text {
+    border: 1px solid var(--deepsea-color);
+}
+
+body.deepsea-theme .form-group select {
+    background-image: linear-gradient(45deg, transparent 50%, var(--deepsea-color) 50%), linear-gradient(135deg, var(--deepsea-color) 50%, transparent 50%);
+}
+
+body.deepsea-theme #skip-button {
+    background-color: var(--deepsea-color);
+    box-shadow: 0 0 8px rgba(var(--deepsea-rgb), 0.5);
+}
+
+    body.deepsea-theme #skip-button:hover {
+        background-color: #00b3ff;
+        box-shadow: 0 0 12px rgba(var(--deepsea-rgb), 0.7);
+    }
+
+/* ----- UNDERWATER EFFECTS ----- */
+/* Ocean Wave Ripple Effect */
 body.deepsea-theme::after {
     content: "";
     position: fixed;
@@ -295,22 +478,11 @@ body.deepsea-theme::after {
     opacity: 0.1;
     z-index: 10;
     animation: oceanRipple 8s infinite linear;
-    background-image: repeating-linear-gradient( 0deg, rgba(0, 136, 204, 0.1), rgba(0, 136, 204, 0.1) 1px, transparent 1px, transparent 6px );
+    background-image: repeating-linear-gradient( 0deg, rgba(var(--deepsea-rgb), 0.1), rgba(var(--deepsea-rgb), 0.1) 1px, transparent 1px, transparent 6px );
     background-size: 100% 6px;
 }
 
-/* Ocean waves moving animation */
-@keyframes oceanRipple {
-    0% {
-        transform: translateY(0);
-    }
-
-    100% {
-        transform: translateY(6px);
-    }
-}
-
-/* Retro glitch effect for DeepSea Theme */
+/* Retro glitch effect */
 body.deepsea-theme::before {
     content: "";
     position: fixed;
@@ -324,6 +496,103 @@ body.deepsea-theme::before {
     background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 73, 109, 0.1) 50%), linear-gradient(90deg, rgba(0, 81, 122, 0.03), rgba(0, 136, 204, 0.08), rgba(0, 191, 255, 0.03));
     background-size: 100% 2px, 3px 100%;
     animation: glitchEffect 2s infinite;
+}
+
+/* Deep underwater light rays */
+body.deepsea-theme {
+    position: relative;
+    overflow: hidden;
+}
+
+    body.deepsea-theme .underwater-rays {
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        right: -50%;
+        bottom: -50%;
+        width: 200%;
+        height: 200%;
+        background: rgba(0, 0, 0, 0);
+        pointer-events: none;
+        z-index: -1;
+        background-image: radial-gradient(ellipse at top, rgba(var(--deepsea-rgb), 0.1) 0%, rgba(var(--deepsea-rgb), 0) 70%), radial-gradient(ellipse at bottom, rgba(0, 91, 138, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+        animation: lightRays 15s ease infinite alternate;
+    }
+
+    /* Subtle digital noise texture */
+    body.deepsea-theme .digital-noise {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4woEFQwNDaabTQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAACASURBVGje7dixDcIwFEbhb8QMKWn5dwEWY4fswAasRJkBkhfAIarsNDEF5x5LrV/dJ1cEAAAAAOzHuefF5byzZ7tS6xDj6qoQpdRxUvNM6lH3rPeM1+ZJ3ROtqe9feGcjY8z74M8UvJGxEVHxTcIbGSsR+SECAAAAsC9/8G82GwHDD80AAAAASUVORK5CYII=');
+        opacity: 0.05;
+        z-index: 2;
+        pointer-events: none;
+        animation: noise 0.5s steps(5) infinite;
+    }
+
+/* ----- ANIMATIONS ----- */
+/* Flicker Animation */
+@keyframes flicker {
+    0% {
+        opacity: 0.97;
+    }
+
+    5% {
+        opacity: 0.95;
+    }
+
+    10% {
+        opacity: 0.97;
+    }
+
+    15% {
+        opacity: 0.94;
+    }
+
+    20% {
+        opacity: 0.98;
+    }
+
+    50% {
+        opacity: 0.95;
+    }
+
+    80% {
+        opacity: 0.96;
+    }
+
+    90% {
+        opacity: 0.94;
+    }
+
+    100% {
+        opacity: 0.98;
+    }
+}
+
+/* Blink Animation for cursors */
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Ocean waves animation */
+@keyframes oceanRipple {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(6px);
+    }
 }
 
 /* Glitch animation */
@@ -358,27 +627,6 @@ body.deepsea-theme::before {
     }
 }
 
-/* Deep underwater light rays */
-body.deepsea-theme {
-    position: relative;
-    overflow: hidden;
-}
-
-    body.deepsea-theme .underwater-rays {
-        position: fixed;
-        top: -50%;
-        left: -50%;
-        right: -50%;
-        bottom: -50%;
-        width: 200%;
-        height: 200%;
-        background: rgba(0, 0, 0, 0);
-        pointer-events: none;
-        z-index: -1;
-        background-image: radial-gradient(ellipse at top, rgba(0, 136, 204, 0.1) 0%, rgba(0, 136, 204, 0) 70%), radial-gradient(ellipse at bottom, rgba(0, 91, 138, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
-        animation: lightRays 15s ease infinite alternate;
-    }
-
 /* Light ray animation */
 @keyframes lightRays {
     0% {
@@ -395,20 +643,6 @@ body.deepsea-theme {
         transform: scale(1.1) skew(0deg);
         opacity: 0.3;
     }
-}
-
-/* Subtle digital noise texture */
-body.deepsea-theme .digital-noise {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4woEFQwNDaabTQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAACASURBVGje7dixDcIwFEbhb8QMKWn5dwEWY4fswAasRJkBkhfAIarsNDEF5x5LrV/dJ1cEAAAAAOzHuefF5byzZ7tS6xDj6qoQpdRxUvNM6lH3rPeM1+ZJ3ROtqe9feGcjY8z74M8UvJGxEVHxTcIbGSsR+SECAAAAsC9/8G82GwHDD80AAAAASUVORK5CYII=');
-    opacity: 0.05;
-    z-index: 2;
-    pointer-events: none;
-    animation: noise 0.5s steps(5) infinite;
 }
 
 /* Noise animation */
@@ -438,228 +672,35 @@ body.deepsea-theme .digital-noise {
     }
 }
 
-/* Base Styles with a subtle radial background for extra depth */
-body {
-  background: linear-gradient(135deg, #121212, #000000);
-  color: #f7931a;
-  font-family: 'VT323', monospace;
-  font-size: 20px;
-  line-height: 1.4;
-  margin: 0;
-  padding: 10px;
-  overflow-x: hidden;
-  height: calc(100vh - 100px);
-  display: flex;
-  flex-direction: column;
-}
-
-/* CRT Screen Effect */
-body::before {
-  content: " ";
-  display: block;
-  position: fixed;
-  top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
-  background-size: 100% 2px, 3px 100%;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0.15;
-}
-
-/* Flicker Animation */
-@keyframes flicker {
-  0% { opacity: 0.97; }
-  5% { opacity: 0.95; }
-  10% { opacity: 0.97; }
-  15% { opacity: 0.94; }
-  20% { opacity: 0.98; }
-  50% { opacity: 0.95; }
-  80% { opacity: 0.96; }
-  90% { opacity: 0.94; }
-  100% { opacity: 0.98; }
-}
-
-/* Terminal Window with scrolling enabled */
-#terminal {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  animation: flicker 4s infinite;
-  height: 400px;
-  overflow-y: auto;
-  position: relative;
-  flex: 1;
-}
-
-#terminal-content {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-}
-
-.cursor {
-  display: inline-block;
-  width: 10px;
-  height: 16px;
-  background-color: #f7931a;
-  animation: blink 1s step-end infinite;
-  vertical-align: middle;
-  box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-/* Neon-inspired color classes */
-.green {
-  color: #39ff14 !important;
-}
-
-.blue {
-  color: #00dfff !important;
-}
-
-.yellow {
-  color: #ffd700 !important;
-}
-
-.white {
-  color: #ffffff !important;
-}
-
-.red {
-  color: #ff2d2d !important;
-}
-
-.magenta {
-  color: #ff2d95 !important;
-}
-
-/* Bitcoin Logo styling with extra neon border */
-#bitcoin-logo {
-  display: block;
-  visibility: hidden;
-  text-align: center;
-  margin: 10px auto;
-  font-size: 10px;
-  line-height: 1;
-  color: #f7931a;
-  text-shadow: 0 0 10px rgba(247, 147, 26, 0.8);
-  white-space: pre;
-  width: 260px;
-  padding: 10px;
-  border: 2px solid #f7931a;
-  background-color: #0a0a0a;
-  box-shadow: 0 0 15px rgba(247, 147, 26, 0.5);
-  font-family: monospace;
-  opacity: 0;
-  transition: opacity 1s ease;
-}
-
-/* Skip Button */
-#skip-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #f7931a;
-  color: #000;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-family: 'VT323', monospace;
-  font-size: 16px;
-  box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
-  transition: all 0.2s ease;
-  z-index: 50; /* Lower z-index value */
-}
-
-#skip-button:hover {
-  background-color: #ffa32e;
-  box-shadow: 0 0 12px rgba(247, 147, 26, 0.7);
-}
-
-/* Mobile-specific adjustments */
+/* ----- RESPONSIVE STYLES ----- */
 @media (max-width: 768px) {
     #skip-button {
         bottom: 25px;
         right: 10px;
-        padding: 10px 18px; /* Larger touch target for mobile */
+        padding: 10px 18px;
         font-size: 18px;
         height: 40px;
         z-index: 50;
     }
+
+    #bitcoin-logo {
+        transform: scale(0.9);
+    }
 }
 
-/* Add this to your CSS */
-#config-form {
-    z-index: 100; /* Higher than the skip button */
-    position: relative; /* Needed for z-index to work properly */
-}
-
-/* Prompt Styling */
-#prompt-container {
-  display: none;
-  white-space: nowrap;
-}
-
-#prompt-text {
-  color: #f7931a;
-  margin-right: 5px;
-  display: inline;
-}
-
-#user-input {
-    background: transparent;
-    border: none;
-    color: #f7931a;
-    font-family: 'VT323', monospace;
-    font-size: 20px;
-    caret-color: transparent;
-    outline: none;
-    width: 35px;
-    height: 33px;
-    padding: 0;
-    margin: 0;
-    display: inline-block;
-    vertical-align: top;
-}
-
-.prompt-cursor {
-  display: inline-block;
-  width: 10px;
-  height: 16px;
-  background-color: #f7931a;
-  animation: blink 1s step-end infinite;
-  vertical-align: middle;
-  box-shadow: 0 0 5px rgba(247, 147, 26, 0.8);
-  position: relative;
-  top: 1px;
-  margin-left: -2px;
-}
-
-/* Mobile Responsiveness */
 @media (max-width: 600px) {
-  body { font-size: 14px; padding: 10px; }
-  #terminal { margin: 0; }
-}
+    body {
+        font-size: 14px;
+        padding: 10px;
+    }
 
-/* Loading and Debug Info */
-#loading-message {
-  text-align: center;
-  margin-bottom: 10px;
-}
+    #terminal {
+        margin: 0;
+    }
 
-#debug-info {
-  position: fixed;
-  bottom: 10px;
-  left: 10px;
-  color: #666;
-  font-size: 12px;
-  z-index: 100;
+    #bitcoin-logo {
+        transform: scale(0.8);
+        width: 100%;
+        padding: 5px;
+    }
 }

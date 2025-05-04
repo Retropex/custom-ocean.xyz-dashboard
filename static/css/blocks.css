@@ -1,12 +1,16 @@
-/* Styles specific to the blocks page */
+/**
+ * blocks.css
+ * Styles specific to the blockchain monitor page
+ */
 
-/* Block controls */
+/* ----- CONTROLS & INPUTS ----- */
 .block-controls {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+    margin-bottom: 15px;
 }
 
 .block-control-item {
@@ -22,11 +26,12 @@
     padding: 5px 10px;
     font-family: var(--terminal-font);
     width: 150px;
+    transition: box-shadow 0.2s ease;
 }
 
     .block-input:focus {
         outline: none;
-        box-shadow: 0 0 8px rgba(247, 147, 26, 0.5);
+        box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5);
     }
 
 .block-button {
@@ -42,10 +47,10 @@
     .block-button:hover {
         background-color: var(--primary-color);
         color: var(--bg-color);
-        box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+        box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5);
     }
 
-/* Latest block stats */
+/* ----- LATEST BLOCK STATS ----- */
 .latest-block-stats {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -57,13 +62,15 @@
     flex-direction: column;
 }
 
-.stat-item strong {
-    color: #f7931a; /* Use the Bitcoin orange color for labels */
-}
+    .stat-item strong {
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
 
-/* Blocks grid */
+/* ----- BLOCKS GRID ----- */
 .blocks-container {
     overflow-x: auto;
+    position: relative;
 }
 
 .blocks-grid {
@@ -73,10 +80,11 @@
     margin-top: 15px;
 }
 
+/* ----- BLOCK CARD ----- */
 .block-card {
     background-color: var(--bg-color);
     border: 1px solid var(--primary-color);
-    box-shadow: 0 0 5px rgba(247, 147, 26, 0.3);
+    box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
     position: relative;
     overflow: hidden;
     padding: 12px;
@@ -85,7 +93,7 @@
 }
 
     .block-card:hover {
-        box-shadow: 0 0 15px rgba(247, 147, 26, 0.5);
+        box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.5);
         transform: translateY(-2px);
     }
 
@@ -106,6 +114,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    position: relative;
+    z-index: 2;
 }
 
 .block-height {
@@ -123,6 +133,8 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px 15px;
+    position: relative;
+    z-index: 2;
 }
 
 .block-info-item {
@@ -139,6 +151,7 @@
     font-size: 0.9rem;
 }
 
+    /* Color-coded values */
     .block-info-value.yellow {
         color: #ffd700;
     }
@@ -159,7 +172,7 @@
         color: #ff5555;
     }
 
-/* Loader */
+/* ----- LOADER ----- */
 .loader {
     text-align: center;
     padding: 20px;
@@ -171,7 +184,7 @@
     margin-right: 5px;
 }
 
-/* Modal styles */
+/* ----- BLOCK MODAL ----- */
 .block-modal {
     display: none;
     position: fixed;
@@ -188,7 +201,7 @@
     background-color: var(--bg-color);
     margin: 5% auto;
     border: 1px solid var(--primary-color);
-    box-shadow: 0 0 20px rgba(247, 147, 26, 0.5);
+    box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.5);
     width: 90%;
     max-width: 800px;
     max-height: 80vh;
@@ -230,6 +243,7 @@
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    transition: color 0.3s ease;
 }
 
     .block-modal-close:hover,
@@ -243,6 +257,7 @@
     z-index: 1;
 }
 
+/* ----- BLOCK DETAILS ----- */
 #block-details {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -281,6 +296,7 @@
     word-break: break-all;
 }
 
+/* ----- FEE VISUALIZATION ----- */
 .transaction-data {
     display: flex;
     flex-direction: column;
@@ -303,7 +319,7 @@
     transition: width 0.5s ease;
 }
 
-/* Mining Animation Container */
+/* ----- MINING ANIMATION ----- */
 .mining-animation-container {
     padding: 0;
     background-color: #0a0a0a;
@@ -330,23 +346,30 @@
     overflow: hidden;
     display: flex;
     justify-content: center;
-    align-items: center; /* Add this to center vertically if needed */
+    align-items: center;
 }
 
 svg {
     max-width: 100%;
     height: auto;
-    display: block; /* Ensures proper centering */
+    display: block;
 }
 
-/* Make sure the SVG itself takes more width */
 #block-mining-animation {
     width: 100%;
     height: 300px;
-    /* Fixed height but full width */
 }
 
-/* Mobile responsiveness */
+/* ----- BLOCK NAVIGATION ----- */
+.block-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 15px;
+    grid-column: 1 / -1;
+}
+
+/* ----- RESPONSIVE STYLES ----- */
 @media (max-width: 768px) {
     .latest-block-stats {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -367,5 +390,46 @@ svg {
 
     #svg-container {
         height: 250px;
+    }
+
+    .block-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .block-control-item {
+        justify-content: space-between;
+    }
+
+    .block-input {
+        flex-grow: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .block-modal-header {
+        font-size: 1rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .block-modal-close {
+        font-size: 24px;
+    }
+
+    .block-modal-body {
+        padding: 0.8rem;
+    }
+
+    .block-detail-title {
+        font-size: 1rem;
+    }
+
+    .block-detail-label,
+    .block-detail-value {
+        font-size: 0.85rem;
+    }
+
+    .block-hash {
+        font-size: 0.75rem;
     }
 }

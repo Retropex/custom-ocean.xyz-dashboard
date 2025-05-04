@@ -1,6 +1,9 @@
-﻿/* earnings.css - Clean theme-switching friendly version */
+﻿/**
+ * earnings.css
+ * Styling for the earnings page with theme compatibility
+ */
 
-/* Color variables - Defined at root level for global access */
+/* ----- ROOT VARIABLES ----- */
 :root {
     /* Shared colors for both themes */
     --yellow-color: #ffd700;
@@ -28,14 +31,11 @@ html.deepsea-theme {
     --primary-gradient-end: #006699; /* Darker blue */
 }
 
-/* ===== LAYOUT COMPONENTS ===== */
-
-/* Main section styling */
+/* ----- LAYOUT COMPONENTS ----- */
 .earnings-section {
     margin: 2rem 0;
 }
 
-    /* Section headers */
     .earnings-section h2 {
         color: var(--primary-color);
         padding: 0.5rem;
@@ -43,76 +43,113 @@ html.deepsea-theme {
         font-family: var(--header-font);
         text-transform: uppercase;
         margin-bottom: 0.5rem;
+        position: relative;
     }
 
-/* Stats grid for summary cards */
+        .earnings-section h2::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px );
+            pointer-events: none;
+            z-index: 1;
+        }
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1rem;
-    margin-bottom: 2rem;
-    margin-top: 2rem;
+    margin: 2rem 0;
 }
 
-/* ===== CARD STYLING ===== */
+.dashboard-container {
+    position: relative;
+    z-index: 0;
+}
 
-/* Stat card - Blue background with white text */
+    .dashboard-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px );
+        pointer-events: none;
+        z-index: -1;
+    }
+
+/* ----- CARD STYLING ----- */
 .stat-card {
     color: white;
     padding: 1rem;
     border: 1px solid var(--primary-color);
     box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3);
     position: relative;
+    background-color: var(--bg-color);
+    overflow: hidden;
 }
+
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+        pointer-events: none;
+        z-index: 1;
+    }
 
     .stat-card h2 {
         padding: 0.5rem;
         color: var(--primary-color);
         font-size: 1.2rem;
-        margin-bottom: 0.5rem;
+        margin: -1rem -1rem 0.5rem -1rem;
         text-transform: uppercase;
+        font-weight: bold;
         font-family: var(--header-font);
+        position: relative;
+        z-index: 2;
     }
 
-/* Card content elements */
 .stat-value {
     font-size: 1.8rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
-}
-
-.stat-card .stat-value {
-    color: white;
+    position: relative;
+    z-index: 2;
 }
 
 .stat-unit {
     font-size: 1rem;
     color: var(--text-color);
     margin-left: 0.25rem;
-}
-
-.stat-card .stat-unit,
-.stat-card .stat-secondary {
-    color: rgba(255, 255, 255, 0.8);
+    position: relative;
+    z-index: 2;
 }
 
 .stat-secondary {
     font-size: 0.9rem;
     margin-bottom: 0.25rem;
+    color: rgba(255, 255, 255, 0.8);
+    position: relative;
+    z-index: 2;
 }
 
 .stat-time {
     margin-top: 0.5rem;
     font-size: 0.9rem;
-    color: var(--accent-color, #00dfff);
+    color: var(--accent-color);
+    position: relative;
+    z-index: 2;
 }
 
-.stat-card .stat-time {
-    color: var(--accent-color, #a0ffff);
-}
-
-/* ===== TABLE STYLING ===== */
-
+/* ----- TABLE STYLING ----- */
 .table-container {
     overflow-x: auto;
     margin: 1rem 0;
@@ -121,10 +158,9 @@ html.deepsea-theme {
     border: 1px solid var(--primary-color);
     box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2);
     position: relative;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
-    /* Scanline effect for tables */
     .table-container::after {
         content: '';
         position: absolute;
@@ -132,7 +168,7 @@ html.deepsea-theme {
         left: 0;
         right: 0;
         bottom: 0;
-        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
         pointer-events: none;
         z-index: 1;
     }
@@ -140,6 +176,8 @@ html.deepsea-theme {
 .earnings-table {
     width: 100%;
     border-collapse: collapse;
+    position: relative;
+    z-index: 2;
 }
 
     .earnings-table th,
@@ -157,7 +195,6 @@ html.deepsea-theme {
         font-size: 0.9rem;
     }
 
-    /* Empty state message */
     .earnings-table tr td[colspan] {
         text-align: center;
         padding: 2rem;
@@ -165,8 +202,7 @@ html.deepsea-theme {
         font-style: italic;
     }
 
-    /* ===== SPECIFIC DATA COLORS ===== */
-
+    /* ----- COLOR CODING FOR DATA ----- */
     /* Yellow color - BTC/sats values */
     #unpaid-sats,
     #total-paid-sats,
@@ -195,22 +231,7 @@ html.deepsea-theme {
     color: var(--accent-color);
 }
 
-/* ===== MISC ELEMENTS ===== */
-
-/* Transaction links */
-.tx-link {
-    color: var(--accent-color);
-    text-decoration: none;
-    letter-spacing: 1px;
-    text-decoration: underline;
-}
-
-    .tx-link:hover {
-        text-decoration: underline;
-        text-shadow: 0 0 5px rgba(var(--accent-color-rgb), 0.7);
-    }
-
-/* Status indicators */
+/* ----- STATUS INDICATORS ----- */
 .status-label {
     display: inline-block;
     padding: 0.25rem 0.5rem;
@@ -237,39 +258,45 @@ html.deepsea-theme {
     color: var(--accent-color);
 }
 
-/* User settings info */
-.settings-info {
-    display: flex;
-    justify-content: flex-end;
-    font-size: 0.9em;
-    color: #888;
+/* ----- LINKS & INTERACTIVE ELEMENTS ----- */
+.tx-link {
+    color: var(--accent-color);
+    text-decoration: none;
+    letter-spacing: 1px;
+    text-decoration: underline;
+    transition: all 0.2s ease;
 }
 
-.setting-item {
-    margin-left: 20px;
-}
-
-    .setting-item strong {
-        color: var(--accent-color);
+    .tx-link:hover {
+        text-decoration: underline;
+        text-shadow: 0 0 5px rgba(var(--accent-color-rgb), 0.7);
     }
 
-/* Currency symbol */
+/* ----- UTILITY CLASSES ----- */
+.arrow {
+    display: inline-block;
+    font-weight: bold;
+    margin-left: 0.5rem;
+}
+
 .currency-symbol {
     display: inline-block;
     margin-right: 2px;
 }
 
-/* ===== SPECIFIC ELEMENT STYLING ===== */
-
-/* Payment count */
-#payment-count {
-    font-size: 1.5rem;
+.metric-value {
+    color: var(--text-color);
+    font-weight: bold;
 }
 
-/* Latest payment timestamp */
-#latest-payment {
-    color: var(--accent-color);
-    font-size: 0.9rem;
+.card-body strong {
+    color: var(--primary-color);
+    margin-right: 0.25rem;
+}
+
+.card-body p {
+    margin: 0.25rem 0;
+    line-height: 1.2;
 }
 
 /* Pool luck indicators */
@@ -290,82 +317,23 @@ html.deepsea-theme {
     color: var(--red-color) !important;
 }
 
-/* ===== ANIMATIONS ===== */
-
-/* Bounce animations */
-@keyframes bounceUp {
-    0% {
-        transform: translateY(0);
-    }
-
-    25% {
-        transform: translateY(-2px);
-    }
-
-    50% {
-        transform: translateY(0);
-    }
-
-    75% {
-        transform: translateY(-2px);
-    }
-
-    100% {
-        transform: translateY(0);
-    }
+/* ----- USER SETTINGS INFO ----- */
+.settings-info {
+    display: flex;
+    justify-content: flex-end;
+    font-size: 0.9em;
+    color: #888;
 }
 
-@keyframes bounceDown {
-    0% {
-        transform: translateY(0);
-    }
-
-    25% {
-        transform: translateY(2px);
-    }
-
-    50% {
-        transform: translateY(0);
-    }
-
-    75% {
-        transform: translateY(2px);
-    }
-
-    100% {
-        transform: translateY(0);
-    }
+.setting-item {
+    margin-left: 20px;
 }
 
-.bounce-up {
-    animation: bounceUp 1s infinite;
-}
-
-.bounce-down {
-    animation: bounceDown 1s infinite;
-}
-
-/* Pulse animation for new payments */
-@keyframes pulse-highlight {
-    0% {
-        background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
+    .setting-item strong {
+        color: var(--accent-color);
     }
 
-    50% {
-        background-color: color-mix(in srgb, var(--primary-color) 30%, transparent);
-    }
-
-    100% {
-        background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
-    }
-}
-
-.new-payment {
-    animation: pulse-highlight 2s infinite;
-}
-
-/* ===== FUTURE CHART STYLING ===== */
-
+/* ----- CHARTS & VISUALIZATIONS ----- */
 .chart-container {
     background-color: var(--bg-color);
     padding: 0.5rem;
@@ -383,38 +351,55 @@ html.deepsea-theme {
         left: 0;
         right: 0;
         bottom: 0;
-        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
         pointer-events: none;
         z-index: 1;
     }
 
-/* ===== UTILITY CLASSES ===== */
+/* ----- ANIMATIONS ----- */
+@keyframes bounceUp {
+    0%, 50%, 100% {
+        transform: translateY(0);
+    }
 
-.arrow {
-    display: inline-block;
-    font-weight: bold;
-    margin-left: 0.5rem;
+    25%, 75% {
+        transform: translateY(-2px);
+    }
 }
 
-/* Metric value styling */
-.metric-value {
-    color: var(--text-color);
-    font-weight: bold;
+@keyframes bounceDown {
+    0%, 50%, 100% {
+        transform: translateY(0);
+    }
+
+    25%, 75% {
+        transform: translateY(2px);
+    }
 }
 
-/* Card body general styling */
-.card-body strong {
-    color: var(--primary-color);
-    margin-right: 0.25rem;
+@keyframes pulse-highlight {
+    0%, 100% {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+    }
+
+    50% {
+        background-color: rgba(var(--primary-color-rgb), 0.3);
+    }
 }
 
-.card-body p {
-    margin: 0.25rem 0;
-    line-height: 1.2;
+.bounce-up {
+    animation: bounceUp 1s infinite;
 }
 
-/* ===== RESPONSIVE STYLING ===== */
+.bounce-down {
+    animation: bounceDown 1s infinite;
+}
 
+.new-payment {
+    animation: pulse-highlight 2s infinite;
+}
+
+/* ----- RESPONSIVE STYLES ----- */
 /* Tablets and smaller desktops */
 @media (max-width: 768px) {
     .stats-grid {
@@ -538,86 +523,3 @@ html.deepsea-theme {
         font-size: 0.75rem;
     }
 }
-
-/* Add scanline effect to the main dashboard container */
-.dashboard-container {
-    position: relative;
-    z-index: 0;
-}
-
-    /* Scanline effect for the entire dashboard container */
-    .dashboard-container::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px);
-        pointer-events: none;
-        z-index: -1;
-    }
-
-/* Update stat card with scanline effect */
-.stat-card {
-    color: white;
-    padding: 1rem;
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3);
-    position: relative;
-    background-color: var(--bg-color);
-    overflow: hidden;
-}
-
-    /* Add scanline effect to stat cards */
-    .stat-card::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
-        pointer-events: none;
-        z-index: 1;
-    }
-
-    /* Ensure h2 headers in stat cards show above scanlines */
-    .stat-card h2 {
-        padding: 0.5rem;
-        color: var(--primary-color);
-        font-size: 1.2rem;
-        margin: -1rem -1rem 0.5rem -1rem;
-        text-transform: uppercase;
-        font-weight: bold;
-        font-family: var(--header-font);
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Ensure content in stat cards shows above scanlines */
-    .stat-card .stat-value,
-    .stat-card .stat-secondary,
-    .stat-card .stat-time,
-    .stat-card .stat-unit {
-        position: relative;
-        z-index: 2;
-    }
-
-/* Add scanline overlay to section headers */
-.earnings-section h2 {
-    position: relative;
-}
-
-    .earnings-section h2::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px);
-        pointer-events: none;
-        z-index: 1;
-    }
-

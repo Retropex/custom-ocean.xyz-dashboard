@@ -1,16 +1,15 @@
-/* notifications.css */
-/* Notification Controls */
+/**
+ * notifications.css
+ * Styling for the notification center page
+ */
+
+/* ----- NOTIFICATION CONTROLS ----- */
 .notification-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-}
-
-.full-timestamp {
-    font-size: 0.8em;
-    color: #888;
 }
 
 .filter-buttons {
@@ -31,15 +30,17 @@
 }
 
     .filter-button:hover {
-        background-color: rgba(247, 147, 26, 0.2);
+        background-color: rgba(var(--primary-color-rgb), 0.2);
+        box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.3);
     }
 
     .filter-button.active {
         background-color: var(--primary-color);
         color: var(--bg-color);
-        box-shadow: 0 0 10px rgba(247, 147, 26, 0.5);
+        box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.5);
     }
 
+/* ----- ACTION BUTTONS ----- */
 .notification-actions {
     display: flex;
     gap: 5px;
@@ -55,17 +56,18 @@
     font-family: var(--terminal-font);
     cursor: pointer;
     transition: all 0.2s ease;
-    min-width: 80px; /* Set a minimum width to prevent text cutoff */
+    min-width: 80px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem; /* Slightly smaller font */
+    font-size: 0.9rem;
     line-height: 1;
     text-transform: uppercase;
 }
 
     .action-button:hover {
-        background-color: rgba(247, 147, 26, 0.2);
+        background-color: rgba(var(--primary-color-rgb), 0.2);
+        box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.3);
     }
 
     .action-button.danger {
@@ -75,9 +77,10 @@
 
         .action-button.danger:hover {
             background-color: rgba(255, 85, 85, 0.2);
+            box-shadow: 0 0 8px rgba(255, 85, 85, 0.3);
         }
 
-/* Card header with unread badge */
+/* ----- CARD HEADER WITH BADGE ----- */
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -98,7 +101,7 @@
         display: none;
     }
 
-/* Notifications Container */
+/* ----- NOTIFICATIONS CONTAINER ----- */
 #notifications-container {
     min-height: 200px;
     position: relative;
@@ -122,24 +125,26 @@
         opacity: 0.5;
     }
 
-/* Notification Item */
+/* ----- NOTIFICATION ITEMS ----- */
 .notification-item {
     display: flex;
     padding: 12px;
-    border-bottom: 1px solid rgba(247, 147, 26, 0.2);
+    border-bottom: 1px solid rgba(var(--primary-color-rgb), 0.2);
     transition: background-color 0.2s ease;
     position: relative;
     background-color: rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-out;
 }
 
     .notification-item:hover {
-        background-color: rgba(247, 147, 26, 0.05);
+        background-color: rgba(var(--primary-color-rgb), 0.05);
     }
 
     .notification-item[data-read="true"] {
         opacity: 0.6;
     }
 
+    /* Level-specific styling */
     .notification-item[data-level="success"] {
         border-left: 3px solid #32CD32;
     }
@@ -156,28 +161,13 @@
         border-left: 3px solid #ff5555;
     }
 
+/* ----- NOTIFICATION COMPONENTS ----- */
 .notification-icon {
     flex: 0 0 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.2rem;
-}
-
-.notification-item[data-level="success"] .notification-icon i {
-    color: #32CD32;
-}
-
-.notification-item[data-level="info"] .notification-icon i {
-    color: #00dfff;
-}
-
-.notification-item[data-level="warning"] .notification-icon i {
-    color: #ffd700;
-}
-
-.notification-item[data-level="error"] .notification-icon i {
-    color: #ff5555;
 }
 
 .notification-content {
@@ -198,12 +188,35 @@
     gap: 15px;
 }
 
+.full-timestamp {
+    font-size: 0.8em;
+    color: #888;
+}
+
 .notification-category {
     text-transform: uppercase;
     font-size: 0.7rem;
     color: #aaa;
 }
 
+/* Level-specific icon colors */
+.notification-item[data-level="success"] .notification-icon i {
+    color: #32CD32;
+}
+
+.notification-item[data-level="info"] .notification-icon i {
+    color: #00dfff;
+}
+
+.notification-item[data-level="warning"] .notification-icon i {
+    color: #ffd700;
+}
+
+.notification-item[data-level="error"] .notification-icon i {
+    color: #ff5555;
+}
+
+/* ----- NOTIFICATION ITEM ACTIONS ----- */
 .notification-actions {
     flex: 0 0 80px;
     display: flex;
@@ -217,7 +230,7 @@
         border: none;
         color: #888;
         cursor: pointer;
-        transition: color 0.2s ease;
+        transition: color 0.2s ease, background-color 0.2s ease;
         width: 30px;
         height: 30px;
         display: flex;
@@ -236,7 +249,7 @@
     background-color: rgba(255, 85, 85, 0.1);
 }
 
-/* Pagination */
+/* ----- PAGINATION ----- */
 .pagination-controls {
     margin-top: 15px;
     text-align: center;
@@ -253,7 +266,8 @@
 }
 
     .load-more-button:hover {
-        background-color: rgba(247, 147, 26, 0.2);
+        background-color: rgba(var(--primary-color-rgb), 0.2);
+        box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.3);
     }
 
     .load-more-button:disabled {
@@ -261,7 +275,7 @@
         cursor: not-allowed;
     }
 
-/* Notification Animation */
+/* ----- ANIMATIONS ----- */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -274,24 +288,8 @@
     }
 }
 
-.notification-item {
-    animation: fadeIn 0.3s ease-out;
-}
-
-/* Mobile Responsiveness */
+/* ----- RESPONSIVE STYLES ----- */
 @media (max-width: 768px) {
-    .notification-actions {
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 10px;
-    }
-
-    .action-button {
-        width: 100%; /* Full width on small screens */
-        padding: 8px 12px;
-        font-size: 0.95rem;
-    }
-
     .notification-controls {
         flex-direction: column;
         align-items: stretch;
@@ -318,9 +316,19 @@
     }
 
     .notification-actions {
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 10px;
         justify-content: stretch;
     }
 
+    .action-button {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+    }
+
+    /* Notification item adjustments */
     .notification-item {
         padding: 8px;
     }
@@ -336,11 +344,11 @@
     .notification-actions {
         flex: 0 0 60px;
     }
+}
 
-    /* For very small screens, reduce to 2 columns */
-    @media (max-width: 375px) {
-        .filter-buttons {
-            grid-template-columns: repeat(2, 1fr);
-        }
+/* Very small screens */
+@media (max-width: 375px) {
+    .filter-buttons {
+        grid-template-columns: repeat(2, 1fr);
     }
 }

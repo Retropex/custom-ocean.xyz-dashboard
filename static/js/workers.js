@@ -12,6 +12,12 @@ const filterState = {
 let miniChart = null;
 let connectionRetryCount = 0;
 
+// Pagination variables
+const WORKERS_PER_PAGE = 20; // Show 20 workers per page
+let currentPage = 1;
+let totalPages = 1;
+let filteredWorkers = [];
+
 // Server time variables for uptime calculation - synced with main dashboard
 let serverTimeOffset = 0;
 let serverStartTime = null;
@@ -136,6 +142,9 @@ function initializePage() {
 
     $('#worker-grid').html('<div class="text-center p-5"><i class="fas fa-spinner fa-spin"></i> Loading worker data...</div>');
 
+    // Hide pagination container initially until workers are loaded
+    $('#pagination-container').hide();
+
     if (!$('#retry-button').length) {
         $('body').append('<button id="retry-button" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #f7931a; color: black; border: none; padding: 8px 16px; display: none; border-radius: 4px; cursor: pointer;">Retry Loading Data</button>');
 
@@ -234,6 +243,9 @@ function fetchWorkerData(forceRefresh = false) {
     $('#worker-grid').addClass('loading-fade');
     showLoader();
 
+    // Reset to first page when fetching new data
+    currentPage = 1;
+
     // For large datasets, better to use streaming or chunked approach
     // First fetch just the summary data and first page
     const initialRequest = $.ajax({
@@ -283,6 +295,7 @@ function fetchWorkerData(forceRefresh = false) {
         $('.retry-btn').on('click', () => fetchWorkerData(true));
         hideLoader();
         $('#worker-grid').removeClass('loading-fade');
+        $('#pagination-container').hide();
     });
 
     // Function to continue fetching additional worker pages
@@ -368,7 +381,7 @@ function finishWorkerLoad() {
         BitcoinMinuteRefresh.notifyRefresh();
     }
 
-    // Efficiently render workers with virtualized list approach
+    // Efficiently render workers with pagination
     renderWorkersList();
 
     $('#retry-button').hide();
@@ -378,7 +391,7 @@ function finishWorkerLoad() {
     hideLoader();
 }
 
-// Virtualized list rendering for large datasets
+// Modified renderWorkersList function to implement pagination
 function renderWorkersList() {
     if (!workerData || !workerData.workers) {
         console.error("No worker data available");
@@ -388,7 +401,8 @@ function renderWorkersList() {
     const workerGrid = $('#worker-grid');
     workerGrid.empty();
 
-    const filteredWorkers = filterWorkersData(workerData.workers);
+    // Filter workers based on current filter state
+    filteredWorkers = filterWorkersData(workerData.workers);
 
     if (filteredWorkers.length === 0) {
         workerGrid.html(`
@@ -397,48 +411,137 @@ function renderWorkersList() {
                 <p>No workers match your filter criteria</p>
             </div>
         `);
+        // Hide pagination when no results
+        $('#pagination-container').hide();
         return;
     }
 
-    // Performance optimization for large lists
-    if (filteredWorkers.length > 200) {
-        // For very large lists, render in batches
-        const workerBatch = 100;
-        const totalBatches = Math.ceil(filteredWorkers.length / workerBatch);
+    // Calculate pagination
+    totalPages = Math.ceil(filteredWorkers.length / WORKERS_PER_PAGE);
 
-        console.log(`Rendering ${filteredWorkers.length} workers in ${totalBatches} batches`);
-
-        // Render first batch immediately
-        renderWorkerBatch(filteredWorkers.slice(0, workerBatch), workerGrid);
-
-        // Render remaining batches with setTimeout to avoid UI freezing
-        for (let i = 1; i < totalBatches; i++) {
-            const start = i * workerBatch;
-            const end = Math.min(start + workerBatch, filteredWorkers.length);
-
-            setTimeout(() => {
-                renderWorkerBatch(filteredWorkers.slice(start, end), workerGrid);
-
-                // Update "loading more" message with progress
-                const loadingMsg = workerGrid.find('.loading-more-workers');
-                if (loadingMsg.length) {
-                    if (i === totalBatches - 1) {
-                        loadingMsg.remove();
-                    } else {
-                        loadingMsg.text(`Loading more workers... ${Math.min((i + 1) * workerBatch, filteredWorkers.length)}/${filteredWorkers.length}`);
-                    }
-                }
-            }, i * 50); // 50ms delay between batches
-        }
-
-        // Add "loading more" indicator at the bottom
-        if (totalBatches > 1) {
-            workerGrid.append(`<div class="loading-more-workers">Loading more workers... ${workerBatch}/${filteredWorkers.length}</div>`);
-        }
-    } else {
-        // For smaller lists, render all at once
-        renderWorkerBatch(filteredWorkers, workerGrid);
+    // Ensure current page is within bounds after filtering
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
     }
+
+    // Calculate slice for current page
+    const startIndex = (currentPage - 1) * WORKERS_PER_PAGE;
+    const endIndex = Math.min(startIndex + WORKERS_PER_PAGE, filteredWorkers.length);
+
+    // Get workers for current page only
+    const workersToShow = filteredWorkers.slice(startIndex, endIndex);
+
+    // Calculate max hashrate once for this batch
+    const maxHashrate = calculateMaxHashrate();
+
+    // Create a document fragment for better performance
+    const fragment = document.createDocumentFragment();
+
+    // Render the current page of workers
+    workersToShow.forEach(worker => {
+        const card = createWorkerCard(worker, maxHashrate);
+        fragment.appendChild(card[0]);
+    });
+
+    workerGrid.append(fragment);
+
+    // Update pagination display
+    updatePagination(startIndex, endIndex, filteredWorkers.length);
+
+    // Show pagination controls if needed
+    $('#pagination-container').toggle(filteredWorkers.length > WORKERS_PER_PAGE);
+}
+
+// New function for pagination controls
+function updatePagination(startIndex, endIndex, totalItems) {
+    // Generate pagination buttons
+    const pagination = $('#pagination');
+    pagination.empty();
+
+    // Don't show pagination for small lists
+    if (totalItems <= WORKERS_PER_PAGE) {
+        return;
+    }
+
+    // Add previous button
+    pagination.append(`
+        <button class="pagination-button${currentPage === 1 ? ' disabled' : ''}" 
+                data-page="prev"${currentPage === 1 ? ' disabled' : ''}>
+            &laquo;
+        </button>
+    `);
+
+    // Determine which page buttons to show (show up to 5 pages + first/last)
+    const pagesToShow = [];
+
+    // Always add first page
+    pagesToShow.push(1);
+
+    // Add pages around current page
+    for (let i = Math.max(2, currentPage - 2); i <= Math.min(totalPages - 1, currentPage + 2); i++) {
+        pagesToShow.push(i);
+    }
+
+    // Always add last page if more than 1 page
+    if (totalPages > 1) {
+        pagesToShow.push(totalPages);
+    }
+
+    // Add ellipsis and page buttons
+    let prevPage = 0;
+    pagesToShow.forEach(page => {
+        // Add ellipsis if needed
+        if (page - prevPage > 1) {
+            pagination.append('<span class="pagination-ellipsis">...</span>');
+        }
+
+        // Add page button
+        pagination.append(`
+            <button class="pagination-button${page === currentPage ? ' active' : ''}" 
+                    data-page="${page}">
+                ${page}
+            </button>
+        `);
+
+        prevPage = page;
+    });
+
+    // Add next button
+    pagination.append(`
+        <button class="pagination-button${currentPage === totalPages ? ' disabled' : ''}" 
+                data-page="next"${currentPage === totalPages ? ' disabled' : ''}>
+            &raquo;
+        </button>
+    `);
+
+    // Update counter text - now positioned below the pagination buttons
+    $('#pagination-count').text(`Showing ${startIndex + 1}-${endIndex} of ${totalItems} workers`);
+
+    // Add click handlers for pagination buttons
+    $('.pagination-button').on('click', function () {
+        if ($(this).hasClass('disabled')) return;
+
+        const page = $(this).data('page');
+
+        if (page === 'prev') {
+            if (currentPage > 1) changePage(currentPage - 1);
+        } else if (page === 'next') {
+            if (currentPage < totalPages) changePage(currentPage + 1);
+        } else {
+            changePage(parseInt(page));
+        }
+    });
+}
+
+// New function for changing pages
+function changePage(newPage) {
+    if (newPage === currentPage || newPage < 1 || newPage > totalPages) return;
+
+    currentPage = newPage;
+    renderWorkersList();
+
+    // Scroll to top of worker grid for better UX
+    $('#worker-grid')[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Render a batch of workers efficiently
@@ -623,15 +726,12 @@ function createWorkerCard(worker, maxHashrate) {
     return card;
 }
 
-// Modified filterWorkers function for better search functionality
-// This will replace the existing filterWorkers function in workers.js
+// Modified filterWorkers function to reset page when filters change
 function filterWorkers() {
     if (!workerData || !workerData.workers) return;
-    renderWorkersList();
-}
 
-// Update the workers grid when filters change
-function updateWorkerGrid() {
+    // Reset to first page when filters change
+    currentPage = 1;
     renderWorkersList();
 }
 

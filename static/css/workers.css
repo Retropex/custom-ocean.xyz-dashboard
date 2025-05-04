@@ -419,3 +419,19 @@
         margin-bottom: 10px;
     }
 }
+
+/* Power cost styling */
+.power-cost-row {
+    margin-top: 3px;
+}
+
+    .power-cost-row .red-glow {
+        color: #ff6b6b !important;
+        text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+    }
+
+/* Add to workers.css */
+.dim-glow {
+    color: #7e7e7e !important;
+    text-shadow: 0 0 3px rgba(126, 126, 126, 0.3);
+}

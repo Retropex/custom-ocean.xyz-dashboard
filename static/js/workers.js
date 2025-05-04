@@ -64,6 +64,139 @@ function formatHashrateForDisplay(value, unit) {
     return (normalizedValue * 1000000).toFixed(2) + ' MH/s';
 }
 
+// ASIC model power efficiency data (TH/s per Watt)
+const ASIC_EFFICIENCY_DATA = {
+    // S19 Series
+    "Bitmain Antminer S19": { efficiency: 0.03, defaultWatts: 3250 },
+    "Bitmain Antminer S19 Pro": { efficiency: 0.034, defaultWatts: 3250 },
+    "Bitmain Antminer S19j Pro": { efficiency: 0.033, defaultWatts: 3150 },
+    "Bitmain Antminer S19k Pro": { efficiency: 0.034, defaultWatts: 3050 },
+    "Bitmain Antminer S19 XP": { efficiency: 0.039, defaultWatts: 3010 },
+    "Bitmain Antminer S19j": { efficiency: 0.029, defaultWatts: 3050 },
+
+    // S21 Series 
+    "Bitmain Antminer S21": { efficiency: 0.049, defaultWatts: 3500 },
+    "Bitmain Antminer S21 Pro": { efficiency: 0.053, defaultWatts: 3450 },
+    "Bitmain Antminer T21": { efficiency: 0.039, defaultWatts: 3276 },
+
+    // Default for unknown models
+    "Default ASIC": { efficiency: 0.031, defaultWatts: 3100 }
+};
+
+// Modify the calculatePowerCost function in static/js/workers.js:
+
+function calculatePowerCost(worker) {
+    try {
+        // Get power cost per kWh from config (via workerData)
+        let powerCostPerKwh = workerData.power_cost || 0.12; // Default to $0.12/kWh if not available
+
+        // Get actual power consumption if available
+        let powerUsageWatts = worker.power_consumption;
+
+        // If worker is offline but has no power consumption value, use 3hr hashrate to estimate
+        if (worker.status === "offline" && (!powerUsageWatts || powerUsageWatts <= 0) && worker.hashrate_3hr > 0) {
+            // Normalize hashrate to TH/s for calculations
+            const hashrateThs = normalizeHashrate(worker.hashrate_3hr, worker.hashrate_3hr_unit || 'th/s');
+
+            // Find efficiency data for this model
+            const modelEfficiency = ASIC_EFFICIENCY_DATA[worker.model] || ASIC_EFFICIENCY_DATA["Default ASIC"];
+
+            // Calculate estimated power usage based on hashrate and efficiency
+            // For offline workers, we use a scaling factor to represent reduced power (70% of normal)
+            // This simulates a recent shutdown with some cooling components still active
+            powerUsageWatts = Math.round((hashrateThs / modelEfficiency.efficiency) * 0.7);
+
+            // Cap reasonable limits
+            const minWatts = 20;   // Minimum for even small miners when offline
+            const maxWatts = 1500; // Maximum for offline ASIC (lower than online max)
+            powerUsageWatts = Math.max(minWatts, Math.min(maxWatts, powerUsageWatts));
+        } else if (worker.status !== "online" && (!powerUsageWatts || powerUsageWatts <= 0)) {
+            // For truly offline workers with no hashrate history
+            return {
+                dailyCost: 0,
+                monthlyCost: 0,
+                powerUsage: 0
+            };
+        } else if (!powerUsageWatts || powerUsageWatts <= 0) {
+            // For online workers with no power consumption data, estimate based on model and hashrate
+            // Normalize hashrate to TH/s for calculations
+            const hashrateThs = normalizeHashrate(worker.hashrate_3hr, worker.hashrate_3hr_unit || 'th/s');
+
+            // Find efficiency data for this model
+            const modelEfficiency = ASIC_EFFICIENCY_DATA[worker.model] || ASIC_EFFICIENCY_DATA["Default ASIC"];
+
+            // Calculate estimated power usage based on hashrate and efficiency
+            // Formula: Power (W) = hashrate (TH/s) / efficiency (TH/W)
+            powerUsageWatts = Math.round(hashrateThs / modelEfficiency.efficiency);
+
+            // Cap reasonable limits to prevent extreme values
+            const minWatts = 30;   // Minimum for even small miners
+            const maxWatts = 4500; // Maximum realistic ASIC power
+            powerUsageWatts = Math.max(minWatts, Math.min(maxWatts, powerUsageWatts));
+        }
+
+        // Convert watts to kilowatts
+        const powerUsageKw = powerUsageWatts / 1000;
+
+        // Daily cost = power (kW) * 24 hours * cost per kWh
+        const dailyCostUsd = powerUsageKw * 24 * powerCostPerKwh;
+
+        // Monthly cost = daily cost * 30 days
+        const monthlyCostUsd = dailyCostUsd * 30;
+
+        return {
+            dailyCost: dailyCostUsd,
+            monthlyCost: monthlyCostUsd,
+            powerUsage: powerUsageWatts
+        };
+    } catch (e) {
+        console.error("Error calculating power cost:", e);
+        return {
+            dailyCost: 0,
+            monthlyCost: 0,
+            powerUsage: 0
+        };
+    }
+}
+
+// Format power cost with currency symbol
+function formatPowerCost(cost) {
+    if (!workerData || cost === 0) return "$0.00";
+
+    try {
+        // Get currency info
+        const configCurrency = workerData.currency || 'USD';
+        const exchangeRates = workerData.exchange_rates || {};
+
+        // Apply exchange rate if not USD
+        let convertedCost = cost;
+        if (configCurrency !== 'USD' && exchangeRates[configCurrency]) {
+            convertedCost *= exchangeRates[configCurrency];
+        }
+
+        // Format the value
+        const formattedValue = convertedCost.toFixed(2);
+
+        // Set currency symbol
+        let symbol = '$';
+        switch (configCurrency) {
+            case 'EUR': symbol = '€'; break;
+            case 'GBP': symbol = '£'; break;
+            case 'JPY': symbol = '¥'; break;
+            case 'AUD':
+            case 'CAD':
+            case 'NZD':
+            case 'USD': symbol = '$'; break;
+            default: symbol = configCurrency + ' ';
+        }
+
+        return symbol + formattedValue;
+    } catch (e) {
+        console.error('Error formatting power cost:', e);
+        return "$" + cost.toFixed(2);
+    }
+}
+
 // Initialize the page
 $(document).ready(function () {
     console.log("Worker page initializing...");
@@ -289,6 +422,36 @@ function fetchWorkerData(forceRefresh = false) {
             updateLastUpdated();
             continueFetchingWorkers();
         }
+        
+        // After receiving worker data, check if we need to fetch config
+        if (!workerData.power_cost && !workerData.configFetched) {
+            // Fetch configuration to get power cost
+            $.ajax({
+                url: '/api/config',
+                method: 'GET',
+                dataType: 'json'
+            }).then(config => {
+                if (config) {
+                    // Add power cost to worker data
+                    workerData.power_cost = config.power_cost || 0.12;
+                    workerData.configFetched = true; // Flag to prevent refetching
+                }
+
+                // Continue with rendering the workers
+                updateSummaryStats();
+                updateMiniChart();
+                updateLastUpdated();
+                renderWorkersList();
+            }).catch(error => {
+                console.warn("Could not fetch power cost from config:", error);
+                // Continue anyway with default values
+                renderWorkersList();
+            });
+        } else {
+            // Continue with rendering the workers
+            renderWorkersList();
+        }
+
     }).catch(error => {
         console.error("Error fetching initial worker data:", error);
         $('#worker-grid').html('<div class="text-center p-5"><i class="fas fa-exclamation-circle"></i> Error loading workers. <button class="retry-btn">Retry</button></div>');
@@ -651,7 +814,8 @@ function formatCurrencyValue(sats) {
     return { symbol, value, isHTML: (symbol.indexOf('&') === 0) };
 }
 
-// Modified createWorkerCard function to display only currency value with proper symbol handling
+// Replace the existing createWorkerCard function with this updated version
+
 function createWorkerCard(worker, maxHashrate) {
     const card = $('<div class="worker-card"></div>');
 
@@ -695,6 +859,11 @@ function createWorkerCard(worker, maxHashrate) {
     const earningsSats = Math.floor(worker.earnings * 100000000); // Convert BTC to SATS
     const currencyData = formatCurrencyValue(earningsSats);
 
+    // Calculate power consumption costs
+    const powerCostData = calculatePowerCost(worker);
+    const dailyCostFormatted = formatPowerCost(powerCostData.dailyCost);
+    const monthlyCostFormatted = formatPowerCost(powerCostData.monthlyCost);
+
     // Create the value display with proper handling of HTML entities
     let valueDisplay;
     if (currencyData.isHTML) {
@@ -706,8 +875,19 @@ function createWorkerCard(worker, maxHashrate) {
         valueDisplay = `${currencyData.symbol}${currencyData.value}`;
     }
 
+    // Add ASIC model info if available
+    const modelInfo = worker.model ? `<div class="worker-stats-row">
+        <div class="worker-stats-label">Model:</div>
+        <div class="white-glow">${worker.model}</div>
+    </div>` : '';
+
+    // Display power consumption info with different styling for offline workers
+    const powerConsumptionClass = worker.status === 'online' ? 'white-glow' : 'dim-glow';
+    const powerConsumption = (powerCostData.powerUsage || worker.power_consumption || 'N/A') + ' W';
+
     card.append(`
         <div class="worker-stats">
+            ${modelInfo}
             <div class="worker-stats-row">
                 <div class="worker-stats-label">Last Share:</div>
                 <div class="blue-glow">${formattedLastShare}</div>
@@ -719,6 +899,18 @@ function createWorkerCard(worker, maxHashrate) {
             <div class="worker-stats-row">
                 <div class="worker-stats-label">Fiat Value:</div>
                 <div style="color: limegreen !important;">${valueDisplay}</div>
+            </div>
+            <div class="worker-stats-row">
+                <div class="worker-stats-label">Power Usage:</div>
+                <div class="${powerConsumptionClass}">${powerConsumption}</div>
+            </div>
+            <div class="worker-stats-row power-cost-row">
+                <div class="worker-stats-label">Power Cost/Day:</div>
+                <div class="red-glow">${dailyCostFormatted}</div>
+            </div>
+            <div class="worker-stats-row power-cost-row">
+                <div class="worker-stats-label">Cost/Month:</div>
+                <div class="red-glow">${monthlyCostFormatted}</div>
             </div>
         </div>
     `);

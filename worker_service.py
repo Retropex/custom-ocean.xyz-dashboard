@@ -572,7 +572,7 @@ class WorkerService:
                 "efficiency": 0,
                 "last_share": last_share,
                 "earnings": 0,  # Minimal earnings for offline workers
-                "power_consumption": 0,
+                "power_consumption": round(model_info["power"] * hashrate_3hr / model_info["max_hashrate"]) if hashrate_3hr > 0 else 0,
                 "temperature": 0
             })
 
@@ -743,7 +743,7 @@ class WorkerService:
                 "efficiency": 0,
                 "last_share": last_share,
                 "earnings": 0,  # Minimal earnings for offline workers
-                "power_consumption": 0,
+                "power_consumption": round(model_info["power"] * hashrate_3hr / model_info["max_hashrate"]) if hashrate_3hr > 0 else 0,
                 "temperature": 0
             })
 

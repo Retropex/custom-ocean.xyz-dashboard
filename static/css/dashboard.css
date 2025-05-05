@@ -504,7 +504,6 @@
     font-size: 0.9rem;
     color: var(--text-secondary, #888);
     text-transform: uppercase;
-    text-shadow: 0 0 2px rgba(0,0,0,0.5);
 }
 
 .chart-points-toggle {
@@ -550,7 +549,6 @@
 
     .toggle-btn:hover:not(.active) {
         background-color: rgba(var(--primary-color-rgb), 0.15);
-        text-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.5);
     }
 
     .toggle-btn.active {

@@ -600,8 +600,8 @@ def stream():
                         # If arrow_history is very large, only send recent data points
                         if 'arrow_history' in sse_metrics:
                             for key, values in sse_metrics['arrow_history'].items():
-                                if len(values) > 30:  # Only include last 30 data points
-                                    sse_metrics['arrow_history'][key] = values[-30:]
+                                if len(values) > 180:  # Only include last 30 data points
+                                    sse_metrics['arrow_history'][key] = values[-180:]
     
                         # Serialize data only once
                         data = json.dumps(sse_metrics)

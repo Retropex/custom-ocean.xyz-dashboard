@@ -413,7 +413,7 @@ class StateManager:
                                                 key=lambda x: x["time"])
 
                 # Only keep the most recent 60 data points for the graph display
-                aggregated_history[key] = aggregated_history[key][-180:] if len(aggregated_history[key]) > 180 else aggregated_history[key]
+                aggregated_history[key] = aggregated_history[key][-MAX_HISTORY_ENTRIES:] if len(aggregated_history[key]) > MAX_HISTORY_ENTRIES else aggregated_history[key]
             
             metrics["arrow_history"] = aggregated_history
             metrics["history"] = hashrate_history

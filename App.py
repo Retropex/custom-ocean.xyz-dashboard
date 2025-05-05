@@ -597,11 +597,23 @@ def stream():
                         # Create a slimmer version with essential fields for SSE updates
                         sse_metrics = {k: v for k, v in cached_metrics.items()}
     
-                        # If arrow_history is very large, only send recent data points
+                        # Get the desired number of points from the query parameter
+                        try:
+                            # Get points parameter, default to 30 if not specified
+                            num_points = int(request.args.get('points', 30))
+                            # Only allow valid options: 30, 60, or 180
+                            if num_points not in [30, 60, 180]:
+                                num_points = 180
+                            logging.info(f"SSE {client_id}: Using {num_points} data points")
+                        except Exception:
+                            num_points = 180
+                            logging.info(f"SSE {client_id}: Using default 180 data points")
+
+                        # If arrow_history is very large, only send the requested number of points
                         if 'arrow_history' in sse_metrics:
                             for key, values in sse_metrics['arrow_history'].items():
-                                if len(values) > 180:  # Only include last 30 data points
-                                    sse_metrics['arrow_history'][key] = values[-180:]
+                                if len(values) > num_points:
+                                    sse_metrics['arrow_history'][key] = values[-num_points:]
     
                         # Serialize data only once
                         data = json.dumps(sse_metrics)

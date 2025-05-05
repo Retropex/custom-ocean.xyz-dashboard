@@ -17,7 +17,14 @@
 <div id="graphContainer" class="mb-2">
     <canvas id="trendGraph" style="width: 100%; height: 100%; position: relative; z-index: 2;"></canvas>
 </div>
-
+<div class="chart-controls">
+    <span class="chart-controls-label">History:</span>
+    <div class="chart-points-toggle">
+        <button id="btn-30" class="toggle-btn active" onclick="setChartPoints(30)">30m</button>
+        <button id="btn-60" class="toggle-btn" onclick="setChartPoints(60)">60m</button>
+        <button id="btn-180" class="toggle-btn" onclick="setChartPoints(180)">180m</button>
+    </div>
+</div>
 <!-- Miner Status and Payout Info -->
 <div class="row mb-2 equal-height">
     <div class="col-md-6">

@@ -488,3 +488,143 @@
         clip: rect(28px, 450px, 26px, 0);
     }
 }
+
+/* Chart Controls - Theme-Aligned Implementation */
+.chart-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 10px 15px 0;
+    font-family: var(--terminal-font);
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.chart-controls-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #888);
+    text-transform: uppercase;
+    text-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.chart-points-toggle {
+    display: flex;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
+    position: relative;
+}
+
+    /* Add subtle scanline effect matching the graph container */
+    .chart-points-toggle::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px );
+        pointer-events: none;
+        z-index: 1;
+    }
+
+.toggle-btn {
+    background: none;
+    color: var(--primary-color); /* Now using primary theme color for inactive state */
+    border: none;
+    padding: 5px 12px;
+    font-size: 0.9rem;
+    font-family: var(--terminal-font);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+    .toggle-btn:not(:last-child) {
+        border-right: 1px solid var(--primary-color);
+    }
+
+    .toggle-btn:hover:not(.active) {
+        background-color: rgba(var(--primary-color-rgb), 0.15);
+        text-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.5);
+    }
+
+    .toggle-btn.active {
+        background-color: var(--primary-color);
+        color: #ffffff; /* Now using white color for active state */
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+        font-weight: bold;
+        animation: subtle-pulse 3s infinite;
+    }
+
+        /* Improved glowing effect for active button that matches theme */
+        .toggle-btn.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            box-shadow: 0 0 6px var(--primary-color);
+            opacity: 0.7;
+            pointer-events: none;
+            animation: subtle-glow 3s infinite;
+        }
+
+/* Add subtle glow animation for the active button */
+@keyframes subtle-glow {
+    0%, 100% {
+        box-shadow: 0 0 5px var(--primary-color);
+    }
+
+    50% {
+        box-shadow: 0 0 12px var(--primary-color);
+    }
+}
+
+/* Responsive adjustments with better small screen support */
+@media (max-width: 576px) {
+    .chart-controls {
+        justify-content: center;
+        padding: 0 10px 10px 10px;
+        flex-wrap: wrap;
+    }
+
+    .chart-controls-label {
+        font-size: 0.8rem;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .toggle-btn {
+        padding: 4px 8px;
+        min-width: 30px;
+        font-size: 0.8rem;
+    }
+}
+
+.loading-spinner {
+    border: 3px solid rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    border-top: 3px solid var(--primary-color);
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Enhanced spinner with glow effect that matches the theme */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

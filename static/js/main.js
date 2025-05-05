@@ -495,6 +495,82 @@ function normalizeHashrate(value, unit, debug = false) {
     return normalizedValue;
 }
 
+// ===== Chart Data Points Control =====
+let chartPoints = 180; // Default to 30 points
+
+function setChartPoints(points) {
+    // Only take action if the points value is different
+    if (points === chartPoints) return;
+
+    // Update the stored value
+    chartPoints = points;
+
+    // Update button states
+    document.getElementById('btn-30').classList.toggle('active', points === 30);
+    document.getElementById('btn-60').classList.toggle('active', points === 60);
+    document.getElementById('btn-180').classList.toggle('active', points === 180);
+
+    // Refresh the chart with the new points
+    updateChartWithNormalizedData(trendChart, latestMetrics);
+
+    // Store preference in localStorage
+    try {
+        localStorage.setItem('chartPointsPreference', points.toString());
+    } catch (e) {
+        console.error("Error storing chart points preference", e);
+    }
+
+    // Show loading indicator on chart
+    showLoadingOverlay('trendGraph');
+
+    // Close and reopen the EventSource with new points parameter
+    setupEventSource();
+}
+
+function showLoadingOverlay(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    // Remove existing overlay if any
+    let overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.remove();
+
+    // Create loading overlay
+    overlay = document.createElement('div');
+    overlay.id = 'loadingOverlay';
+    overlay.style.position = 'absolute';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '10';
+    overlay.style.borderRadius = '4px';
+
+    // Add loading spinner
+    const spinner = document.createElement('div');
+    spinner.className = 'loading-spinner';
+    overlay.appendChild(spinner);
+
+    // Make parent position relative for absolute positioning
+    const parent = element.parentElement;
+    if (getComputedStyle(parent).position === 'static') {
+        parent.style.position = 'relative';
+    }
+
+    // Add overlay to parent
+    parent.appendChild(overlay);
+
+    // Auto-hide after 5 seconds (failsafe)
+    setTimeout(() => {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) overlay.remove();
+    }, 5000);
+}
+
 // Helper function to format hashrate values for display
 function formatHashrateForDisplay(value, unit) {
     if (isNaN(value) || value === null || value === undefined) return "N/A";
@@ -659,7 +735,10 @@ function setupEventSource() {
 
     // Always use absolute URL with origin to ensure it works from any path
     const baseUrl = window.location.origin;
-    const streamUrl = `${baseUrl}/stream`;
+    // Include points parameter in the stream URL
+    const streamUrl = `${baseUrl}/stream?points=${chartPoints}`;
+
+    console.log(`Setting up EventSource with ${chartPoints} data points`);
 
     // Clear any existing ping interval
     if (pingInterval) {
@@ -1532,6 +1611,13 @@ function updateChartWithNormalizedData(chart, data) {
                             validatedData[i] = 0; // Use 0 as a safe fallback
                         }
                     }
+                    // Limit the data points based on the selected chartPoints (30, 60, or 180)
+                    const limitedData = validatedData.slice(-chartPoints);
+                    chart.data.datasets[0].data = limitedData;
+
+                    // Similarly, limit the labels
+                    const limitedLabels = formattedLabels.slice(-chartPoints);
+                    chart.data.labels = limitedLabels;
 
                     // Assign the processed data to chart
                     chart.data.datasets[0].data = validatedData;
@@ -3136,6 +3222,26 @@ $(document).ready(function () {
             }
         }, 100);
     };
+
+    // Initialize chart points preference from localStorage
+    try {
+        const storedPreference = localStorage.getItem('chartPointsPreference');
+        if (storedPreference) {
+            const points = parseInt(storedPreference, 10);
+            if ([30, 60, 180].includes(points)) {
+                chartPoints = points;
+                // Update button states after a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    document.getElementById('btn-30').classList.toggle('active', points === 30);
+                    document.getElementById('btn-60').classList.toggle('active', points === 60);
+                    document.getElementById('btn-180').classList.toggle('active', points === 180);
+                }, 100);
+                console.log(`Using stored chart points preference: ${points}`);
+            }
+        }
+    } catch (e) {
+        console.error("Error loading chart points preference", e);
+    }
 
     // Add this to your $(document).ready() function in main.js
     function fixLastBlockLine() {

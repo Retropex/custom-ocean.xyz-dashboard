@@ -52,7 +52,7 @@ def inject_request():
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 10})
 
 # Global variables for SSE connections and metrics
-MAX_SSE_CONNECTIONS = 10  # Maximum concurrent SSE connections
+MAX_SSE_CONNECTIONS = 50  # Maximum concurrent SSE connections
 MAX_SSE_CONNECTION_TIME = 900  # 15 minutes maximum SSE connection time
 active_sse_connections = 0
 sse_connections_lock = threading.Lock()

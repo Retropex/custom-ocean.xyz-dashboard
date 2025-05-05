@@ -3,13 +3,13 @@
  * Specific styles for the main dashboard page
  */
 
-/* ----- GRAPH & CHART COMPONENTS ----- */
+/* ----- CHART & GRAPH COMPONENTS ----- */
 .chart-container-relative {
     position: relative;
 }
 
 #graphContainer {
-    background-color: #000;
+    background-color: var(--bg-color);
     padding: 0.5rem;
     margin-bottom: 1rem;
     height: 230px;
@@ -18,7 +18,6 @@
     position: relative;
 }
 
-    /* Add scanline effect to graph */
     #graphContainer::after {
         content: '';
         position: absolute;
@@ -31,34 +30,112 @@
         z-index: 1;
     }
 
-/* Fee indicator styling */
-.fee-star {
-    color: gold;
-    margin-left: 4px;
-    font-size: 1.2em;
-    vertical-align: middle;
+/* Chart controls styling */
+.chart-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 10px 15px 0;
+    font-family: var(--terminal-font);
+    gap: 8px;
+    margin-top: 5px;
+    position: relative;
 }
 
-/* Block marker animation */
-@keyframes pulse-block-marker {
-    0% {
-        transform: translate(-50%, -50%) rotate(45deg) scale(1);
-        opacity: 1;
+.chart-controls-label {
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.chart-points-toggle {
+    display: flex;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
+    position: relative;
+}
+
+    .chart-points-toggle::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+        pointer-events: none;
+        z-index: 1;
     }
 
-    50% {
-        transform: translate(-50%, -50%) rotate(45deg) scale(1.3);
-        opacity: 0.8;
+.toggle-btn {
+    background: none;
+    color: var(--primary-color);
+    border: none;
+    padding: 5px 12px;
+    font-size: 0.9rem;
+    font-family: var(--terminal-font);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+    .toggle-btn:not(:last-child) {
+        border-right: 1px solid var(--primary-color);
     }
 
-    100% {
-        transform: translate(-50%, -50%) rotate(45deg) scale(1);
-        opacity: 1;
+    .toggle-btn:hover:not(.active) {
+        background-color: rgba(var(--primary-color-rgb), 0.15);
     }
+
+    .toggle-btn.active {
+        background-color: var(--primary-color);
+        font-weight: bold;
+        animation: subtle-pulse 3s infinite;
+        position: relative;
+    }
+
+/* Theme-specific button text color */
+html.bitcoin-theme .toggle-btn.active {
+    color: #000 !important;
+}
+
+html.deepsea-theme .toggle-btn.active {
+    color: #ffffff !important;
+}
+
+/* Button effects */
+.toggle-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+    pointer-events: none;
+    z-index: 3;
+}
+
+.toggle-btn.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-shadow: 0 0 6px var(--primary-color);
+    opacity: 0.7;
+    pointer-events: none;
+    animation: subtle-glow 3s infinite;
 }
 
 /* ----- LAYOUT & STRUCTURE ----- */
-/* Row equal height for card alignment */
 .row.equal-height {
     display: flex;
     flex-wrap: wrap;
@@ -74,13 +151,11 @@
             width: 100%;
         }
 
-/* Override for Payout & Misc card */
 #payoutMiscCard {
     margin-bottom: 0.5rem;
 }
 
 /* ----- INDICATORS & STATUS ELEMENTS ----- */
-/* Arrow indicator styles */
 .arrow {
     display: inline-block;
     font-weight: bold;
@@ -100,6 +175,15 @@
     animation: bounceDown 1s infinite;
 }
 
+/* Fee indicator */
+.fee-star {
+    color: gold;
+    margin-left: 4px;
+    font-size: 1.2em;
+    vertical-align: middle;
+}
+
+/* ----- SPECIAL INDICATORS ----- */
 /* Pool luck indicators */
 .very-lucky {
     color: #32CD32 !important;
@@ -199,7 +283,7 @@
     font-weight: bold;
 }
 
-/* Yellow color family (BTC price, sats metrics, time to payout) */
+/* Yellow color family */
 #btc_price,
 #daily_mined_sats,
 #monthly_mined_sats,
@@ -210,7 +294,7 @@
     color: #ffd700;
 }
 
-/* Green color family (profits, earnings) */
+/* Green color family */
 #unpaid_earnings,
 #daily_revenue,
 #daily_profit_usd,
@@ -218,13 +302,13 @@
     color: #32CD32;
 }
 
-/* Red color family (costs) */
+/* Red color family */
 #daily_power_cost,
 #pool_fees_sats {
     color: #ff5555 !important;
 }
 
-/* White metrics (general stats) */
+/* White metrics */
 .metric-value.white,
 #block_number,
 #network_hashrate,
@@ -237,7 +321,7 @@
     color: #ffffff;
 }
 
-/* Blue metrics (time data) */
+/* Blue metrics */
 #last_block_time {
     color: #00dfff;
 }
@@ -271,46 +355,39 @@
 
 /* ----- ANIMATIONS ----- */
 @keyframes bounceUp {
-    0% {
+    0%, 50%, 100% {
         transform: translateY(0);
     }
 
-    25% {
+    25%, 75% {
         transform: translateY(-2px);
-    }
-
-    50% {
-        transform: translateY(0);
-    }
-
-    75% {
-        transform: translateY(-2px);
-    }
-
-    100% {
-        transform: translateY(0);
     }
 }
 
 @keyframes bounceDown {
-    0% {
+    0%, 50%, 100% {
         transform: translateY(0);
     }
 
-    25% {
+    25%, 75% {
         transform: translateY(2px);
+    }
+}
+
+@keyframes pulse-block-marker {
+    0% {
+        transform: translate(-50%, -50%) rotate(45deg) scale(1);
+        opacity: 1;
     }
 
     50% {
-        transform: translateY(0);
-    }
-
-    75% {
-        transform: translateY(2px);
+        transform: translate(-50%, -50%) rotate(45deg) scale(1.3);
+        opacity: 0.8;
     }
 
     100% {
-        transform: translateY(0);
+        transform: translate(-50%, -50%) rotate(45deg) scale(1);
+        opacity: 1;
     }
 }
 
@@ -489,164 +566,47 @@
     }
 }
 
-/* Chart Controls - Theme-Aligned Implementation */
-.chart-controls {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 10px 15px 0;
-    font-family: var(--terminal-font);
-    gap: 8px;
-    margin-top: 5px;
-}
-
-/* Chart controls styling */
-.chart-controls-label {
-    font-size: 0.9rem;
-    color: var(--primary-color);
-    text-transform: uppercase;
-    font-weight: bold;
-}
-
-.chart-points-toggle {
-    display: flex;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
-    overflow: hidden;
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
-    position: relative;
-}
-
-    /* Modified: Match exact scanline effect from graphContainer */
-    .chart-points-toggle::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
-        pointer-events: none;
-        z-index: 1;
+/* ----- RESPONSIVE STYLES ----- */
+@media (max-width: 768px) {
+    .chart-controls {
+        justify-content: space-between;
+        padding: 0 10px 10px 10px;
     }
 
-/* Apply the CRT scanline effect to the entire chart controls area */
-.chart-controls::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.5;
-}
-
-/* Ensure the chart-controls has relative positioning for the scanline effect */
-.chart-controls {
-    position: relative;
-}
-
-/* Default toggle button style - always primary color when not active */
-.toggle-btn {
-    background: none;
-    color: var(--primary-color); /* Primary color for non-active buttons in both themes */
-    border: none;
-    padding: 5px 12px;
-    font-size: 0.9rem;
-    font-family: var(--terminal-font);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 40px;
-    position: relative;
-    z-index: 2;
-}
-
-    .toggle-btn:not(:last-child) {
-        border-right: 1px solid var(--primary-color);
-    }
-
-    .toggle-btn:hover:not(.active) {
-        background-color: rgba(var(--primary-color-rgb), 0.15);
-    }
-
-    /* Base active button styles */
-    .toggle-btn.active {
-        background-color: var(--primary-color);
-        font-weight: bold;
-        animation: subtle-pulse 3s infinite;
-        position: relative; /* Ensure positioning context */
-    }
-
-/* Theme-specific active button text color */
-html.bitcoin-theme .toggle-btn.active {
-    color: #000 !important; /* Black text for active buttons in Bitcoin theme */
-}
-
-html.deepsea-theme .toggle-btn.active {
-    color: #ffffff !important; /* White color for active buttons in DeepSea theme */
-}
-
-/* Scanline effect for active buttons */
-.toggle-btn.active::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
-    pointer-events: none;
-    z-index: 3;
-}
-
-/* Improved glowing effect for active button that matches theme */
-.toggle-btn.active::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    box-shadow: 0 0 6px var(--primary-color);
-    opacity: 0.7;
-    pointer-events: none;
-    animation: subtle-glow 3s infinite;
-}
-
-/* Add subtle glow animation for the active button */
-@keyframes subtle-glow {
-    0%, 100% {
-        box-shadow: 0 0 5px var(--primary-color);
-    }
-
-    50% {
-        box-shadow: 0 0 12px var(--primary-color);
+    .toggle-btn {
+        padding: 4px 10px;
+        min-width: 35px;
+        font-size: 0.85rem;
     }
 }
 
-/* Responsive adjustments with better small screen support */
 @media (max-width: 576px) {
     .chart-controls {
-        justify-content: space-between; /* Changed to space-between for label/buttons layout */
+        justify-content: space-between;
         padding: 0 10px 10px 10px;
-        flex-wrap: nowrap; /* Changed to nowrap to keep items in a row */
+        flex-wrap: nowrap;
     }
 
     .chart-controls-label {
         font-size: 0.8rem;
-        width: auto; /* Changed from 100% to auto */
-        margin-bottom: 0; /* Removed bottom margin */
-        text-align: left; /* Align text to the left */
-        white-space: nowrap; /* Prevent wrapping */
+        width: auto;
+        margin-bottom: 0;
+        text-align: left;
+        white-space: nowrap;
     }
 
     .toggle-btn {
         padding: 4px 8px;
         min-width: 30px;
         font-size: 0.8rem;
+    }
+
+    .fee-star {
+        font-size: 1em;
+    }
+
+    .datum-label {
+        font-size: 0.85em;
+        letter-spacing: 1px;
     }
 }

@@ -502,8 +502,19 @@
 
 .chart-controls-label {
     font-size: 0.9rem;
-    color: var(--text-secondary, #888);
+    color: var(--primary-color);
     text-transform: uppercase;
+    font-weight: bold;
+}
+
+/* Bitcoin theme - black label text */
+html.bitcoin-theme .chart-controls-label {
+    color: #000; /* Black text for Bitcoin theme */
+}
+
+/* DeepSea theme - keep primary color for label text */
+html.deepsea-theme .chart-controls-label {
+    color: var(--primary-color); /* Blue text for DeepSea theme */
 }
 
 .chart-points-toggle {
@@ -516,7 +527,7 @@
     position: relative;
 }
 
-    /* Add subtle scanline effect matching the graph container */
+    /* Modified: Match exact scanline effect from graphContainer */
     .chart-points-toggle::after {
         content: '';
         position: absolute;
@@ -524,14 +535,33 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 1px, transparent 1px, transparent 2px );
+        background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
         pointer-events: none;
         z-index: 1;
     }
 
+/* Apply the CRT scanline effect to the entire chart controls area */
+.chart-controls::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient( 0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px );
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+/* Ensure the chart-controls has relative positioning for the scanline effect */
+.chart-controls {
+    position: relative;
+}
+
 .toggle-btn {
     background: none;
-    color: var(--primary-color); /* Now using primary theme color for inactive state */
+    color: var(--primary-color); /* Using primary theme color for inactive state */
     border: none;
     padding: 5px 12px;
     font-size: 0.9rem;
@@ -553,7 +583,7 @@
 
     .toggle-btn.active {
         background-color: var(--primary-color);
-        color: #ffffff; /* Now using white color for active state */
+        color: #ffffff; /* White color for active state */
         font-weight: bold;
         animation: subtle-pulse 3s infinite;
     }
@@ -586,16 +616,17 @@
 /* Responsive adjustments with better small screen support */
 @media (max-width: 576px) {
     .chart-controls {
-        justify-content: center;
+        justify-content: space-between; /* Changed to space-between for label/buttons layout */
         padding: 0 10px 10px 10px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap; /* Changed to nowrap to keep items in a row */
     }
 
     .chart-controls-label {
         font-size: 0.8rem;
-        width: 100%;
-        text-align: center;
-        margin-bottom: 5px;
+        width: auto; /* Changed from 100% to auto */
+        margin-bottom: 0; /* Removed bottom margin */
+        text-align: left; /* Align text to the left */
+        white-space: nowrap; /* Prevent wrapping */
     }
 
     .toggle-btn {

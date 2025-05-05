@@ -564,11 +564,11 @@ function showLoadingOverlay(elementId) {
     // Add overlay to parent
     parent.appendChild(overlay);
 
-    // Auto-hide after 5 seconds (failsafe)
+    // Auto-hide after 2 seconds (failsafe)
     setTimeout(() => {
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) overlay.remove();
-    }, 5000);
+    }, 2000);
 }
 
 // Helper function to format hashrate values for display
@@ -760,6 +760,10 @@ function setupEventSource() {
             connectionRetryCount = 0; // Reset retry count on successful connection
             reconnectionDelay = 1000; // Reset reconnection delay
             hideConnectionIssue();
+
+            // Add this line to hide the loading overlay immediately when connected
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.remove();
 
             // Start ping interval to detect dead connections
             lastPingTime = Date.now();
@@ -1619,22 +1623,29 @@ function updateChartWithNormalizedData(chart, data) {
                     const limitedLabels = formattedLabels.slice(-chartPoints);
                     chart.data.labels = limitedLabels;
 
-                    // Assign the processed data to chart
-                    chart.data.datasets[0].data = validatedData;
+                    // Store the full datasets for reference, but don't overwrite the displayed data
+                    chart.fullData = validatedData;
                     chart.originalData = validHistoryData; // Store for tooltip reference
 
                     // Update tooltip callback to display proper units
                     chart.options.plugins.tooltip.callbacks.label = function (context) {
-                        const index = context.dataIndex;
+                        // Calculate the correct index in the original data array based on display data length
+                        let index = context.dataIndex;
+
+                        // If we're in limited view mode (30m or 60m), adjust the index
+                        if (chart.data.labels.length < chart.originalData.length) {
+                            // Calculate the offset - we need to look at the last N points of the original data
+                            const offset = chart.originalData.length - chart.data.labels.length;
+                            index = offset + context.dataIndex;
+                        }
+
                         const originalData = chart.originalData?.[index];
 
                         if (originalData) {
                             if (originalData.storageValue !== undefined && originalData.storageUnit) {
-                                // Use the optimized storage value/unit if available
                                 return `HASHRATE: ${originalData.storageValue} ${originalData.storageUnit.toUpperCase()}`;
                             }
                             else if (originalData.originalValue !== undefined && originalData.originalUnit) {
-                                // Fall back to original values 
                                 return `HASHRATE: ${originalData.originalValue} ${originalData.originalUnit.toUpperCase()}`;
                             }
                         }

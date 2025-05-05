@@ -500,21 +500,12 @@
     margin-top: 5px;
 }
 
+/* Chart controls styling */
 .chart-controls-label {
     font-size: 0.9rem;
     color: var(--primary-color);
     text-transform: uppercase;
     font-weight: bold;
-}
-
-/* Bitcoin theme - black label text */
-html.bitcoin-theme .chart-controls-label {
-    color: #000; /* Black text for Bitcoin theme */
-}
-
-/* DeepSea theme - keep primary color for label text */
-html.deepsea-theme .chart-controls-label {
-    color: var(--primary-color); /* Blue text for DeepSea theme */
 }
 
 .chart-points-toggle {
@@ -559,9 +550,10 @@ html.deepsea-theme .chart-controls-label {
     position: relative;
 }
 
+/* Default toggle button style - always primary color when not active */
 .toggle-btn {
     background: none;
-    color: var(--primary-color); /* Using primary theme color for inactive state */
+    color: var(--primary-color); /* Primary color for non-active buttons in both themes */
     border: none;
     padding: 5px 12px;
     font-size: 0.9rem;
@@ -581,26 +573,49 @@ html.deepsea-theme .chart-controls-label {
         background-color: rgba(var(--primary-color-rgb), 0.15);
     }
 
+    /* Base active button styles */
     .toggle-btn.active {
         background-color: var(--primary-color);
-        color: #ffffff; /* White color for active state */
         font-weight: bold;
         animation: subtle-pulse 3s infinite;
+        position: relative; /* Ensure positioning context */
     }
 
-        /* Improved glowing effect for active button that matches theme */
-        .toggle-btn.active::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            box-shadow: 0 0 6px var(--primary-color);
-            opacity: 0.7;
-            pointer-events: none;
-            animation: subtle-glow 3s infinite;
-        }
+/* Theme-specific active button text color */
+html.bitcoin-theme .toggle-btn.active {
+    color: #000 !important; /* Black text for active buttons in Bitcoin theme */
+}
+
+html.deepsea-theme .toggle-btn.active {
+    color: #ffffff !important; /* White color for active buttons in DeepSea theme */
+}
+
+/* Scanline effect for active buttons */
+.toggle-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* Improved glowing effect for active button that matches theme */
+.toggle-btn.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-shadow: 0 0 6px var(--primary-color);
+    opacity: 0.7;
+    pointer-events: none;
+    animation: subtle-glow 3s infinite;
+}
 
 /* Add subtle glow animation for the active button */
 @keyframes subtle-glow {
@@ -633,26 +648,5 @@ html.deepsea-theme .chart-controls-label {
         padding: 4px 8px;
         min-width: 30px;
         font-size: 0.8rem;
-    }
-}
-
-.loading-spinner {
-    border: 3px solid rgba(0, 0, 0, 0.3);
-    border-radius: 50%;
-    border-top: 3px solid var(--primary-color);
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
-    box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
-}
-
-/* Enhanced spinner with glow effect that matches the theme */
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
     }
 }

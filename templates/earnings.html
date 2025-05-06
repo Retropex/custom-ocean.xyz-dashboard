@@ -105,7 +105,7 @@
                     {% for payment in earnings.payments %}
                     <tr>
                         <td>{{ payment.date|format_datetime }}</td>
-                        <td>{{ "%.8f"|format(payment.amount_btc|float) }}</td>
+                        <td>₿ {{ "%.8f"|format(payment.amount_btc|float) }}</td>
                         <td>{{ payment.amount_sats|int|commafy }}</td>
                         <!--<td>
                             {% if payment.txid %}

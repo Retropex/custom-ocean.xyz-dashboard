@@ -73,7 +73,7 @@
                     <tr>
                         <td>{{ month.month_name }}</td>
                         <td>{{ month.payments|length }}</td>
-                        <td>{{ "%.8f"|format(month.total_btc|float) }}</td>
+                        <td>₿ {{ "%.8f"|format(month.total_btc|float) }}</td>
                         <td>{{ month.total_sats|int|commafy }}</td>
                         <td><span class="currency-symbol">{{ currency_symbols[user_currency] }}</span>{{ "%.2f"|format(month.total_fiat|float) }}</td>
                     </tr>

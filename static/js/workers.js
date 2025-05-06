@@ -1,4 +1,4 @@
-"use strict";
+ï»¿"use strict";
 
 // Global variables for workers dashboard
 let workerData = null;
@@ -231,9 +231,9 @@ function formatPowerCost(cost) {
         // Set currency symbol
         let symbol = '$';
         switch (configCurrency) {
-            case 'EUR': symbol = '€'; break;
-            case 'GBP': symbol = '£'; break;
-            case 'JPY': symbol = '¥'; break;
+            case 'EUR': symbol = 'â‚¬'; break;
+            case 'GBP': symbol = 'Â£'; break;
+            case 'JPY': symbol = 'Â¥'; break;
             case 'AUD':
             case 'CAD':
             case 'NZD':
@@ -978,7 +978,7 @@ function createWorkerCard(worker, maxHashrate) {
                 <div class="blue-glow">${formattedLastShare}</div>
             </div>
             <div class="worker-stats-row">
-                <div class="worker-stats-label">Earnings:</div>
+                <div class="worker-stats-label">â‚¿ Earnings:</div>
                 <div class="green-glow">${worker.earnings.toFixed(8)}</div>
             </div>
             <div class="worker-stats-row">

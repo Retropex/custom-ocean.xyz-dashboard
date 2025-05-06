@@ -901,15 +901,15 @@ function createWorkerCard(worker, maxHashrate) {
                 <div style="color: limegreen !important;">${valueDisplay}</div>
             </div>
             <div class="worker-stats-row">
-                <div class="worker-stats-label">Power Usage:</div>
+                <div class="worker-stats-label">Est. Power Usage:</div>
                 <div class="${powerConsumptionClass}">${powerConsumption}</div>
             </div>
             <div class="worker-stats-row power-cost-row">
-                <div class="worker-stats-label">Power Cost/Day:</div>
+                <div class="worker-stats-label">Est. Power Cost/Day:</div>
                 <div class="red-glow">${dailyCostFormatted}</div>
             </div>
             <div class="worker-stats-row power-cost-row">
-                <div class="worker-stats-label">Cost/Month:</div>
+                <div class="worker-stats-label">Est. Cost/Month:</div>
                 <div class="red-glow">${monthlyCostFormatted}</div>
             </div>
         </div>

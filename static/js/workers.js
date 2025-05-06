@@ -79,12 +79,38 @@ const ASIC_EFFICIENCY_DATA = {
     "Bitmain Antminer S21 Pro": { efficiency: 0.053, defaultWatts: 3450 },
     "Bitmain Antminer T21": { efficiency: 0.039, defaultWatts: 3276 },
 
+    // M Series (MicroBT Whatsminer)
+    "MicroBT Whatsminer M30S": { efficiency: 0.031, defaultWatts: 3400 },
+    "MicroBT Whatsminer M30S+": { efficiency: 0.034, defaultWatts: 3400 },
+    "MicroBT Whatsminer M30S++": { efficiency: 0.035, defaultWatts: 3472 },
+    "MicroBT Whatsminer M31S": { efficiency: 0.030, defaultWatts: 3220 },
+    "MicroBT Whatsminer M31S+": { efficiency: 0.032, defaultWatts: 3312 },
+    "MicroBT Whatsminer M50": { efficiency: 0.046, defaultWatts: 3500 },
+
+    // Avalon Series
+    "Canaan Avalon A1246": { efficiency: 0.029, defaultWatts: 3010 },
+    "Canaan Avalon A1166": { efficiency: 0.027, defaultWatts: 3196 },
+    "Canaan Avalon A1346": { efficiency: 0.035, defaultWatts: 3276 },
+
+    // BitAxe and DIY Mining Devices (much smaller scale)
+    "BitAxe": { efficiency: 0.005, defaultWatts: 35 },
+    "BitAxe 2.0": { efficiency: 0.006, defaultWatts: 30 },
+    "BitAxe 3.0": { efficiency: 0.007, defaultWatts: 28 },
+    "BitAxe BM1368": { efficiency: 0.0075, defaultWatts: 32 },
+    "BitAxe BM1397": { efficiency: 0.0065, defaultWatts: 30 },
+    "ESP32 BM1387": { efficiency: 0.0035, defaultWatts: 15 },
+    "DIY Single-chip": { efficiency: 0.004, defaultWatts: 20 },
+
+    // USB ASIC Miners
+    "Gekkoscience Newpac": { efficiency: 0.0024, defaultWatts: 12 },
+    "Futurebit Moonlander 2": { efficiency: 0.0018, defaultWatts: 10 },
+    "GoldShell Mini-DOGE": { efficiency: 0.0029, defaultWatts: 233 },
+
     // Default for unknown models
-    "Default ASIC": { efficiency: 0.031, defaultWatts: 3100 }
+    "Default ASIC": { efficiency: 0.034, defaultWatts: 3100 }
 };
 
-// Modify the calculatePowerCost function in static/js/workers.js:
-
+// Modified calculatePowerCost to better handle small miners with unique units
 function calculatePowerCost(worker) {
     try {
         // Get power cost per kWh from config (via workerData)
@@ -92,6 +118,14 @@ function calculatePowerCost(worker) {
 
         // Get actual power consumption if available
         let powerUsageWatts = worker.power_consumption;
+
+        // Special handling for BitAxe and other small devices that might report in GH/s or MH/s 
+        const isSmallMiner = worker.model &&
+            (worker.model.toLowerCase().includes('bitaxe') ||
+                worker.model.toLowerCase().includes('esp32') ||
+                worker.model.toLowerCase().includes('diy') ||
+                worker.model.toLowerCase().includes('gekko') ||
+                worker.model.toLowerCase().includes('moonlander'));
 
         // If worker is offline but has no power consumption value, use 3hr hashrate to estimate
         if (worker.status === "offline" && (!powerUsageWatts || powerUsageWatts <= 0) && worker.hashrate_3hr > 0) {
@@ -106,9 +140,9 @@ function calculatePowerCost(worker) {
             // This simulates a recent shutdown with some cooling components still active
             powerUsageWatts = Math.round((hashrateThs / modelEfficiency.efficiency) * 0.7);
 
-            // Cap reasonable limits
-            const minWatts = 20;   // Minimum for even small miners when offline
-            const maxWatts = 1500; // Maximum for offline ASIC (lower than online max)
+            // Cap reasonable limits - different for small miners
+            const minWatts = isSmallMiner ? 2 : 20;   // Lower minimum for small miners
+            const maxWatts = isSmallMiner ? 50 : 1500; // Lower maximum for small miners when offline
             powerUsageWatts = Math.max(minWatts, Math.min(maxWatts, powerUsageWatts));
         } else if (worker.status !== "online" && (!powerUsageWatts || powerUsageWatts <= 0)) {
             // For truly offline workers with no hashrate history
@@ -129,9 +163,9 @@ function calculatePowerCost(worker) {
             // Formula: Power (W) = hashrate (TH/s) / efficiency (TH/W)
             powerUsageWatts = Math.round(hashrateThs / modelEfficiency.efficiency);
 
-            // Cap reasonable limits to prevent extreme values
-            const minWatts = 30;   // Minimum for even small miners
-            const maxWatts = 4500; // Maximum realistic ASIC power
+            // Cap reasonable limits to prevent extreme values - different for small miners
+            const minWatts = isSmallMiner ? 5 : 30;   // Lower minimum for small miners
+            const maxWatts = isSmallMiner ? 250 : 4500; // Lower maximum for small miners
             powerUsageWatts = Math.max(minWatts, Math.min(maxWatts, powerUsageWatts));
         }
 
@@ -157,6 +191,23 @@ function calculatePowerCost(worker) {
             powerUsage: 0
         };
     }
+}
+
+// Calculate total power consumption for all workers
+function calculateTotalPowerUsage(workers) {
+    if (!workers || !Array.isArray(workers) || workers.length === 0) {
+        return 0;
+    }
+
+    let totalPower = 0;
+
+    workers.forEach(worker => {
+        // Use the power usage calculated by calculatePowerCost or the raw value
+        const powerData = calculatePowerCost(worker);
+        totalPower += powerData.powerUsage || 0;
+    });
+
+    return Math.round(totalPower);
 }
 
 // Format power cost with currency symbol
@@ -740,9 +791,10 @@ function calculateMaxHashrate() {
         const onlineWorkers = workerData.workers.filter(w => w.status === 'online');
 
         if (onlineWorkers.length > 0) {
-            let maxWorkerHashrate = 0;
+            // Collect all hashrates for statistical analysis
+            const hashrateValues = [];
 
-            // Find maximum hashrate without logging every worker
+            // First pass - collect normalized hashrates
             onlineWorkers.forEach(w => {
                 const hashrateValue = w.hashrate_24hr || w.hashrate_3hr || 0;
                 const hashrateUnit = w.hashrate_24hr ?
@@ -750,13 +802,46 @@ function calculateMaxHashrate() {
                     (w.hashrate_3hr_unit || 'th/s');
                 const normalizedRate = normalizeHashrate(hashrateValue, hashrateUnit);
 
-                if (normalizedRate > maxWorkerHashrate) {
-                    maxWorkerHashrate = normalizedRate;
+                if (normalizedRate > 0) {
+                    hashrateValues.push(normalizedRate);
                 }
             });
 
-            if (maxWorkerHashrate > 0) {
-                return Math.max(5, maxWorkerHashrate * 1.2);
+            // Only perform outlier detection if we have enough data points
+            if (hashrateValues.length >= 4) {
+                // Sort the values for quartile calculation
+                hashrateValues.sort((a, b) => a - b);
+
+                // Calculate quartiles for IQR (Interquartile Range) method
+                const q1Index = Math.floor(hashrateValues.length * 0.25);
+                const q3Index = Math.floor(hashrateValues.length * 0.75);
+                const q1 = hashrateValues[q1Index];
+                const q3 = hashrateValues[q3Index];
+                const iqr = q3 - q1;
+
+                // Define outlier threshold (1.5 * IQR is commonly used)
+                const upperBound = q3 + (iqr * 1.5);
+
+                // Filter out outliers and find maximum non-outlier value
+                const filteredValues = hashrateValues.filter(v => v <= upperBound);
+                const maxNonOutlierValue = Math.max(...filteredValues);
+
+                // Log if outliers were removed
+                if (filteredValues.length < hashrateValues.length) {
+                    console.log(`Removed ${hashrateValues.length - filteredValues.length} outlier hashrate values`);
+                }
+
+                // Return max value with buffer
+                if (maxNonOutlierValue > 0) {
+                    return Math.max(5, maxNonOutlierValue * 1.2);
+                }
+            } else {
+                // Not enough data points for outlier detection, use simple maximum
+                let maxWorkerHashrate = Math.max(...hashrateValues, 0);
+
+                if (maxWorkerHashrate > 0) {
+                    return Math.max(5, maxWorkerHashrate * 1.2);
+                }
             }
         }
     }
@@ -950,7 +1035,7 @@ function filterWorkersData(workers) {
     });
 }
 
-// Update summary stats with normalized hashrate display
+// Update summary stats with normalized hashrate display and total power usage
 function updateSummaryStats() {
     if (!workerData) return;
 
@@ -968,6 +1053,17 @@ function updateSummaryStats() {
 
     $('#total-earnings').text(`${(workerData.total_earnings || 0).toFixed(8)} BTC`);
     $('#daily-sats').text(`${numberWithCommas(workerData.daily_sats || 0)} SATS`);
+
+    // Calculate and display total power usage
+    if (workerData.workers && workerData.workers.length > 0) {
+        const totalPowerWatts = calculateTotalPowerUsage(workerData.workers);
+        const powerDisplay = totalPowerWatts >= 1000 ?
+            `${(totalPowerWatts / 1000).toFixed(2)} kW` :
+            `${totalPowerWatts} W`;
+        $('#total-power-usage').text(powerDisplay);
+    } else {
+        $('#total-power-usage').text('N/A');
+    }
 }
 
 // Initialize mini chart

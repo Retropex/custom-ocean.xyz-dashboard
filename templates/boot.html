@@ -34,6 +34,9 @@
             opacity: 0;
             transform: scale(0.3);
             transition: opacity 1.2s ease-in-out, transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(2.5px) contrast(1.2);
+            /* Optionally add: */
+            -webkit-backdrop-filter: blur(2.5px) contrast(1.2);
         }
 
             .water-droplet::before {
@@ -342,7 +345,13 @@
     
             // Force reflow before starting animations
             void trail.offsetWidth;
-    
+
+            // Remove any custom transform (rotation/wobble) before dripping
+            droplet.style.transform = ''; // Reset to default so animation works
+
+            // Remove any wobble animation
+            droplet.style.animation = '';
+
             // Mark droplet as dripping
             droplet.classList.add('dripping');
     

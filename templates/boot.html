@@ -18,6 +18,129 @@
     <link rel="stylesheet" href="/static/css/theme-toggle.css">
     <!-- Add Theme JS -->
     <script src="/static/js/theme.js"></script>
+
+    <!-- Water Beading and Dripping Effects CSS -->
+    <style>
+        /* Water Droplet and Dripping Effects */
+        .water-droplet {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            box-shadow: inset 10px 10px 10px rgba(255, 255, 255, 0.3), inset -10px -10px 10px rgba(0, 0, 0, 0.3), 0 0 5px rgba(255, 255, 255, 0.5);
+            transform-origin: center bottom;
+            z-index: 1000;
+            pointer-events: none;
+            /* Add fade-in animation and transition properties */
+            opacity: 0;
+            transform: scale(0.3);
+            transition: opacity 1.2s ease-in-out, transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+            .water-droplet::before {
+                content: '';
+                position: absolute;
+                top: 10%;
+                left: 15%;
+                width: 30%;
+                height: 30%;
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 50%;
+                z-index: 1001;
+            }
+
+            .water-droplet.dripping {
+                animation: dropletDrip var(--drip-duration, 4s) linear forwards;
+            }
+
+        /* Make water trails also fade in smoothly */
+        .water-trail {
+            position: absolute;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.3) 20%, rgba(255, 255, 255, 0.2) 70%, transparent);
+            z-index: 999;
+            pointer-events: none;
+            border-radius: 50% 50% 0 0 / 80% 80% 0 0;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        /* New fade-in animation for water droplets */
+        @keyframes dropletFadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Droplets for DeepSea Theme */
+        body.deepsea-theme .water-droplet {
+            background-color: rgba(0, 136, 204, 0.3);
+            box-shadow: inset 5px 5px 10px rgba(255, 255, 255, 0.3), inset -5px -5px 10px rgba(0, 0, 0, 0.3), 0 0 5px rgba(0, 136, 204, 0.5);
+        }
+
+            body.deepsea-theme .water-droplet::before {
+                background-color: rgba(255, 255, 255, 0.5);
+            }
+
+        body.deepsea-theme .water-trail {
+            background: linear-gradient(to bottom, transparent, rgba(0, 136, 204, 0.2) 20%, rgba(0, 136, 204, 0.1) 70%, transparent);
+        }
+
+        /* Update dripping animation to work with the new fade-in */
+        @keyframes dropletDrip {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+
+            60% {
+                transform: translateY(var(--drip-distance)) scale(1.1, 0.9);
+            }
+
+            80% {
+                transform: translateY(var(--drip-distance)) scale(0.95, 1.05);
+            }
+
+            100% {
+                transform: translateY(var(--drip-distance)) scale(0.9);
+                opacity: 0;
+            }
+        }
+
+        /* Screen condensation effect - creates a foggy appearance */
+        .screen-condensation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/png;base64,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'), linear-gradient(0deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.05));
+            pointer-events: none;
+            opacity: 0.2;
+            z-index: 5;
+        }
+
+        /* DeepSea Theme Condensation */
+        body.deepsea-theme .screen-condensation {
+            background-image: url('data:image/png;base64,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'), linear-gradient(0deg, rgba(0, 136, 204, 0.03), rgba(0, 136, 204, 0.05));
+            opacity: 0.2;
+        }
+
+        /* Add wobble animation */
+        @keyframes dropletWobble {
+            0%, 100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05, 0.95);
+            }
+        }
+    </style>
+
     <!-- Add Boot Sequence Bypass Logic -->
     <script>
         // Check if we should bypass boot sequence and go directly to dashboard
@@ -74,7 +197,182 @@
                 noise.className = 'digital-noise';
                 document.body.appendChild(noise);
             }
+
+            // Add water beading and dripping effects
+            // Create condensation effect
+            const condensation = document.createElement('div');
+            condensation.className = 'screen-condensation';
+            document.body.appendChild(condensation);
+
+            // Check if DeepSea theme is active to adjust water colors
+            const isDeepSeaTheme = localStorage.getItem('useDeepSeaTheme') === 'true';
+            if (isDeepSeaTheme) {
+                document.body.classList.add('deepsea-theme');
+            }
+
+            // Configuration for water droplets
+            const dropletConfig = {
+                minSize: 5,
+                maxSize: 25,
+                count: 15,              // Initial number of droplets
+                dripProbability: 0.3,   // Probability of a droplet dripping
+                minDripDistance: 50,    // Minimum distance for droplets to drip
+                maxDripDistance: 200,   // Maximum distance for droplets to drip
+                minDripDuration: 2,     // Min animation duration in seconds
+                maxDripDuration: 6      // Max animation duration in seconds
+            };
+
+            // Create initial set of droplets
+            createInitialDroplets(dropletConfig);
+
+            // Periodically add new droplets
+            setInterval(() => {
+                const currentDroplets = document.querySelectorAll('.water-droplet').length;
+                if (currentDroplets < dropletConfig.count * 1.5) {
+                    createDroplet(dropletConfig);
+                }
+            }, 2000);
+
+            // Start the dripping process
+            setInterval(() => {
+                initiateRandomDrip(dropletConfig);
+            }, 3000);
         });
+
+        // Create the initial set of water droplets
+        function createInitialDroplets(config) {
+            for (let i = 0; i < config.count; i++) {
+                createDroplet(config);
+            }
+        }
+
+        // Update createDroplet function for smooth appearance
+        function createDroplet(config) {
+            const droplet = document.createElement('div');
+            droplet.className = 'water-droplet';
+
+            // Random properties
+            const size = Math.floor(Math.random() * (config.maxSize - config.minSize) + config.minSize);
+            const leftPosition = Math.random() * 98; // percentage of screen width
+            const topPosition = Math.random() * 80;  // percentage of screen height (avoid bottom)
+
+            // Set droplet styles
+            droplet.style.width = `${size}px`;
+            droplet.style.height = `${size}px`;
+            droplet.style.left = `${leftPosition}%`;
+            droplet.style.top = `${topPosition}%`;
+
+            // Add to document (still invisible)
+            document.body.appendChild(droplet);
+
+            // Force a reflow before starting animations
+            void droplet.offsetWidth;
+
+            // Trigger smooth appearance
+            setTimeout(() => {
+                droplet.style.opacity = '1';
+                droplet.style.transform = 'scale(1)';
+
+                // Add slight random wobble animation to some droplets
+                if (Math.random() > 0.7) {
+                    droplet.style.animation = `dropletWobble ${2 + Math.random() * 3}s infinite alternate ease-in-out`;
+                }
+            }, 10);
+
+            return droplet;
+        }
+
+        // Update makeDropletDrip function for smooth trails
+        function makeDropletDrip(droplet, config) {
+            // Get current position
+            const rect = droplet.getBoundingClientRect();
+            const startX = rect.left;
+            const startY = rect.top;
+
+            // Calculate drip distance
+            const dripDistance = Math.floor(Math.random() *
+                (config.maxDripDistance - config.minDripDistance) +
+                config.minDripDistance);
+
+            // Calculate duration of the dripping animation
+            const dripDuration = Math.floor(Math.random() *
+                (config.maxDripDuration - config.minDripDuration) +
+                config.minDripDuration);
+
+            // Create water trail element that follows behind the droplet
+            const trail = document.createElement('div');
+            trail.className = 'water-trail';
+            trail.style.left = `${startX + rect.width / 2 - 2}px`;
+            trail.style.top = `${startY + rect.height}px`;
+            trail.style.width = `${rect.width * 0.5}px`;
+            document.body.appendChild(trail);
+
+            // Force reflow
+            void trail.offsetWidth;
+
+            // Fade in trail
+            setTimeout(() => {
+                trail.style.opacity = '1';
+            }, 10);
+
+            // Mark droplet as dripping
+            droplet.classList.add('dripping');
+
+            // Set CSS variables for the animation
+            droplet.style.setProperty('--drip-distance', `${dripDistance}px`);
+            droplet.style.setProperty('--drip-duration', `${dripDuration}s`);
+
+            // Animate trail growth alongside droplet movement
+            let trailProgress = 0;
+            const trailGrowth = setInterval(() => {
+                trailProgress += 1 / (dripDuration * 10); // 10 updates per second
+
+                // Calculate current droplet position
+                const dropletRect = droplet.getBoundingClientRect();
+                const currentY = dropletRect.top;
+                const trailHeight = currentY - startY + dropletRect.height;
+
+                // Update trail position and size
+                trail.style.height = `${Math.max(0, trailHeight)}px`;
+
+                if (trailProgress >= 1) {
+                    clearInterval(trailGrowth);
+
+                    // Fade out trail
+                    trail.style.transition = 'opacity 1s ease-out';
+                    trail.style.opacity = '0';
+                    setTimeout(() => {
+                        if (trail.parentNode) {
+                            trail.parentNode.removeChild(trail);
+                        }
+                    }, 1000);
+                }
+            }, 100);
+
+            // Remove droplet after animation and create a new one with smooth fade-out
+            setTimeout(() => {
+                // Start fade-out transition
+                droplet.style.transition = 'opacity 0.8s ease-out, transform 0.5s ease-in-out';
+                droplet.style.opacity = '0';
+
+                setTimeout(() => {
+                    if (droplet.parentNode) {
+                        droplet.parentNode.removeChild(droplet);
+                    }
+                    createDroplet(config);
+                }, 800); // Match the duration of opacity transition
+            }, dripDuration * 1000);
+        }
+
+        // Also update the initial droplet creation to be staggered
+        function createInitialDroplets(config) {
+            // Create droplets with a staggered delay for a more natural appearance
+            for (let i = 0; i < config.count; i++) {
+                setTimeout(() => {
+                    createDroplet(config);
+                }, i * 200); // 200ms delay between each initial droplet
+            }
+        }
     </script>
     <!-- Theme toggle button (new) -->
     <!--<button id="themeToggle" class="theme-toggle-btn">
@@ -84,13 +382,13 @@
     <div id="debug-info"></div>
     <div id="loading-message">Loading mining data...</div>
     <div id="bitcoin-logo">
-██████╗ ████████╗ ██████╗   ██████╗ ███████╗
-██╔══██╗╚══██╔══╝██╔════╝  ██╔═══██╗██╔════╝
-██████╔╝   ██║   ██║       ██║   ██║███████╗
-██╔══██╗   ██║   ██║       ██║   ██║╚════██║
-██████╔╝   ██║   ╚██████╗  ╚██████╔╝███████║
-╚═════╝    ╚═╝    ╚═════╝   ╚═════╝ ╚══════╝
-v.21
+        ██████╗ ████████╗ ██████╗   ██████╗ ███████╗
+        ██╔══██╗╚══██╔══╝██╔════╝  ██╔═══██╗██╔════╝
+        ██████╔╝   ██║   ██║       ██║   ██║███████╗
+        ██╔══██╗   ██║   ██║       ██║   ██║╚════██║
+        ██████╔╝   ██║   ╚██████╗  ╚██████╔╝███████║
+        ╚═════╝    ╚═╝    ╚═════╝   ╚═════╝ ╚══════╝
+        v.21
     </div>
     <div id="terminal">
         <div id="terminal-content">

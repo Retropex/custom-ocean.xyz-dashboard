@@ -22,12 +22,16 @@ const BitcoinMinuteRefresh = (function () {
         MINIMIZED_UPTIME: 'minimized-uptime-value',
         SHOW_BUTTON: 'bitcoin-terminal-show'
     };
+    // Add these new keys to the STORAGE_KEYS constant
     const STORAGE_KEYS = {
         THEME: 'useDeepSeaTheme',
         COLLAPSED: 'bitcoin_terminal_collapsed',
         SERVER_OFFSET: 'serverTimeOffset',
         SERVER_START: 'serverStartTime',
-        REFRESH_EVENT: 'bitcoin_refresh_event'
+        REFRESH_EVENT: 'bitcoin_refresh_event',
+        POSITION_LEFT: 'bitcoin_terminal_left',
+        POSITION_TOP: 'bitcoin_terminal_top',
+        SNAP_POINT: 'bitcoin_terminal_snap_point'
     };
     const SELECTORS = {
         HEADER: '.terminal-header',
@@ -219,9 +223,12 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
-     * Add dragging functionality to the terminal
+     * Add dragging functionality with snapping to the terminal
      */
     function addDraggingBehavior() {
+        // Add snapping behavior first
+        addSnappingBehavior();
+
         // Find the terminal element
         const terminal = document.getElementById(DOM_IDS.TERMINAL) ||
             document.querySelector('.bitcoin-terminal') ||
@@ -234,7 +241,9 @@ const BitcoinMinuteRefresh = (function () {
 
         let isDragging = false;
         let startX = 0;
+        let startY = 0;
         let startLeft = 0;
+        let startTop = 0;
 
         // Function to handle mouse down (drag start)
         function handleMouseDown(e) {
@@ -249,16 +258,25 @@ const BitcoinMinuteRefresh = (function () {
 
             // Calculate start position
             startX = e.clientX;
+            startY = e.clientY;
 
-            // Get current left position accounting for different possible styles
+            // Get current position
             const style = window.getComputedStyle(terminal);
+
+            // Handle horizontal position
             if (style.left !== 'auto') {
                 startLeft = parseInt(style.left) || 0;
             } else {
                 // Calculate from right if left is not set
-                startLeft = window.innerWidth -
-                    (parseInt(style.right) || 0) -
-                    terminal.offsetWidth;
+                startLeft = window.innerWidth - (parseInt(style.right) || 0) - terminal.offsetWidth;
+            }
+
+            // Handle vertical position
+            if (style.top !== 'auto') {
+                startTop = parseInt(style.top) || 0;
+            } else {
+                // Calculate from bottom if top is not set
+                startTop = window.innerHeight - (parseInt(style.bottom) || 0) - terminal.offsetHeight;
             }
 
             e.preventDefault(); // Prevent text selection
@@ -268,17 +286,39 @@ const BitcoinMinuteRefresh = (function () {
         const handleMouseMove = debounce(function (e) {
             if (!isDragging) return;
 
-            // Calculate the horizontal movement - vertical stays fixed
+            // Calculate the movement
             const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
             let newLeft = startLeft + deltaX;
+            let newTop = startTop + deltaY;
 
             // Constrain to window boundaries
             const maxLeft = window.innerWidth - terminal.offsetWidth;
-            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            const maxTop = window.innerHeight - terminal.offsetHeight;
 
-            // Update position - only horizontally along bottom
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            // Check if we're near a snap point
+            const snapPoint = window.findClosestSnapPoint(newLeft, newTop);
+
+            if (snapPoint) {
+                // Visual feedback for snapping
+                terminal.classList.add('snapping');
+
+                // Snap to the point
+                newLeft = snapPoint.x;
+                newTop = snapPoint.y;
+            } else {
+                terminal.classList.remove('snapping');
+            }
+
+            // Update position
             terminal.style.left = newLeft + 'px';
-            terminal.style.right = 'auto'; // Remove right positioning
+            terminal.style.top = newTop + 'px';
+            terminal.style.right = 'auto';
+            terminal.style.bottom = 'auto';
             terminal.style.transform = 'none'; // Remove transformations
         }, 10);
 
@@ -287,6 +327,35 @@ const BitcoinMinuteRefresh = (function () {
             if (isDragging) {
                 isDragging = false;
                 terminal.classList.remove('dragging');
+
+                // If we're snapped, add a class to indicate it
+                const style = window.getComputedStyle(terminal);
+                const left = parseInt(style.left) || 0;
+                const top = parseInt(style.top) || 0;
+
+                const snapPoint = window.findClosestSnapPoint(left, top);
+                if (snapPoint) {
+                    terminal.classList.add('snapped');
+                    terminal.setAttribute('data-snap-point', snapPoint.name);
+
+                    // Save snap point to localStorage
+                    localStorage.setItem(STORAGE_KEYS.SNAP_POINT, snapPoint.name);
+
+                    // Add a subtle animation to emphasize the snap
+                    terminal.style.transition = 'all 0.2s ease-out';
+                    setTimeout(() => {
+                        terminal.style.transition = '';
+                        terminal.classList.remove('snapping');
+                    }, 200);
+                } else {
+                    terminal.classList.remove('snapped');
+                    terminal.removeAttribute('data-snap-point');
+                    localStorage.removeItem(STORAGE_KEYS.SNAP_POINT);
+                }
+
+                // Save position to localStorage for persistence
+                localStorage.setItem(STORAGE_KEYS.POSITION_LEFT, left);
+                localStorage.setItem(STORAGE_KEYS.POSITION_TOP, top);
             }
         }
 
@@ -299,7 +368,7 @@ const BitcoinMinuteRefresh = (function () {
             terminal.addEventListener('mousedown', handleMouseDown);
         }
 
-        // Add touch support for mobile/tablet
+        // Add touch support for mobile/tablet - similar changes to mouse events
         function handleTouchStart(e) {
             if (window.innerWidth < 768) return;
             if (e.target.closest(SELECTORS.TERMINAL_DOT)) return;
@@ -309,12 +378,22 @@ const BitcoinMinuteRefresh = (function () {
             terminal.classList.add('dragging');
 
             startX = touch.clientX;
+            startY = touch.clientY;
 
             const style = window.getComputedStyle(terminal);
+
+            // Handle horizontal position
             if (style.left !== 'auto') {
                 startLeft = parseInt(style.left) || 0;
             } else {
                 startLeft = window.innerWidth - (parseInt(style.right) || 0) - terminal.offsetWidth;
+            }
+
+            // Handle vertical position
+            if (style.top !== 'auto') {
+                startTop = parseInt(style.top) || 0;
+            } else {
+                startTop = window.innerHeight - (parseInt(style.bottom) || 0) - terminal.offsetHeight;
             }
 
             e.preventDefault();
@@ -325,13 +404,32 @@ const BitcoinMinuteRefresh = (function () {
 
             const touch = e.touches[0];
             const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+
             let newLeft = startLeft + deltaX;
+            let newTop = startTop + deltaY;
 
             const maxLeft = window.innerWidth - terminal.offsetWidth;
+            const maxTop = window.innerHeight - terminal.offsetHeight;
+
             newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            // Check for snap points
+            const snapPoint = window.findClosestSnapPoint(newLeft, newTop);
+
+            if (snapPoint) {
+                terminal.classList.add('snapping');
+                newLeft = snapPoint.x;
+                newTop = snapPoint.y;
+            } else {
+                terminal.classList.remove('snapping');
+            }
 
             terminal.style.left = newLeft + 'px';
+            terminal.style.top = newTop + 'px';
             terminal.style.right = 'auto';
+            terminal.style.bottom = 'auto';
             terminal.style.transform = 'none';
 
             e.preventDefault();
@@ -341,6 +439,34 @@ const BitcoinMinuteRefresh = (function () {
             if (isDragging) {
                 isDragging = false;
                 terminal.classList.remove('dragging');
+
+                // Same snapping check as in mouseup
+                const style = window.getComputedStyle(terminal);
+                const left = parseInt(style.left) || 0;
+                const top = parseInt(style.top) || 0;
+
+                const snapPoint = window.findClosestSnapPoint(left, top);
+                if (snapPoint) {
+                    terminal.classList.add('snapped');
+                    terminal.setAttribute('data-snap-point', snapPoint.name);
+
+                    // Save snap point to localStorage
+                    localStorage.setItem(STORAGE_KEYS.SNAP_POINT, snapPoint.name);
+
+                    terminal.style.transition = 'all 0.2s ease-out';
+                    setTimeout(() => {
+                        terminal.style.transition = '';
+                        terminal.classList.remove('snapping');
+                    }, 200);
+                } else {
+                    terminal.classList.remove('snapped');
+                    terminal.removeAttribute('data-snap-point');
+                    localStorage.removeItem(STORAGE_KEYS.SNAP_POINT);
+                }
+
+                // Save position to localStorage for persistence
+                localStorage.setItem(STORAGE_KEYS.POSITION_LEFT, left);
+                localStorage.setItem(STORAGE_KEYS.POSITION_TOP, top);
             }
         }
 
@@ -360,20 +486,27 @@ const BitcoinMinuteRefresh = (function () {
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
 
-            // Handle window resize to keep terminal visible
+            // Handle window resize
             window.addEventListener('resize', function () {
                 if (window.innerWidth < 768) {
                     // Reset position for mobile view
                     terminal.style.left = '50%';
+                    terminal.style.top = 'auto';
+                    terminal.style.bottom = '20px';
                     terminal.style.right = 'auto';
                     terminal.style.transform = 'translateX(-50%)';
                 } else {
                     // Ensure terminal stays visible in desktop view
                     const maxLeft = window.innerWidth - terminal.offsetWidth;
+                    const maxTop = window.innerHeight - terminal.offsetHeight;
                     const currentLeft = parseInt(window.getComputedStyle(terminal).left) || 0;
+                    const currentTop = parseInt(window.getComputedStyle(terminal).top) || 0;
 
                     if (currentLeft > maxLeft) {
                         terminal.style.left = maxLeft + 'px';
+                    }
+                    if (currentTop > maxTop) {
+                        terminal.style.top = maxTop + 'px';
                     }
                 }
             });
@@ -384,8 +517,87 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
-     * Create and inject the retro terminal element into the DOM
-     */
+    * Add snapping functionality to the draggable terminal
+    */
+    function addSnappingBehavior() {
+        // Get terminal height to calculate proper bottom positions
+        const getTerminalHeight = () => {
+            const terminal = document.getElementById(DOM_IDS.TERMINAL) ||
+                document.querySelector('.bitcoin-terminal');
+            return terminal ? terminal.offsetHeight : 150;
+        };
+
+        // Calculate proper bottom position with safe margin
+        const calculateBottomY = () => {
+            const terminalHeight = getTerminalHeight();
+            // Add 20px safety margin to avoid cutting off
+            return window.innerHeight - terminalHeight - 20;
+        };
+
+        // Define snap points - strategic locations on screen
+        const snapPoints = [
+            { name: 'topLeft', x: 20, y: 20 },
+            { name: 'topRight', x: window.innerWidth - 250, y: 20 },
+            { name: 'bottomLeft', x: 20, y: calculateBottomY() },
+            { name: 'bottomRight', x: window.innerWidth - 250, y: calculateBottomY() },
+            { name: 'center', x: (window.innerWidth - 230) / 2, y: 20 },
+            { name: 'centerBottom', x: (window.innerWidth - 230) / 2, y: calculateBottomY() }
+        ];
+
+        // Snap sensitivity - how close the terminal needs to be to snap (in pixels)
+        const snapThreshold = 60;
+
+        // Add a method to find the closest snap point
+        function findClosestSnapPoint(x, y) {
+            let closest = null;
+            let minDistance = Number.MAX_VALUE;
+
+            // Update bottom positions before checking
+            updateSnapPoints();
+
+            snapPoints.forEach(point => {
+                // Calculate Euclidean distance
+                const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
+
+                if (distance < minDistance && distance < snapThreshold) {
+                    minDistance = distance;
+                    closest = point;
+                }
+            });
+
+            return closest;
+        }
+
+        // Store this in the module scope for use in other functions
+        window.findClosestSnapPoint = findClosestSnapPoint;
+
+        // Update snap points on window resize
+        function updateSnapPoints() {
+            const bottomY = calculateBottomY();
+
+            snapPoints[1].x = window.innerWidth - 250; // topRight
+            snapPoints[3].x = window.innerWidth - 250; // bottomRight
+            snapPoints[4].x = (window.innerWidth - 230) / 2; // center
+            snapPoints[5].x = (window.innerWidth - 230) / 2; // centerBottom
+
+            snapPoints[2].y = bottomY; // bottomLeft
+            snapPoints[3].y = bottomY; // bottomRight
+            snapPoints[5].y = bottomY; // centerBottom
+        }
+
+        // Initial setup
+        window.addEventListener('resize', function () {
+            // Delay the update to ensure terminal dimensions are stable
+            setTimeout(updateSnapPoints, 100);
+        });
+
+        // Call once on init to set correct values
+        setTimeout(updateSnapPoints, 200);
+    }
+
+    /**
+ * Create and inject the retro terminal element into the DOM
+ */
     function createTerminalElement() {
         // Container element
         terminalElement = document.createElement('div');
@@ -394,62 +606,71 @@ const BitcoinMinuteRefresh = (function () {
 
         // Terminal content - simplified for uptime-only
         terminalElement.innerHTML = `
-      <div class="terminal-header">
-        <div class="terminal-title">SYSTEM MONITOR v.3</div>
-        <div class="terminal-controls">
-          <div class="terminal-dot minimize" title="Minimize" onclick="BitcoinMinuteRefresh.toggleTerminal()">
-            <span class="control-symbol">-</span>
-          </div>
-          <div class="terminal-dot close" title="Close" onclick="BitcoinMinuteRefresh.hideTerminal()">
-            <span class="control-symbol">x</span>
-          </div>
-        </div>
-      </div>
-      <div class="terminal-content">
-        <div class="status-row">
-          <div class="status-indicator">
-            <div class="status-dot connected"></div>
-            <span>LIVE</span>
-          </div>
-          <span id="${DOM_IDS.CLOCK}" class="terminal-clock">00:00:00</span>
-        </div>
-        <div id="uptime-timer" class="uptime-timer">
-          <div class="uptime-title">UPTIME</div>
-          <div class="uptime-display">
-            <div class="uptime-value">
-              <span id="${DOM_IDS.UPTIME_HOURS}" class="uptime-number">00</span>
-              <span class="uptime-label">H</span>
-            </div>
-            <div class="uptime-separator">:</div>
-            <div class="uptime-value">
-              <span id="${DOM_IDS.UPTIME_MINUTES}" class="uptime-number">00</span>
-              <span class="uptime-label">M</span>
-            </div>
-            <div class="uptime-separator">:</div>
-            <div class="uptime-value">
-              <span id="${DOM_IDS.UPTIME_SECONDS}" class="uptime-number">00</span>
-              <span class="uptime-label">S</span>
+          <div class="terminal-header">
+            <div class="terminal-title">SYSTEM MONITOR v.3</div>
+            <div class="terminal-controls">
+              <div class="terminal-dot minimize" title="Minimize" onclick="BitcoinMinuteRefresh.toggleTerminal()">
+                <span class="control-symbol">-</span>
+              </div>
+              <div class="terminal-dot close" title="Close" onclick="BitcoinMinuteRefresh.hideTerminal()">
+                <span class="control-symbol">x</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="terminal-minimized">
-        <div class="minimized-uptime">
-          <span class="mini-uptime-label">UPTIME</span>
-          <span id="${DOM_IDS.MINIMIZED_UPTIME}">00:00:00</span>
-        </div>
-        <div class="minimized-status-dot connected"></div>
-      </div>
-    `;
+          <div class="terminal-content">
+            <div class="status-row">
+              <div class="status-indicator">
+                <div class="status-dot connected"></div>
+                <span>LIVE</span>
+              </div>
+              <span id="${DOM_IDS.CLOCK}" class="terminal-clock">00:00:00</span>
+            </div>
+            <div id="uptime-timer" class="uptime-timer">
+              <div class="uptime-title">UPTIME</div>
+              <div class="uptime-display">
+                <div class="uptime-value">
+                  <span id="${DOM_IDS.UPTIME_HOURS}" class="uptime-number">00</span>
+                  <span class="uptime-label">H</span>
+                </div>
+                <div class="uptime-separator">:</div>
+                <div class="uptime-value">
+                  <span id="${DOM_IDS.UPTIME_MINUTES}" class="uptime-number">00</span>
+                  <span class="uptime-label">M</span>
+                </div>
+                <div class="uptime-separator">:</div>
+                <div class="uptime-value">
+                  <span id="${DOM_IDS.UPTIME_SECONDS}" class="uptime-number">00</span>
+                  <span class="uptime-label">S</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="terminal-minimized">
+            <div class="minimized-uptime">
+              <span class="mini-uptime-label">UPTIME</span>
+              <span id="${DOM_IDS.MINIMIZED_UPTIME}">00:00:00</span>
+            </div>
+            <div class="minimized-status-dot connected"></div>
+          </div>
+        `;
 
         // Append to body
         document.body.appendChild(terminalElement);
 
-        // Add dragging behavior
-        addDraggingBehavior();
+        // Add custom styles if not already present
+        if (!document.getElementById(DOM_IDS.STYLES)) {
+            addStyles();
+        }
 
         // Cache element references
         uptimeElement = document.getElementById('uptime-timer');
+
+        // IMPORTANT: Delay position restoration to ensure correct height calculation
+        setTimeout(() => {
+            restoreTerminalPosition();
+            // Add dragging behavior after position is set
+            addDraggingBehavior();
+        }, 100);
 
         // Check if terminal was previously collapsed
         if (localStorage.getItem(STORAGE_KEYS.COLLAPSED) === 'true') {
@@ -460,6 +681,73 @@ const BitcoinMinuteRefresh = (function () {
         if (!document.getElementById(DOM_IDS.STYLES)) {
             addStyles();
         }
+    }
+
+    /**
+     * Restore terminal position from localStorage
+     */
+    function restoreTerminalPosition() {
+        // Only restore position on desktop
+        if (window.innerWidth >= 768 && terminalElement) {
+            const savedLeft = localStorage.getItem(STORAGE_KEYS.POSITION_LEFT);
+            const savedTop = localStorage.getItem(STORAGE_KEYS.POSITION_TOP);
+            const savedSnapPoint = localStorage.getItem(STORAGE_KEYS.SNAP_POINT);
+
+            // Calculate terminal height now that it's in the DOM
+            const termHeight = terminalElement.offsetHeight;
+            const safeBottomY = window.innerHeight - termHeight - 20;
+
+            if (savedSnapPoint) {
+                // If we have a saved snap point, use it to position with freshly calculated dimensions
+                const snapPoints = {
+                    topLeft: { x: 20, y: 20 },
+                    topRight: { x: window.innerWidth - 250, y: 20 },
+                    bottomLeft: { x: 20, y: safeBottomY },
+                    bottomRight: { x: window.innerWidth - 250, y: safeBottomY },
+                    center: { x: (window.innerWidth - 230) / 2, y: 20 },
+                    centerBottom: { x: (window.innerWidth - 230) / 2, y: safeBottomY }
+                };
+
+                if (snapPoints[savedSnapPoint]) {
+                    terminalElement.style.left = snapPoints[savedSnapPoint].x + 'px';
+                    terminalElement.style.top = snapPoints[savedSnapPoint].y + 'px';
+                    terminalElement.classList.add('snapped');
+                    terminalElement.setAttribute('data-snap-point', savedSnapPoint);
+
+                    // Reset any conflicting styles
+                    terminalElement.style.right = 'auto';
+                    terminalElement.style.bottom = 'auto';
+                    terminalElement.style.transform = 'none';
+                }
+            } else if (savedLeft && savedTop) {
+                // Otherwise use saved coordinates 
+                // But make sure they're still valid for current window size
+                const maxLeft = window.innerWidth - terminalElement.offsetWidth;
+                const maxTop = window.innerHeight - terminalElement.offsetHeight;
+
+                const left = Math.max(0, Math.min(parseInt(savedLeft), maxLeft));
+                const top = Math.max(0, Math.min(parseInt(savedTop), maxTop));
+
+                terminalElement.style.left = left + 'px';
+                terminalElement.style.top = top + 'px';
+                terminalElement.style.right = 'auto';
+                terminalElement.style.bottom = 'auto';
+                terminalElement.style.transform = 'none';
+            } else {
+                // Default position if nothing saved
+                terminalElement.style.right = '20px';
+                terminalElement.style.bottom = '20px';
+                terminalElement.style.left = 'auto';
+                terminalElement.style.top = 'auto';
+            }
+        }
+    }
+
+    // Helper function for determining terminal height
+    function getTerminalHeight() {
+        const terminal = document.getElementById(DOM_IDS.TERMINAL) ||
+            document.querySelector('.bitcoin-terminal');
+        return terminal ? terminal.offsetHeight : 150;
     }
 
     /**
@@ -811,6 +1099,15 @@ const BitcoinMinuteRefresh = (function () {
           right: auto;
           transform: translateX(-50%);
         }
+      }
+      /* Snapping styles */
+      .bitcoin-terminal.snapping {
+        box-shadow: 0 0 6px var(--primary-color, ${theme.color}) !important;
+        transition: box-shadow 0.2s ease;
+      }
+
+      .bitcoin-terminal.snapped {
+        box-shadow: 0 0 4px var(--primary-color, ${theme.color}) !important;
       }
     `;
 

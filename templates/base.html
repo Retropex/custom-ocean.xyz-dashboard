@@ -88,7 +88,12 @@
         document.addEventListener('DOMContentLoaded', function () {
             // Check if DeepSea theme is active
             if (localStorage.getItem('useDeepSeaTheme') === 'true') {
-                // Create underwater light rays
+                // Apply deep ocean background gradient
+                document.body.style.background = 'linear-gradient(135deg, #030c14 0%, #071a30 100%)';
+                document.body.style.backgroundSize = '400% 400%';
+                document.body.style.animation = 'water-movement 30s ease infinite';
+        
+                // Create underwater light rays similar to boot.css
                 const rays = document.createElement('div');
                 rays.className = 'underwater-rays';
                 document.body.appendChild(rays);
@@ -97,8 +102,78 @@
                 const noise = document.createElement('div');
                 noise.className = 'digital-noise';
                 document.body.appendChild(noise);
+        
+                // Create bubble container
+                const bubbleContainer = document.createElement('div');
+                bubbleContainer.className = 'underwater-bubbles';
+                document.body.appendChild(bubbleContainer);
+        
+                // Create deep water overlay for darker appearance
+                const deepWaterOverlay = document.createElement('div');
+                deepWaterOverlay.className = 'deep-water-overlay';
+                document.body.appendChild(deepWaterOverlay);
+        
+                // Generate bubbles
+                createBubbles(bubbleContainer);
             }
         });
+    
+        // Function to create animated bubbles
+        function createBubbles(container) {
+            // Configuration for bubbles
+            const config = {
+                minSize: 5,
+                maxSize: 22,
+                minDuration: 8,
+                maxDuration: 20,
+                density: 20, // Higher number = more bubbles
+                minHorizontalDrift: -50,
+                maxHorizontalDrift: 50
+            };
+        
+            // Create initial batch of bubbles
+            for (let i = 0; i < config.density; i++) {
+                createBubble(container, config);
+            }
+        
+            // Add new bubbles occasionally
+            setInterval(() => {
+                if (container.childElementCount < config.density * 1.5) {
+                    createBubble(container, config);
+                }
+            }, 2000);
+        }
+    
+        // Create a single bubble
+        function createBubble(container, config) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+        
+            // Random properties
+            const size = Math.floor(Math.random() * (config.maxSize - config.minSize) + config.minSize);
+            const leftPos = Math.floor(Math.random() * 100);
+            const duration = Math.floor(Math.random() * (config.maxDuration - config.minDuration) + config.minDuration);
+            const drift = Math.floor(Math.random() * (config.maxHorizontalDrift - config.minHorizontalDrift) + config.minHorizontalDrift);
+            const delay = Math.random() * 5;
+        
+            // Set bubble styles
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${leftPos}%`;
+            bubble.style.animationDuration = `${duration}s`;
+            bubble.style.animationDelay = `${delay}s`;
+            bubble.style.setProperty('--bubble-drift', `${drift}px`);
+        
+            // Add to container
+            container.appendChild(bubble);
+        
+            // Remove bubble once animation completes
+            setTimeout(() => {
+                if (bubble && bubble.parentNode === container) {
+                    container.removeChild(bubble);
+                }
+            }, (duration + delay) * 1000);
+        }
     </script>
     <div class="container-fluid">
 

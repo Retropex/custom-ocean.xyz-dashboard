@@ -180,6 +180,226 @@ body {
     }
 }
 
+/* ----- ENHANCED DEEPSEA UNDERWATER EFFECTS ----- */
+
+/* Deep ocean background for DeepSea theme */
+html.deepsea-theme {
+    background-color: #030c14;
+}
+
+    html.deepsea-theme body {
+        background: linear-gradient(135deg, #030c14 0%, #071a30 100%);
+        background-size: 400% 400%;
+        animation: water-movement 30s ease infinite;
+    }
+
+/* Deep water overlay for darker appearance */
+.deep-water-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(3, 12, 20, 0) 0%, rgba(1, 6, 12, 0.4) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Enhanced underwater light rays effect */
+.underwater-rays {
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    z-index: -1;
+    background-image: radial-gradient(ellipse at top, rgba(0, 136, 204, 0.1) 0%, rgba(0, 136, 204, 0) 70%), radial-gradient(ellipse at bottom, rgba(0, 91, 138, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    animation: lightRays 15s ease infinite alternate;
+}
+
+/* Digital noise effect */
+.digital-noise {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4woEFQwNDaabTQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAACASURBVGje7dixDcIwFEbhb8QMKWn5dwEWY4fswAasRJkBkhfAIarsNDEF5x5LrV/dJ1cEAAAAAOzHuefF5byzZ7tS6xDj6qoQpdRxUvNM6lH3rPeM1+ZJ3ROtqe9feGcjY8z74M8UvJGxEVHxTcIbGSsR+SECAAAAsC9/8G82GwHDD80AAAAASUVORK5CYII=');
+    opacity: 0.03;
+    z-index: 1;
+    pointer-events: none;
+    animation: noise 0.5s steps(5) infinite;
+}
+
+/* Bubble container and bubbles */
+.underwater-bubbles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.bubble {
+    position: absolute;
+    bottom: -20px;
+    background: rgba(120, 205, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.05), inset 0 0 5px rgba(255, 255, 255, 0.05);
+    animation: bubble-rise linear infinite;
+    pointer-events: none;
+}
+
+/* Additional animations from boot.css */
+@keyframes lightRays {
+    0% {
+        transform: scale(1) skew(0deg);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.05) skew(2deg);
+        opacity: 0.4;
+    }
+
+    100% {
+        transform: scale(1.1) skew(0deg);
+        opacity: 0.3;
+    }
+}
+
+@keyframes noise {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    20% {
+        transform: translate(-1px, 1px);
+    }
+
+    40% {
+        transform: translate(1px, -1px);
+    }
+
+    60% {
+        transform: translate(-2px, -1px);
+    }
+
+    80% {
+        transform: translate(2px, 1px);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes oceanRipple {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(6px);
+    }
+}
+
+/* Add ocean ripple effect similar to boot.css */
+html.deepsea-theme body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: transparent;
+    opacity: 0.1;
+    z-index: 1;
+    animation: oceanRipple 8s infinite linear;
+    background-image: repeating-linear-gradient( 0deg, rgba(0, 136, 204, 0.1), rgba(0, 136, 204, 0.1) 1px, transparent 1px, transparent 6px );
+    background-size: 100% 6px;
+}
+
+/* Modified CRT effect for DeepSea theme */
+html.deepsea-theme body::before {
+    content: "";
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 73, 109, 0.1) 50%), linear-gradient(90deg, rgba(0, 81, 122, 0.03), rgba(0, 136, 204, 0.08), rgba(0, 191, 255, 0.03));
+    background-size: 100% 2px, 3px 100%;
+    animation: glitchEffect 2s infinite;
+}
+
+@keyframes glitchEffect {
+    0% {
+        opacity: 0.15;
+        background-position: 0 0;
+    }
+
+    20% {
+        opacity: 0.17;
+    }
+
+    40% {
+        opacity: 0.14;
+        background-position: -1px 0;
+    }
+
+    60% {
+        opacity: 0.15;
+        background-position: 1px 0;
+    }
+
+    80% {
+        opacity: 0.16;
+        background-position: -2px 0;
+    }
+
+    100% {
+        opacity: 0.15;
+        background-position: 0 0;
+    }
+}
+
+/* Add the bubble-rise animation that was missing */
+@keyframes bubble-rise {
+    0% {
+        transform: translateY(0) translateX(0) scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: translateY(-100vh) translateX(var(--bubble-drift)) scale(0.7);
+        opacity: 0;
+    }
+}
+
+/* Add this for subtle water movement in the background */
+@keyframes water-movement {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
 /* Theme-specific animations */
 @keyframes ocean-wave {
     0% {

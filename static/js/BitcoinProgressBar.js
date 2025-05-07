@@ -31,7 +31,8 @@ const BitcoinMinuteRefresh = (function () {
         REFRESH_EVENT: 'bitcoin_refresh_event',
         POSITION_LEFT: 'bitcoin_terminal_left',
         POSITION_TOP: 'bitcoin_terminal_top',
-        SNAP_POINT: 'bitcoin_terminal_snap_point'
+        SNAP_POINT: 'bitcoin_terminal_snap_point',
+        COLLAPSED_SNAP_POINT: 'bitcoin_terminal_collapsed_snap_point'
     };
     const SELECTORS = {
         HEADER: '.terminal-header',
@@ -517,13 +518,18 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
-    * Add snapping functionality to the draggable terminal
-    */
+ * Add snapping functionality to the draggable terminal
+ */
     function addSnappingBehavior() {
         // Get terminal height to calculate proper bottom positions
         const getTerminalHeight = () => {
             const terminal = document.getElementById(DOM_IDS.TERMINAL) ||
                 document.querySelector('.bitcoin-terminal');
+
+            // Different height calculation based on collapsed state
+            if (terminal && terminal.classList.contains('collapsed')) {
+                return terminal.offsetHeight || 40; // Approximated collapsed height
+            }
             return terminal ? terminal.offsetHeight : 150;
         };
 
@@ -534,8 +540,18 @@ const BitcoinMinuteRefresh = (function () {
             return window.innerHeight - terminalHeight - 20;
         };
 
-        // Define snap points - strategic locations on screen
-        const snapPoints = [
+        // Define snap points for expanded state
+        const expandedSnapPoints = [
+            { name: 'topLeft', x: 20, y: 20 },
+            { name: 'topRight', x: window.innerWidth - 250, y: 20 },
+            { name: 'bottomLeft', x: 20, y: calculateBottomY() },
+            { name: 'bottomRight', x: window.innerWidth - 250, y: calculateBottomY() },
+            { name: 'center', x: (window.innerWidth - 230) / 2, y: 20 },
+            { name: 'centerBottom', x: (window.innerWidth - 230) / 2, y: calculateBottomY() }
+        ];
+
+        // Define snap points for minimized/collapsed state - optimized for smaller height
+        const collapsedSnapPoints = [
             { name: 'topLeft', x: 20, y: 20 },
             { name: 'topRight', x: window.innerWidth - 250, y: 20 },
             { name: 'bottomLeft', x: 20, y: calculateBottomY() },
@@ -547,15 +563,23 @@ const BitcoinMinuteRefresh = (function () {
         // Snap sensitivity - how close the terminal needs to be to snap (in pixels)
         const snapThreshold = 60;
 
-        // Add a method to find the closest snap point
+        // Add a method to find the closest snap point based on current state
         function findClosestSnapPoint(x, y) {
             let closest = null;
             let minDistance = Number.MAX_VALUE;
 
-            // Update bottom positions before checking
+            // Determine which set of snap points to use based on collapsed state
+            const terminal = document.getElementById(DOM_IDS.TERMINAL) ||
+                document.querySelector('.bitcoin-terminal');
+            const isCollapsed = terminal && terminal.classList.contains('collapsed');
+
+            // Update positions before checking
             updateSnapPoints();
 
-            snapPoints.forEach(point => {
+            // Use appropriate snap points array based on collapsed state
+            const relevantSnapPoints = isCollapsed ? collapsedSnapPoints : expandedSnapPoints;
+
+            relevantSnapPoints.forEach(point => {
                 // Calculate Euclidean distance
                 const distance = Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2));
 
@@ -575,14 +599,25 @@ const BitcoinMinuteRefresh = (function () {
         function updateSnapPoints() {
             const bottomY = calculateBottomY();
 
-            snapPoints[1].x = window.innerWidth - 250; // topRight
-            snapPoints[3].x = window.innerWidth - 250; // bottomRight
-            snapPoints[4].x = (window.innerWidth - 230) / 2; // center
-            snapPoints[5].x = (window.innerWidth - 230) / 2; // centerBottom
+            // Update expanded snap points
+            expandedSnapPoints[1].x = window.innerWidth - 250; // topRight
+            expandedSnapPoints[3].x = window.innerWidth - 250; // bottomRight
+            expandedSnapPoints[4].x = (window.innerWidth - 230) / 2; // center
+            expandedSnapPoints[5].x = (window.innerWidth - 230) / 2; // centerBottom
 
-            snapPoints[2].y = bottomY; // bottomLeft
-            snapPoints[3].y = bottomY; // bottomRight
-            snapPoints[5].y = bottomY; // centerBottom
+            expandedSnapPoints[2].y = bottomY; // bottomLeft
+            expandedSnapPoints[3].y = bottomY; // bottomRight
+            expandedSnapPoints[5].y = bottomY; // centerBottom
+
+            // Update collapsed snap points
+            collapsedSnapPoints[1].x = window.innerWidth - 250; // topRight
+            collapsedSnapPoints[3].x = window.innerWidth - 250; // bottomRight
+            collapsedSnapPoints[4].x = (window.innerWidth - 230) / 2; // center
+            collapsedSnapPoints[5].x = (window.innerWidth - 230) / 2; // centerBottom
+
+            collapsedSnapPoints[2].y = bottomY; // bottomLeft
+            collapsedSnapPoints[3].y = bottomY; // bottomRight
+            collapsedSnapPoints[5].y = bottomY; // centerBottom
         }
 
         // Initial setup
@@ -593,6 +628,30 @@ const BitcoinMinuteRefresh = (function () {
 
         // Call once on init to set correct values
         setTimeout(updateSnapPoints, 200);
+
+        // Return helper functions to manage snap point transitions
+        return {
+            getSnapPointMapping: function () {
+                // Direct mapping between expanded and collapsed snap points
+                return {
+                    // Expanded -> Collapsed
+                    'topLeft': 'topLeft',
+                    'topRight': 'topRight',
+                    'bottomLeft': 'bottomLeft',
+                    'bottomRight': 'bottomRight',
+                    'center': 'center',
+                    'centerBottom': 'centerBottom',
+
+                    // These are the same in both directions
+                    // since our point names match
+                };
+            },
+
+            // Get appropriate snap points based on state
+            getSnapPoints: function (isCollapsed) {
+                return isCollapsed ? collapsedSnapPoints : expandedSnapPoints;
+            }
+        };
     }
 
     /**
@@ -684,14 +743,19 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
-     * Restore terminal position from localStorage
-     */
+ * Restore terminal position from localStorage
+ */
     function restoreTerminalPosition() {
         // Only restore position on desktop
         if (window.innerWidth >= 768 && terminalElement) {
             const savedLeft = localStorage.getItem(STORAGE_KEYS.POSITION_LEFT);
             const savedTop = localStorage.getItem(STORAGE_KEYS.POSITION_TOP);
-            const savedSnapPoint = localStorage.getItem(STORAGE_KEYS.SNAP_POINT);
+            const isCollapsed = terminalElement.classList.contains('collapsed');
+
+            // Get the appropriate snap point based on current state
+            const savedSnapPoint = isCollapsed
+                ? localStorage.getItem(STORAGE_KEYS.COLLAPSED_SNAP_POINT)
+                : localStorage.getItem(STORAGE_KEYS.SNAP_POINT);
 
             // Calculate terminal height now that it's in the DOM
             const termHeight = terminalElement.offsetHeight;
@@ -699,7 +763,16 @@ const BitcoinMinuteRefresh = (function () {
 
             if (savedSnapPoint) {
                 // If we have a saved snap point, use it to position with freshly calculated dimensions
-                const snapPoints = {
+                const snapPoints = isCollapsed ? {
+                    // Collapsed snap points
+                    topLeft: { x: 20, y: 20 },
+                    topRight: { x: window.innerWidth - 250, y: 20 },
+                    bottomLeft: { x: 20, y: safeBottomY },
+                    bottomRight: { x: window.innerWidth - 250, y: safeBottomY },
+                    center: { x: (window.innerWidth - 230) / 2, y: 20 },
+                    centerBottom: { x: (window.innerWidth - 230) / 2, y: safeBottomY }
+                } : {
+                    // Expanded snap points
                     topLeft: { x: 20, y: 20 },
                     topRight: { x: window.innerWidth - 250, y: 20 },
                     bottomLeft: { x: 20, y: safeBottomY },
@@ -1339,13 +1412,74 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
-     * Toggle terminal collapsed state
-     */
+ * Toggle terminal collapsed state
+ */
     function toggleTerminal() {
         if (!terminalElement) return;
 
+        // Get the current state and snap point before toggling
+        const wasCollapsed = terminalElement.classList.contains('collapsed');
+        const currentSnapPoint = terminalElement.getAttribute('data-snap-point');
+
+        // Toggle collapsed state
         terminalElement.classList.toggle('collapsed');
         localStorage.setItem(STORAGE_KEYS.COLLAPSED, terminalElement.classList.contains('collapsed'));
+
+        // If we have a snap point, we need to handle the transition
+        if (currentSnapPoint) {
+            const isNowCollapsed = terminalElement.classList.contains('collapsed');
+            const snapper = addSnappingBehavior();
+            const mapping = snapper.getSnapPointMapping();
+
+            // Since our snap point names match in both states,
+            // we just need to save to the appropriate localStorage key
+            if (isNowCollapsed) {
+                localStorage.setItem(STORAGE_KEYS.COLLAPSED_SNAP_POINT, currentSnapPoint);
+            } else {
+                localStorage.setItem(STORAGE_KEYS.SNAP_POINT, currentSnapPoint);
+            }
+
+            // Apply position transition with slight delay to allow collapsed CSS to take effect
+            setTimeout(() => {
+                // Create smooth transition
+                terminalElement.style.transition = 'all 0.3s ease-out';
+
+                // Calculate the height-adjusted position
+                const termHeight = terminalElement.offsetHeight;
+                const safeBottomY = window.innerHeight - termHeight - 20;
+
+                // Get snap point coordinates for new state
+                const snapPoints = isNowCollapsed ? {
+                    topLeft: { x: 20, y: 20 },
+                    topRight: { x: window.innerWidth - 250, y: 20 },
+                    bottomLeft: { x: 20, y: safeBottomY },
+                    bottomRight: { x: window.innerWidth - 250, y: safeBottomY },
+                    center: { x: (window.innerWidth - 230) / 2, y: 20 },
+                    centerBottom: { x: (window.innerWidth - 230) / 2, y: safeBottomY }
+                } : {
+                    topLeft: { x: 20, y: 20 },
+                    topRight: { x: window.innerWidth - 250, y: 20 },
+                    bottomLeft: { x: 20, y: safeBottomY },
+                    bottomRight: { x: window.innerWidth - 250, y: safeBottomY },
+                    center: { x: (window.innerWidth - 230) / 2, y: 20 },
+                    centerBottom: { x: (window.innerWidth - 230) / 2, y: safeBottomY }
+                };
+
+                // Move to newly sized position
+                if (snapPoints[currentSnapPoint]) {
+                    terminalElement.style.left = snapPoints[currentSnapPoint].x + 'px';
+                    terminalElement.style.top = snapPoints[currentSnapPoint].y + 'px';
+
+                    // The snap point stays the same, but we need to update its position
+                    terminalElement.setAttribute('data-snap-point', currentSnapPoint);
+                }
+
+                // Remove transition after animation completes
+                setTimeout(() => {
+                    terminalElement.style.transition = '';
+                }, 300);
+            }, 50);
+        }
     }
 
     /**

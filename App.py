@@ -16,7 +16,6 @@ from zoneinfo import ZoneInfo
 from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
 from notification_service import NotificationService, NotificationLevel, NotificationCategory
-from flask import Flask, request
 
 # Import custom modules
 from config import load_config, save_config

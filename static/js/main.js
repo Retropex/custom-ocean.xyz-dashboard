@@ -496,34 +496,28 @@ function normalizeHashrate(value, unit, debug = false) {
 }
 
 // ===== Chart Data Points Control =====
-let chartPoints = 180; // Default to 30 points
+let chartPoints = 180; // Default to 180 points
+
+function updateChartPointsButtons() {
+    document.getElementById('btn-30').classList.toggle('active', chartPoints === 30);
+    document.getElementById('btn-60').classList.toggle('active', chartPoints === 60);
+    document.getElementById('btn-180').classList.toggle('active', chartPoints === 180);
+}
 
 function setChartPoints(points) {
-    // Only take action if the points value is different
     if (points === chartPoints) return;
-
-    // Update the stored value
     chartPoints = points;
+    updateChartPointsButtons();
 
-    // Update button states
-    document.getElementById('btn-30').classList.toggle('active', points === 30);
-    document.getElementById('btn-60').classList.toggle('active', points === 60);
-    document.getElementById('btn-180').classList.toggle('active', points === 180);
-
-    // Refresh the chart with the new points
     updateChartWithNormalizedData(trendChart, latestMetrics);
 
-    // Store preference in localStorage
     try {
         localStorage.setItem('chartPointsPreference', points.toString());
     } catch (e) {
         console.error("Error storing chart points preference", e);
     }
 
-    // Show loading indicator on chart
     showLoadingOverlay('trendGraph');
-
-    // Close and reopen the EventSource with new points parameter
     setupEventSource();
 }
 
@@ -2908,6 +2902,20 @@ $(document).ready(function () {
         console.error("Error handling theme:", e);
     }
 
+    // Initialize chart points preference from localStorage
+    try {
+        const storedPreference = localStorage.getItem('chartPointsPreference');
+        if (storedPreference) {
+            const points = parseInt(storedPreference, 10);
+            if ([30, 60, 180].includes(points)) {
+                chartPoints = points;
+            }
+        }
+    } catch (e) {
+        console.error("Error loading chart points preference", e);
+    }
+    updateChartPointsButtons();
+
     // Modify the initializeChart function to use blue colors for the chart
     function initializeChart() {
         try {
@@ -3234,27 +3242,7 @@ $(document).ready(function () {
         }, 100);
     };
 
-    // Initialize chart points preference from localStorage
-    try {
-        const storedPreference = localStorage.getItem('chartPointsPreference');
-        if (storedPreference) {
-            const points = parseInt(storedPreference, 10);
-            if ([30, 60, 180].includes(points)) {
-                chartPoints = points;
-                // Update button states after a small delay to ensure DOM is ready
-                setTimeout(() => {
-                    document.getElementById('btn-30').classList.toggle('active', points === 30);
-                    document.getElementById('btn-60').classList.toggle('active', points === 60);
-                    document.getElementById('btn-180').classList.toggle('active', points === 180);
-                }, 100);
-                console.log(`Using stored chart points preference: ${points}`);
-            }
-        }
-    } catch (e) {
-        console.error("Error loading chart points preference", e);
-    }
-
-    // Add this to your $(document).ready() function in main.js
+    // Function to fix the Last Block line in the payout card
     function fixLastBlockLine() {
         // Add the style to fix the Last Block line
         $("<style>")

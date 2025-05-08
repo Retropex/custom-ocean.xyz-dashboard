@@ -2180,7 +2180,6 @@ function updateUI() {
         if (data.pool_fees_percentage !== undefined && data.last_block_earnings !== undefined) {
             // Parse the last_block_earnings (removing any "+" prefix if present)
             const lastBlockEarnings = parseFloat(data.last_block_earnings.toString().replace(/^\+/, ''));
-
             const poolFeeSats = calculatePoolFeeInSats(
                 parseFloat(data.pool_fees_percentage),
                 lastBlockEarnings
@@ -2203,16 +2202,8 @@ function updateUI() {
                     poolFeesSats.id = "pool_fees_sats";
                     poolFeesSats.className = "metric-value";
 
-                    // Find the indicator element that comes right after pool_fees_percentage
-                    const indicatorPoolFees = document.getElementById("indicator_pool_fees_percentage");
-
-                    // Insert before the indicator element
-                    if (indicatorPoolFees) {
-                        poolFeesPercentage.parentNode.insertBefore(poolFeesSats, indicatorPoolFees);
-                    } else {
-                        // If no indicator, append to the parent
-                        poolFeesPercentage.parentNode.appendChild(poolFeesSats);
-                    }
+                    // Insert immediately after the pool_fees_percentage element
+                    poolFeesPercentage.insertAdjacentElement('afterend', poolFeesSats);
                 }
 
                 // Update the text and styling

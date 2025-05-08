@@ -175,14 +175,6 @@ html.deepsea-theme .toggle-btn.active {
     animation: bounceDown 1s infinite;
 }
 
-/* Fee indicator */
-.fee-star {
-    color: gold;
-    margin-left: 4px;
-    font-size: 1.2em;
-    vertical-align: middle;
-}
-
 /* ----- SPECIAL INDICATORS ----- */
 /* Pool luck indicators */
 .very-lucky {
@@ -201,59 +193,6 @@ html.deepsea-theme .toggle-btn.active {
 .unlucky {
     color: #ff5555 !important;
 }
-
-/* Datum rainbow label */
-.datum-label {
-    position: relative;
-    color: cyan;
-    font-size: 0.95em;
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-left: 4px;
-    padding: 2px 5px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
-    letter-spacing: 2px;
-    display: inline-block;
-    animation: rainbow-shift 8s infinite linear, glitch-anim 3s infinite, pulse-glow 2s infinite;
-    transform-origin: center;
-}
-
-    .datum-label::before,
-    .datum-label::after {
-        content: "DATUM";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.3);
-        border-radius: 3px;
-        padding: 2px 5px;
-        clip: rect(0, 0, 0, 0);
-    }
-
-    .datum-label::before {
-        left: -1px;
-        animation: glitch-frames 2s infinite linear alternate-reverse;
-        text-shadow: -2px 0 #ff2a6d;
-        clip: rect(44px, 450px, 56px, 0);
-    }
-
-    .datum-label::after {
-        left: 1px;
-        animation: glitch-frames 3s infinite linear alternate-reverse;
-        text-shadow: 2px 0 #05d9e8;
-        clip: rect(24px, 450px, 36px, 0);
-    }
-
-    .datum-label:hover {
-        animation-play-state: paused;
-        filter: brightness(1.5);
-        cursor: pointer;
-        transform: scale(1.1);
-        transition: transform 0.2s ease;
-    }
 
 /* ----- REFRESH & UPTIME ELEMENTS ----- */
 #refreshUptime {
@@ -388,58 +327,6 @@ html.deepsea-theme .toggle-btn.active {
     100% {
         transform: translate(-50%, -50%) rotate(45deg) scale(1);
         opacity: 1;
-    }
-}
-
-@keyframes rainbow-shift {
-    0%, 10% {
-        color: #ff2a6d;
-        text-shadow: 2px 0 #05d9e8, -2px 0 #ff2a6d, 0 0 10px #ff2a6d;
-    }
-
-    20% {
-        color: #ff7f00;
-        text-shadow: -2px 0 #05d9e8, 2px 0 #ff7f00, 0 0 10px #ff7f00;
-    }
-
-    30% {
-        color: #d8ff00;
-        text-shadow: 2px 0 #05d9e8, -2px 0 #d8ff00, 0 0 10px #d8ff00;
-    }
-
-    40% {
-        color: #00ff80;
-        text-shadow: -2px 0 #ff2a6d, 2px 0 #00ff80, 0 0 10px #00ff80;
-    }
-
-    50% {
-        color: #05d9e8;
-        text-shadow: 2px 0 #ff2a6d, -2px 0 #05d9e8, 0 0 10px #05d9e8;
-    }
-
-    60% {
-        color: #0000ff;
-        text-shadow: -2px 0 #ff2a6d, 2px 0 #0000ff, 0 0 10px #0000ff;
-    }
-
-    70% {
-        color: #8000ff;
-        text-shadow: 2px 0 #05d9e8, -2px 0 #8000ff, 0 0 10px #8000ff;
-    }
-
-    80% {
-        color: #ff00ff;
-        text-shadow: -2px 0 #05d9e8, 2px 0 #ff00ff, 0 0 10px #ff00ff;
-    }
-
-    90% {
-        color: #ff007f;
-        text-shadow: 2px 0 #05d9e8, -2px 0 #ff007f, 0 0 10px #ff007f;
-    }
-
-    100% {
-        color: #ff2a6d;
-        text-shadow: -2px 0 #05d9e8, 2px 0 #ff2a6d, 0 0 10px #ff2a6d;
     }
 }
 

@@ -215,14 +215,14 @@
 
             // Configuration for water droplets
             const dropletConfig = {
-                minSize: 5,
+                minSize: 7,
                 maxSize: 25,
-                count: 15,              // Initial number of droplets
-                dripProbability: 0.3,   // Probability of a droplet dripping
-                minDripDistance: 50,    // Minimum distance for droplets to drip
-                maxDripDistance: 200,   // Maximum distance for droplets to drip
-                minDripDuration: 2,     // Min animation duration in seconds
-                maxDripDuration: 6      // Max animation duration in seconds
+                count: 12,              // Initial number of droplets
+                dripProbability: 0.2,   // Probability of a droplet dripping
+                minDripDistance: 70,    // Minimum distance for droplets to drip
+                maxDripDistance: 250,   // Maximum distance for droplets to drip
+                minDripDuration: 3,     // Min animation duration in seconds
+                maxDripDuration: 7      // Max animation duration in seconds
             };
 
             // Create initial set of droplets
@@ -234,289 +234,307 @@
                 if (currentDroplets < dropletConfig.count * 1.5) {
                     createDroplet(dropletConfig);
                 }
-            }, 2000);
+            }, 5000);
 
             // Start the dripping process
             setInterval(() => {
                 initiateRandomDrip(dropletConfig);
-            }, 3000);
-        });
+            }, 6000);
 
-        // Create the initial set of water droplets
-        function createInitialDroplets(config) {
-            for (let i = 0; i < config.count; i++) {
-                createDroplet(config);
-            }
-        }
+            // Make droplets drip on mouse move (throttled)
+            let lastDripTime = 0;
+            document.addEventListener('mousemove', function () {
+                const now = Date.now();
+                // Throttle to avoid excessive drips
+                if (now - lastDripTime < 3000) return;
+                lastDripTime = now;
 
-        // Function to randomly select a droplet to drip
-        function initiateRandomDrip(config) {
-            // Get all non-dripping droplets
-            const droplets = Array.from(document.querySelectorAll('.water-droplet:not(.dripping)'));
-    
-            // If there are no eligible droplets, exit
-            if (droplets.length === 0) return;
-    
-            // Only drip some droplets based on probability
-            if (Math.random() > config.dripProbability) return;
-    
-            // Select a random droplet
-            const randomIndex = Math.floor(Math.random() * droplets.length);
-            const selectedDroplet = droplets[randomIndex];
-    
-            // Make it drip
-            makeDropletDrip(selectedDroplet, config);
-        }
+                const droplets = Array.from(document.querySelectorAll('.water-droplet:not(.dripping)'));
+                if (droplets.length === 0) return;
 
+                // Pick a random droplet to drip
+                const randomIndex = Math.floor(Math.random() * droplets.length);
+                const selectedDroplet = droplets[randomIndex];
 
-        // Update this function to create more realistic droplet shapes
-        function createDroplet(config) {
-            const droplet = document.createElement('div');
-            droplet.className = 'water-droplet';
+                // Use the same config as initial droplets
+                makeDropletDrip(selectedDroplet, dropletConfig);
+            });
 
-            // Random properties
-            const size = Math.floor(Math.random() * (config.maxSize - config.minSize) + config.minSize);
-            // Make some droplets slightly oval for realism
-            const heightRatio = 1 + (Math.random() * 0.2);
-            const leftPosition = Math.random() * 90; // percentage of screen width
-            const topPosition = Math.random() * 90;  // percentage of screen height (avoid bottom more)
-
-            // Set droplet styles
-            droplet.style.width = `${size}px`;
-            droplet.style.height = `${size * heightRatio}px`;
-            droplet.style.left = `${leftPosition}%`;
-            droplet.style.top = `${topPosition}%`;
-    
-            // Add slight random rotation for more natural appearance
-            if (Math.random() > 0.5) {
-                const rotation = Math.random() * 20 - 10; // -10 to 10 degrees
-                droplet.style.transform = `rotate(${rotation}deg)`;
-            }
-
-            // Add to document (still invisible)
-            document.body.appendChild(droplet);
-
-            // Force a reflow before starting animations
-            void droplet.offsetWidth;
-
-            // Trigger smooth appearance
-            setTimeout(() => {
-                droplet.style.opacity = '1';
-                droplet.style.transform = 'scale(1)';
-
-                // Add slight random wobble animation to some droplets
-                if (Math.random() > 0.6) {
-                    const wobbleDuration = 2 + Math.random() * 3;
-                    droplet.style.animation = `dropletWobble ${wobbleDuration}s infinite alternate ease-in-out`;
+            // Create the initial set of water droplets
+            function createInitialDroplets(config) {
+                for (let i = 0; i < config.count; i++) {
+                    createDroplet(config);
                 }
-            }, 10);
+            }
 
-            return droplet;
-        }
+            // Function to randomly select a droplet to drip
+            function initiateRandomDrip(config) {
+                // Get all non-dripping droplets
+                const droplets = Array.from(document.querySelectorAll('.water-droplet:not(.dripping)'));
 
-        // Improved makeDropletDrip function for more realistic water streaks
-        function makeDropletDrip(droplet, config) {
-            // Get current position
-            const rect = droplet.getBoundingClientRect();
-            const startX = rect.left;
-            const startY = rect.top;
-            const dropletWidth = rect.width;
-            const dropletHeight = rect.height;
+                // If there are no eligible droplets, exit
+                if (droplets.length === 0) return;
 
-            // Calculate drip distance - avoid very short drips
-            const dripDistance = Math.floor(Math.random() *
-                (config.maxDripDistance - config.minDripDistance) +
-                config.minDripDistance);
+                // Only drip some droplets based on probability
+                if (Math.random() > config.dripProbability) return;
 
-            // Calculate duration based on distance for more natural physics
-            const baseDuration = Math.sqrt(dripDistance) / 4;
-            const dripDuration = baseDuration +
-                (Math.random() * (config.maxDripDuration - config.minDripDuration) / 3);
+                // Select a random droplet
+                const randomIndex = Math.floor(Math.random() * droplets.length);
+                const selectedDroplet = droplets[randomIndex];
 
-            // Create water trail element that follows behind the droplet
-            const trail = document.createElement('div');
-            trail.className = 'water-trail';
+                // Make it drip
+                makeDropletDrip(selectedDroplet, config);
+            }
 
-            // Randomize skew and rotation for realism
-            const skew = (Math.random() - 0.5) * 6; // -3deg to +3deg
-            const rotate = (Math.random() - 0.5) * 4; // -2deg to +2deg
-            trail.style.transform = `skewX(${skew}deg) rotate(${rotate}deg)`;
+            // Update this function to create more realistic droplet shapes
+            function createDroplet(config) {
+                const droplet = document.createElement('div');
+                droplet.className = 'water-droplet';
 
-            // Position it more precisely relative to the droplet
-            trail.style.left = `${startX + (dropletWidth / 2) - (dropletWidth * 0.25)}px`;
-            trail.style.top = `${startY + dropletHeight - 2}px`;
-            trail.style.width = `${dropletWidth * 0.5}px`;
-            document.body.appendChild(trail);
+                // Random properties
+                const size = Math.floor(Math.random() * (config.maxSize - config.minSize) + config.minSize);
+                // Make some droplets slightly oval for realism
+                const heightRatio = 1 + (Math.random() * 0.25);
+                const leftPosition = Math.random() * 90; // percentage of screen width
+                const topPosition = Math.random() * 90;  // percentage of screen height (avoid bottom more)
 
-            // Force reflow before starting animations
-            void trail.offsetWidth;
+                // Set droplet styles
+                droplet.style.width = `${size}px`;
+                droplet.style.height = `${size * heightRatio}px`;
+                droplet.style.left = `${leftPosition}%`;
+                droplet.style.top = `${topPosition}%`;
 
-            // Remove any custom transform (rotation/wobble) before dripping
-            droplet.style.transform = '';
-            droplet.style.animation = '';
+                // Add slight random rotation for more natural appearance
+                if (Math.random() > 0.5) {
+                    const rotation = Math.random() * 20 - 10; // -10 to 10 degrees
+                    droplet.style.transform = `rotate(${rotation}deg)`;
+                }
 
-            // Mark droplet as dripping
-            droplet.classList.add('dripping');
+                // Add to document (still invisible)
+                document.body.appendChild(droplet);
 
-            // Set CSS variables for the animation with proper timing
-            droplet.style.setProperty('--drip-distance', `${dripDistance}px`);
-            droplet.style.setProperty('--drip-duration', `${dripDuration}s`);
+                // Force a reflow before starting animations
+                void droplet.offsetWidth;
 
-            // Start with a short trail
-            trail.style.height = '0px';
+                // Trigger smooth appearance
+                setTimeout(() => {
+                    droplet.style.opacity = '1';
+                    droplet.style.transform = 'scale(1)';
 
-            // Fade in the trail
-            setTimeout(() => {
-                trail.style.opacity = '1';
-            }, 10);
+                    // Add slight random wobble animation to some droplets
+                    if (Math.random() > 0.6) {
+                        const wobbleDuration = 2 + Math.random() * 3;
+                        droplet.style.animation = `dropletWobble ${wobbleDuration}s infinite alternate ease-in-out`;
+                    }
+                }, 10);
 
-            // Animate trail height, width (taper), and optional wobble
-            let startTime = null;
-            const trailMaxHeight = dripDistance;
-            const startWidth = dropletWidth * 0.5;
-            const endWidth = startWidth * 0.45 + Math.random() * (startWidth * 0.15); // taper to 45-60% of start
+                return droplet;
+            }
 
-            function updateTrail(timestamp) {
-                if (!startTime) startTime = timestamp;
+            // Improved makeDropletDrip function for more realistic water streaks
+            function makeDropletDrip(droplet, config) {
+                // Get current position
+                const rect = droplet.getBoundingClientRect();
+                const startX = rect.left;
+                const startY = rect.top;
+                const dropletWidth = rect.width;
+                const dropletHeight = rect.height;
 
-                // Calculate progress as a value between 0 and 1
-                const elapsed = timestamp - startTime;
-                const progress = Math.min(elapsed / (dripDuration * 1000), 1);
+                // Calculate drip distance - avoid very short drips
+                const dripDistance = Math.floor(Math.random() *
+                    (config.maxDripDistance - config.minDripDistance) +
+                    config.minDripDistance);
 
-                if (progress < 1) {
-                    // Trail grows in height
-                    const newHeight = progress * trailMaxHeight;
-                    trail.style.height = `${newHeight}px`;
+                // Calculate duration based on distance for more natural physics
+                const baseDuration = Math.sqrt(dripDistance) / 4;
+                const dripDuration = baseDuration +
+                    (Math.random() * (config.maxDripDuration - config.minDripDuration) / 3);
 
-                    // Trail tapers in width
-                    const currentWidth = startWidth - (startWidth - endWidth) * progress;
-                    trail.style.width = `${currentWidth}px`;
+                // Create water trail element that follows behind the droplet
+                const trail = document.createElement('div');
+                trail.className = 'water-trail';
 
-                    // Optional: subtle horizontal "wobble" as it grows
-                    const wobble = Math.sin(progress * Math.PI * 2) * 2; // -2px to +2px
-                    trail.style.left = `${startX + (dropletWidth / 2) - (currentWidth / 2) + wobble}px`;
+                // Randomize skew and rotation for realism
+                const skew = (Math.random() - 0.5) * 6; // -3deg to +3deg
+                const rotate = (Math.random() - 0.5) * 4; // -2deg to +2deg
+                trail.style.transform = `skewX(${skew}deg) rotate(${rotate}deg)`;
 
-                    requestAnimationFrame(updateTrail);
-                } else {
-                    // When complete, fade out trail
-                    trail.style.transition = 'opacity 0.8s ease-out';
-                    trail.style.opacity = '0';
+                // Position it more precisely relative to the droplet
+                trail.style.left = `${startX + (dropletWidth / 2) - (dropletWidth * 0.25)}px`;
+                trail.style.top = `${startY + dropletHeight - 2}px`;
+                trail.style.width = `${dropletWidth * 0.5}px`;
+                document.body.appendChild(trail);
+
+                // Force reflow before starting animations
+                void trail.offsetWidth;
+
+                // Remove any custom transform (rotation/wobble) before dripping
+                droplet.style.transform = '';
+                droplet.style.animation = '';
+
+                // Mark droplet as dripping
+                droplet.classList.add('dripping');
+
+                // Set CSS variables for the animation with proper timing
+                droplet.style.setProperty('--drip-distance', `${dripDistance}px`);
+                droplet.style.setProperty('--drip-duration', `${dripDuration}s`);
+
+                // Start with a short trail
+                trail.style.height = '0px';
+
+                // Fade in the trail
+                setTimeout(() => {
+                    trail.style.opacity = '1';
+                }, 10);
+
+                // Animate trail height, width (taper), and optional wobble
+                let startTime = null;
+                const trailMaxHeight = dripDistance;
+                const startWidth = dropletWidth * 0.5;
+                const endWidth = startWidth * 0.45 + Math.random() * (startWidth * 0.15); // taper to 45-60% of start
+
+                function updateTrail(timestamp) {
+                    if (!startTime) startTime = timestamp;
+
+                    // Calculate progress as a value between 0 and 1
+                    const elapsed = timestamp - startTime;
+                    const progress = Math.min(elapsed / (dripDuration * 1000), 1);
+
+                    if (progress < 1) {
+                        // Trail grows in height
+                        const newHeight = progress * trailMaxHeight;
+                        trail.style.height = `${newHeight}px`;
+
+                        // Trail tapers in width
+                        const currentWidth = startWidth - (startWidth - endWidth) * progress;
+                        trail.style.width = `${currentWidth}px`;
+
+                        // Optional: subtle horizontal "wobble" as it grows
+                        const wobble = Math.sin(progress * Math.PI * 2) * 2; // -2px to +2px
+                        trail.style.left = `${startX + (dropletWidth / 2) - (currentWidth / 2) + wobble}px`;
+
+                        requestAnimationFrame(updateTrail);
+                    } else {
+                        // When complete, fade out trail
+                        trail.style.transition = 'opacity 0.8s ease-out';
+                        trail.style.opacity = '0';
+
+                        setTimeout(() => {
+                            if (trail.parentNode) {
+                                trail.parentNode.removeChild(trail);
+                            }
+                        }, 800);
+                    }
+                }
+
+                // Start the animation loop
+                requestAnimationFrame(updateTrail);
+
+                // Remove droplet after animation and create a new one with smooth fade-out
+                setTimeout(() => {
+                    droplet.style.transition = 'opacity 0.8s ease-out, transform 0.5s ease-in-out';
+                    droplet.style.opacity = '0';
 
                     setTimeout(() => {
-                        if (trail.parentNode) {
-                            trail.parentNode.removeChild(trail);
+                        if (droplet.parentNode) {
+                            droplet.parentNode.removeChild(droplet);
                         }
+                        createDroplet(config);
                     }, 800);
+                }, dripDuration * 1000);
+            }
+
+            // Also update the initial droplet creation with improved staggering
+            function createInitialDroplets(config) {
+                // Apply the improved CSS first
+                updateWaterTrailsCSS();
+
+                // Create droplets with a staggered delay for a more natural appearance
+                for (let i = 0; i < config.count; i++) {
+                    setTimeout(() => {
+                        createDroplet(config);
+
+                        // Start some droplets already dripping for immediate visual effect
+                        if (i > config.count / 2 && Math.random() > 0.7) {
+                            setTimeout(() => {
+                                const droplets = document.querySelectorAll('.water-droplet:not(.dripping)');
+                                if (droplets.length > 0) {
+                                    const randomIndex = Math.floor(Math.random() * droplets.length);
+                                    makeDropletDrip(droplets[randomIndex], config);
+                                }
+                            }, 500 + Math.random() * 1000);
+                        }
+                    }, i * 200); // 200ms delay between each initial droplet
                 }
             }
 
-            // Start the animation loop
-            requestAnimationFrame(updateTrail);
-
-            // Remove droplet after animation and create a new one with smooth fade-out
-            setTimeout(() => {
-                droplet.style.transition = 'opacity 0.8s ease-out, transform 0.5s ease-in-out';
-                droplet.style.opacity = '0';
-
-                setTimeout(() => {
-                    if (droplet.parentNode) {
-                        droplet.parentNode.removeChild(droplet);
-                    }
-                    createDroplet(config);
-                }, 800);
-            }, dripDuration * 1000);
-        }
-
-        // Also update the initial droplet creation with improved staggering
-        function createInitialDroplets(config) {
-            // Apply the improved CSS first
-            updateWaterTrailsCSS();
-    
-            // Create droplets with a staggered delay for a more natural appearance
-            for (let i = 0; i < config.count; i++) {
-                setTimeout(() => {
-                    createDroplet(config);
-            
-                    // Start some droplets already dripping for immediate visual effect
-                    if (i > config.count / 2 && Math.random() > 0.7) {
-                        setTimeout(() => {
-                            const droplets = document.querySelectorAll('.water-droplet:not(.dripping)');
-                            if (droplets.length > 0) {
-                                const randomIndex = Math.floor(Math.random() * droplets.length);
-                                makeDropletDrip(droplets[randomIndex], config);
-                            }
-                        }, 500 + Math.random() * 1000);
-                    }
-                }, i * 200); // 200ms delay between each initial droplet
-            }
-        }
-
-        // Update CSS for the water-trail to improve the appearance
-        function updateWaterTrailsCSS() {
-            // Create a style element
-            const styleEl = document.createElement('style');
-            styleEl.innerHTML = `
-                .water-trail {
-                    position: absolute;
-                    pointer-events: none;
-                    z-index: 999;
-                    border-radius: 100% 100% 0 0 / 100% 100% 0 0;
-                    opacity: 0;
-                    background: linear-gradient(
-                        to bottom,
-                        rgba(255,255,255,0.7) 0%,
-                        rgba(255,255,255,0.3) 20%,
-                        rgba(255,255,255,0.15) 60%,
-                        transparent 100%
-                    );
-                    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08) inset;
-                    mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
-                    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
-                    backdrop-filter: blur(1.5px) brightness(1.1) contrast(1.1);
-                    -webkit-backdrop-filter: blur(1.5px) brightness(1.1) contrast(1.1);
-                    transition: opacity 0.3s, height 0.3s, width 0.3s;
-                    will-change: opacity, height, width;
-                }
-
-                body.deepsea-theme .water-trail {
-                    background: linear-gradient(to bottom, 
-                        rgba(0, 136, 204, 0.05) 0%,
-                        rgba(0, 136, 204, 0.25) 10%, 
-                        rgba(0, 136, 204, 0.1) 60%, 
-                        transparent 100%);
-                }
-        
-                /* Update droplet drip animation for smoother movement */
-                @keyframes dropletDrip {
-                    0% {
-                        transform: translateY(0) scale(1);
-                        animation-timing-function: ease-in;
-                    }
-            
-                    40% {
-                        transform: translateY(calc(var(--drip-distance) * 0.6)) scale(1.05, 0.95);
-                        animation-timing-function: ease-in-out;
-                    }
-            
-                    60% {
-                        transform: translateY(calc(var(--drip-distance) * 0.8)) scale(0.98, 1.02);
-                        animation-timing-function: ease-in-out;
-                    }
-            
-                    85% {
-                        transform: translateY(var(--drip-distance)) scale(1, 1);
-                        animation-timing-function: ease-out;
-                        opacity: 1;
-                    }
-            
-                    100% {
-                        transform: translateY(var(--drip-distance)) scale(0.9);
+            // Update CSS for the water-trail to improve the appearance
+            function updateWaterTrailsCSS() {
+                // Create a style element
+                const styleEl = document.createElement('style');
+                styleEl.innerHTML = `
+                    .water-trail {
+                        position: absolute;
+                        pointer-events: none;
+                        z-index: 999;
+                        border-radius: 100% 100% 0 0 / 100% 100% 0 0;
                         opacity: 0;
+                        background: linear-gradient(
+                            to bottom,
+                            rgba(255,255,255,0.7) 0%,
+                            rgba(255,255,255,0.3) 20%,
+                            rgba(255,255,255,0.15) 60%,
+                            transparent 100%
+                        );
+                        box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08) inset;
+                        mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
+                        -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%);
+                        backdrop-filter: blur(1.5px) brightness(1.1) contrast(1.1);
+                        -webkit-backdrop-filter: blur(1.5px) brightness(1.1) contrast(1.1);
+                        transition: opacity 0.3s, height 0.3s, width 0.3s;
+                        will-change: opacity, height, width;
                     }
-                }
-            `;
-            document.head.appendChild(styleEl);
-        }
+
+                    body.deepsea-theme .water-trail {
+                        background: linear-gradient(to bottom, 
+                            rgba(0, 136, 204, 0.05) 0%,
+                            rgba(0, 136, 204, 0.25) 10%, 
+                            rgba(0, 136, 204, 0.1) 60%, 
+                            transparent 100%);
+                    }
+        
+                    /* Update droplet drip animation for smoother movement */
+                    @keyframes dropletDrip {
+                        0% {
+                            transform: translateY(0) scale(1);
+                            animation-timing-function: ease-in;
+                        }
+            
+                        40% {
+                            transform: translateY(calc(var(--drip-distance) * 0.6)) scale(1.05, 0.95);
+                            animation-timing-function: ease-in-out;
+                        }
+            
+                        60% {
+                            transform: translateY(calc(var(--drip-distance) * 0.8)) scale(0.98, 1.02);
+                            animation-timing-function: ease-in-out;
+                        }
+            
+                        85% {
+                            transform: translateY(var(--drip-distance)) scale(1, 1);
+                            animation-timing-function: ease-out;
+                            opacity: 1;
+                        }
+            
+                        100% {
+                            transform: translateY(var(--drip-distance)) scale(0.9);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(styleEl);
+            }
+        });
     </script>
     <!-- Theme toggle button (new) -->
     <!--<button id="themeToggle" class="theme-toggle-btn">

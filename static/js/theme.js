@@ -306,7 +306,6 @@ function applyDeepSeaTheme() {
             #block_number,
             #difficulty,
             #network_hashrate,
-            #pool_fees_percentage,
             #workers_hashing,
             #last_share,
             #blocks_found,

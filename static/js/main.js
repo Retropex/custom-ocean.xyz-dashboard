@@ -1214,9 +1214,9 @@ function updateWorkersCount() {
 
         // Update miner status with online/offline indicator based on worker count
         if (latestMetrics.workers_hashing > 0) {
-            updateElementHTML("miner_status", "<span class='status-green'>ONLINE</span> <span class='online-dot'></span>");
+            updateElementHTML("miner_status", "<span class='status-green'>ONLINE</span> <span class='retro-led'></span>");
         } else {
-            updateElementHTML("miner_status", "<span class='status-red'>OFFLINE</span> <span class='offline-dot'></span>");
+            updateElementHTML("miner_status", "<span class='status-red'>OFFLINE</span> <span class='retro-led-offline'></span>");
         }
     }
 }

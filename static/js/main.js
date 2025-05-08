@@ -2155,7 +2155,7 @@ function updateUI() {
                 }
             } else {
                 // Create the divider if it doesn't exist
-                const poolLuckDiv = createDivider("pool_luck", poolLuckValue, "Earnings Efficiency");
+                const poolLuckDiv = createDivider("pool_luck", poolLuckValue, "Live Earnings Efficiency");
 
                 // Apply appropriate color class
                 const valueSpan = poolLuckDiv.querySelector('#pool_luck');

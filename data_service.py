@@ -712,10 +712,10 @@ class MiningDashboardService:
             try:
                 _, _, btc_price, _ = self.get_bitcoin_stats()
                 if not btc_price:
-                    btc_price = 75000  # Default value if fetch fails
+                    btc_price = 85000  # Default value if fetch fails
             except Exception as e:
                 logging.error(f"Error getting BTC price: {e}")
-                btc_price = 75000  # Default value
+                btc_price = 85000  # Default value
     
             # Calculate USD value
             total_paid_usd = round(total_paid * btc_price, 2)

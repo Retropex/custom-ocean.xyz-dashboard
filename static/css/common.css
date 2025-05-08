@@ -477,6 +477,7 @@ h1 {
     position: relative;
     color: var(--primary-color);
     overflow: hidden;
+    z-index: 1;
 }
 
 /* Bitcoin theme header styling */

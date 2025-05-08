@@ -967,7 +967,7 @@ function createWorkerCard(worker, maxHashrate) {
     </div>` : '';
 
     // Display power consumption info with different styling for offline workers
-    const powerConsumptionClass = worker.status === 'online' ? 'white-glow' : 'dim-glow';
+    const powerConsumptionClass = worker.status === 'online' ? 'yellow-glow' : 'dim-glow';
     const powerConsumption = (powerCostData.powerUsage || worker.power_consumption || 'N/A') + ' W';
 
     card.append(`

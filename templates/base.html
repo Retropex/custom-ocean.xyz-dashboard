@@ -120,42 +120,66 @@
     
         // Function to create animated bubbles
         function createBubbles(container) {
-            // Configuration for bubbles
+            // Check if we're on a mobile device
+            const isMobile = window.innerWidth < 768;
+    
+            // Configuration for bubbles - reduce density for mobile
             const config = {
-                minSize: 5,
-                maxSize: 17,
+                minSize: isMobile ? 4 : 5,
+                maxSize: isMobile ? 15 : 17,
                 minDuration: 8,
                 maxDuration: 20,
-                density: 12, // Higher number = more bubbles
+                density: isMobile ? 6 : 12, // Reduced bubbles for mobile
                 minHorizontalDrift: -50,
                 maxHorizontalDrift: 50
             };
-        
+
             // Create initial batch of bubbles
             for (let i = 0; i < config.density; i++) {
                 createBubble(container, config);
             }
-        
+
             // Add new bubbles occasionally
             setInterval(() => {
-                if (container.childElementCount < config.density * 1.5) {
+                // Check current device type again in case of resize
+                const currentIsMobile = window.innerWidth < 768;
+        
+                // Update max bubbles based on current screen size
+                const maxBubbles = currentIsMobile ? config.density * 1.2 : config.density * 1.5;
+        
+                if (container.childElementCount < maxBubbles) {
                     createBubble(container, config);
                 }
-            }, 2000);
+            }, isMobile ? 3000 : 2000); // Less frequent bubble generation on mobile
+
+            // Optional enhancement: Handle window resizing
+            window.addEventListener('resize', function() {
+                // If the device switches between mobile/desktop, 
+                // you could remove excess bubbles on resize to mobile
+                const nowMobile = window.innerWidth < 768;
+                if (nowMobile && container.childElementCount > config.density * 1.2) {
+                    // Remove excess bubbles when switching to mobile
+                    const bubblesToRemove = container.childElementCount - Math.floor(config.density * 1.2);
+                    const bubbles = container.querySelectorAll('.bubble');
+                    for (let i = 0; i < bubblesToRemove && i < bubbles.length; i++) {
+                        container.removeChild(bubbles[i]);
+                    }
+                }
+            });
         }
-    
+
         // Create a single bubble
         function createBubble(container, config) {
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
-        
+
             // Random properties
             const size = Math.floor(Math.random() * (config.maxSize - config.minSize) + config.minSize);
             const leftPos = Math.floor(Math.random() * 100);
             const duration = Math.floor(Math.random() * (config.maxDuration - config.minDuration) + config.minDuration);
             const drift = Math.floor(Math.random() * (config.maxHorizontalDrift - config.minHorizontalDrift) + config.minHorizontalDrift);
             const delay = Math.random() * 5;
-        
+
             // Set bubble styles
             bubble.style.width = `${size}px`;
             bubble.style.height = `${size}px`;
@@ -163,10 +187,10 @@
             bubble.style.animationDuration = `${duration}s`;
             bubble.style.animationDelay = `${delay}s`;
             bubble.style.setProperty('--bubble-drift', `${drift}px`);
-        
+
             // Add to container
             container.appendChild(bubble);
-        
+
             // Remove bubble once animation completes
             setTimeout(() => {
                 if (bubble && bubble.parentNode === container) {

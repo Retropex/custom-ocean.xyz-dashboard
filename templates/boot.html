@@ -186,7 +186,7 @@
 </head>
 <body>
     <script>
-        // Add underwater effects for DeepSea theme
+        // Configuration for water droplets - add mobile detection
         document.addEventListener('DOMContentLoaded', function () {
             // Check if DeepSea theme is active
             if (localStorage.getItem('useDeepSeaTheme') === 'true') {
@@ -213,33 +213,62 @@
                 document.body.classList.add('deepsea-theme');
             }
 
-            // Configuration for water droplets
+            // Check if we're on a mobile device
+            const isMobile = window.innerWidth < 768;
+
+            // Configuration for water droplets - reduce density for mobile
             const dropletConfig = {
-                minSize: 7,
-                maxSize: 25,
-                count: 12,              // Initial number of droplets
-                dripProbability: 0.2,   // Probability of a droplet dripping
-                minDripDistance: 70,    // Minimum distance for droplets to drip
-                maxDripDistance: 250,   // Maximum distance for droplets to drip
-                minDripDuration: 3,     // Min animation duration in seconds
-                maxDripDuration: 7      // Max animation duration in seconds
+                minSize: isMobile ? 6 : 7,
+                maxSize: isMobile ? 20 : 25,
+                count: isMobile ? 6 : 12,          // Fewer droplets for mobile
+                dripProbability: 0.2,              // Probability of a droplet dripping
+                minDripDistance: isMobile ? 50 : 70,    // Minimum distance for droplets to drip
+                maxDripDistance: isMobile ? 180 : 250,  // Maximum distance for droplets to drip
+                minDripDuration: isMobile ? 3.5 : 3,     // Min animation duration in seconds
+                maxDripDuration: isMobile ? 8 : 7      // Max animation duration in seconds
             };
 
             // Create initial set of droplets
             createInitialDroplets(dropletConfig);
 
-            // Periodically add new droplets
+            // Periodically add new droplets - less frequently on mobile
             setInterval(() => {
+                // Check current device type again in case of resize
+                const currentIsMobile = window.innerWidth < 768;
+        
+                // Update max droplets based on current screen size
+                const maxDroplets = currentIsMobile ? dropletConfig.count * 1.2 : dropletConfig.count * 1.5;
+        
                 const currentDroplets = document.querySelectorAll('.water-droplet').length;
-                if (currentDroplets < dropletConfig.count * 1.5) {
+                if (currentDroplets < maxDroplets) {
                     createDroplet(dropletConfig);
                 }
-            }, 5000);
+            }, isMobile ? 8000 : 5000);  // Less frequent droplet generation on mobile
 
-            // Start the dripping process
+            // Start the dripping process - less frequent on mobile
             setInterval(() => {
                 initiateRandomDrip(dropletConfig);
-            }, 6000);
+            }, isMobile ? 8000 : 6000);
+
+            // Handle window resizing to adjust droplets when switching from desktop to mobile
+            window.addEventListener('resize', function() {
+                const nowMobile = window.innerWidth < 768;
+                const droplets = document.querySelectorAll('.water-droplet');
+        
+                if (nowMobile && droplets.length > dropletConfig.count * 1.2) {
+                    // Remove excess droplets when switching to mobile
+                    const dropletsToRemove = droplets.length - Math.floor(dropletConfig.count * 1.2);
+            
+                    // Remove non-dripping droplets first
+                    const staticDroplets = Array.from(document.querySelectorAll('.water-droplet:not(.dripping)'));
+            
+                    for (let i = 0; i < dropletsToRemove && i < staticDroplets.length; i++) {
+                        if (staticDroplets[i].parentNode) {
+                            staticDroplets[i].parentNode.removeChild(staticDroplets[i]);
+                        }
+                    }
+                }
+            });
 
             // Make droplets drip on mouse move (throttled)
             let lastDripTime = 0;
@@ -259,32 +288,6 @@
                 // Use the same config as initial droplets
                 makeDropletDrip(selectedDroplet, dropletConfig);
             });
-
-            // Create the initial set of water droplets
-            function createInitialDroplets(config) {
-                for (let i = 0; i < config.count; i++) {
-                    createDroplet(config);
-                }
-            }
-
-            // Function to randomly select a droplet to drip
-            function initiateRandomDrip(config) {
-                // Get all non-dripping droplets
-                const droplets = Array.from(document.querySelectorAll('.water-droplet:not(.dripping)'));
-
-                // If there are no eligible droplets, exit
-                if (droplets.length === 0) return;
-
-                // Only drip some droplets based on probability
-                if (Math.random() > config.dripProbability) return;
-
-                // Select a random droplet
-                const randomIndex = Math.floor(Math.random() * droplets.length);
-                const selectedDroplet = droplets[randomIndex];
-
-                // Make it drip
-                makeDropletDrip(selectedDroplet, config);
-            }
 
             // Update this function to create more realistic droplet shapes
             function createDroplet(config) {

@@ -1433,6 +1433,17 @@ def earnings():
         logging.error(traceback.format_exc())
         return render_template("error.html", message="Failed to load earnings data. Please try again later."), 500
 
+@app.route("/api/earnings")
+def api_earnings():
+    """API endpoint for earnings data."""
+    try:
+        # Get the earnings data with a reasonable timeout
+        earnings_data = dashboard_service.get_earnings_data()
+        return jsonify(earnings_data)
+    except Exception as e:
+        logging.error(f"Error in earnings API endpoint: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # Add the middleware
 app.wsgi_app = RobustMiddleware(app.wsgi_app)
 

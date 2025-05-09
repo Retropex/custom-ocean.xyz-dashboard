@@ -509,7 +509,7 @@ class MiningDashboardService:
             logging.error(f"Error fetching exchange rates: {e}")
             return {}
     
-    def get_payment_history(self, max_pages=5, timeout=30, max_retries=3):
+    def get_payment_history(self, max_pages=5, timeout=30, max_retries=3, btc_price=None):
         """
         Get payment history data from Ocean.xyz with retry logic.
 
@@ -650,6 +650,9 @@ class MiningDashboardService:
                             try:
                                 payment["amount_btc"] = float(amount_match.group(1))
                                 payment["amount_sats"] = int(round(payment["amount_btc"] * self.sats_per_btc))
+                                if btc_price is not None:
+                                    payment["rate"] = btc_price
+                                    payment["fiat_value"] = payment["amount_btc"] * btc_price
                             except ValueError as e:
                                 logging.warning(f"Could not parse payment amount '{amount_text}': {e}")
                 
@@ -716,6 +719,9 @@ class MiningDashboardService:
             except Exception as e:
                 logging.error(f"Error getting BTC price: {e}")
                 btc_price = 85000  # Default value
+
+            # Get the payment history with longer timeout and retries, and pass btc_price
+            payments = self.get_payment_history(max_pages=30, timeout=20, max_retries=3, btc_price=btc_price)
     
             # Calculate USD value
             total_paid_usd = round(total_paid * btc_price, 2)

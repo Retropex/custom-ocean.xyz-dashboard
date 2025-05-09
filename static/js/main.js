@@ -334,6 +334,15 @@ let pingInterval = null;
 let lastPingTime = Date.now();
 let connectionLostTimeout = null;
 
+// Add this to the top of main.js with other global variables
+let lastPayoutTracking = {
+    lastUnpaidEarnings: null,
+    estimatedTime: null,
+    estimationTimestamp: null,
+    lastBlockTime: null,
+    payoutHistory: []
+};
+
 // Server time variables for uptime calculation
 let serverTimeOffset = 0;
 let serverStartTime = null;
@@ -715,6 +724,726 @@ function formatLuckPercentage(luckPercentage) {
     // Don't add classes here, just return the formatted value
     // The styling will be applied separately based on the value
     return formattedLuck;
+}
+
+function trackPayoutPerformance(data) {
+    // Check if we have the necessary data
+    if (!data || data.unpaid_earnings === undefined || !data.est_time_to_payout) {
+        return;
+    }
+
+    const currentUnpaidEarnings = data.unpaid_earnings;
+    const currentEstimatedTime = data.est_time_to_payout;
+    const currentTime = new Date();
+
+    // First-time initialization
+    if (lastPayoutTracking.lastUnpaidEarnings === null) {
+        lastPayoutTracking.lastUnpaidEarnings = currentUnpaidEarnings;
+        lastPayoutTracking.estimatedTime = currentEstimatedTime;
+        lastPayoutTracking.estimationTimestamp = currentTime;
+        lastPayoutTracking.lastBlockTime = data.last_block_time;
+        return;
+    }
+
+    // Check if unpaid earnings decreased significantly (potential payout)
+    if (currentUnpaidEarnings < lastPayoutTracking.lastUnpaidEarnings * 0.5) {
+        // A payout likely occurred
+        console.log("Payout detected! Unpaid earnings decreased from",
+            lastPayoutTracking.lastUnpaidEarnings, "to", currentUnpaidEarnings);
+
+        let actualPayoutTime = null;
+
+        // If last_block_time changed since our last check, use that as the payout timestamp
+        if (data.last_block_time && data.last_block_time !== lastPayoutTracking.lastBlockTime) {
+            // Parse last_block_time (assuming it's in a standard datetime format)
+            actualPayoutTime = new Date(data.last_block_time);
+        } else {
+            // Fallback to current time if we can't determine the exact payout time
+            actualPayoutTime = currentTime;
+        }
+
+        // Only calculate if we have valid timestamps
+        if (lastPayoutTracking.estimationTimestamp && actualPayoutTime) {
+            // Calculate expected payout time with improved parsing
+            const estimatedMinutes = parseEstimatedTimeToMinutes(lastPayoutTracking.estimatedTime);
+            if (estimatedMinutes > 0) {
+                // Store original estimated time string
+                const originalEstimateText = lastPayoutTracking.estimatedTime;
+
+                // Calculate expected payout time based on estimation
+                const expectedPayoutTime = new Date(lastPayoutTracking.estimationTimestamp.getTime() + (estimatedMinutes * 60 * 1000));
+
+                // Calculate the difference between expected and actual in minutes
+                const differenceMinutes = (actualPayoutTime.getTime() - expectedPayoutTime.getTime()) / (60 * 1000);
+
+                // Format the difference for display
+                const formattedDifference = formatTimeDifference(differenceMinutes);
+
+                // Calculate accuracy as a percentage (improved algorithm)
+                // The closer the actual time is to the estimated time, the higher the accuracy
+                let accuracyPercent = 100; // Start with perfect accuracy
+
+                // Calculate actual time deviation
+                const absMinutesDiff = Math.abs(differenceMinutes);
+
+                // Calculate accuracy based on deviation relative to estimated time
+                if (absMinutesDiff <= estimatedMinutes * 0.1) {
+                    // Within 10% of estimate: Very accurate (90-100%)
+                    accuracyPercent = Math.max(90, 100 - (absMinutesDiff / estimatedMinutes) * 100);
+                } else if (absMinutesDiff <= estimatedMinutes * 0.3) {
+                    // Within 30% of estimate: Good accuracy (70-90%)
+                    accuracyPercent = Math.max(70, 90 - (absMinutesDiff / estimatedMinutes) * 100);
+                } else if (absMinutesDiff <= estimatedMinutes * 0.6) {
+                    // Within 60% of estimate: Fair accuracy (50-70%)
+                    accuracyPercent = Math.max(50, 70 - (absMinutesDiff / estimatedMinutes) * 50);
+                } else {
+                    // Greater deviation: Poor accuracy (below 50%)
+                    accuracyPercent = Math.max(0, 50 - (absMinutesDiff / estimatedMinutes) * 25);
+                }
+
+                // Round to nearest whole percent
+                accuracyPercent = Math.round(accuracyPercent);
+
+                // Store the payout comparison with enhanced data
+                const payoutComparison = {
+                    timestamp: actualPayoutTime,
+                    estimatedTime: originalEstimateText,
+                    expectedTime: formatMinutesToTime(estimatedMinutes), // Add this for clearer display
+                    actualTime: formatMinutesToTime(estimatedMinutes + differenceMinutes),
+                    difference: formattedDifference,
+                    accuracy: accuracyPercent + '%',
+                    amountBTC: (lastPayoutTracking.lastUnpaidEarnings - currentUnpaidEarnings).toFixed(8),
+                    // Store timing details for debugging/verification
+                    _debug: {
+                        estimationTimestamp: lastPayoutTracking.estimationTimestamp,
+                        actualTimestamp: actualPayoutTime,
+                        estimatedMinutes: estimatedMinutes,
+                        differenceMinutes: differenceMinutes
+                    }
+                };
+
+                // Add to history (limited to last 10 entries)
+                lastPayoutTracking.payoutHistory.unshift(payoutComparison);
+                if (lastPayoutTracking.payoutHistory.length > 10) {
+                    lastPayoutTracking.payoutHistory.pop();
+                }
+
+                // Save to local storage for persistence
+                try {
+                    localStorage.setItem('payoutHistory', JSON.stringify(lastPayoutTracking.payoutHistory));
+                    console.log("Saved payout history to localStorage:", lastPayoutTracking.payoutHistory);
+                } catch (e) {
+                    console.error("Error saving payout history to localStorage:", e);
+                }
+
+                // Display the comparison
+                displayPayoutComparison(payoutComparison);
+
+                console.log("Payout detected! Estimated vs actual comparison:", payoutComparison);
+            } else {
+                console.warn("Could not parse estimated time to minutes:", lastPayoutTracking.estimatedTime);
+            }
+        }
+
+        // Reset tracking with current values
+        lastPayoutTracking.lastUnpaidEarnings = currentUnpaidEarnings;
+        lastPayoutTracking.estimatedTime = currentEstimatedTime;
+        lastPayoutTracking.estimationTimestamp = currentTime;
+        lastPayoutTracking.lastBlockTime = data.last_block_time;
+    }
+    // If the estimated time changes significantly, update our tracking
+    else if (currentEstimatedTime !== lastPayoutTracking.estimatedTime) {
+        lastPayoutTracking.estimatedTime = currentEstimatedTime;
+        lastPayoutTracking.estimationTimestamp = currentTime;
+        lastPayoutTracking.lastBlockTime = data.last_block_time;
+    }
+}
+
+// Helper function to parse estimated time string to minutes
+function parseEstimatedTimeToMinutes(timeString) {
+    if (!timeString) return 0;
+
+    // Standardize string format
+    timeString = timeString.toLowerCase().trim();
+
+    // Check for "next block" which means imminent payout (use 5 minutes as approximation)
+    if (timeString.includes('next block')) {
+        return 5;
+    }
+
+    // Initialize total minutes
+    let minutes = 0;
+
+    // Extract days
+    const daysMatch = timeString.match(/(\d+)\s*day/);
+    if (daysMatch) {
+        minutes += parseInt(daysMatch[1]) * 24 * 60;
+    }
+
+    // Extract hours
+    const hoursMatch = timeString.match(/(\d+)\s*hour/);
+    if (hoursMatch) {
+        minutes += parseInt(hoursMatch[1]) * 60;
+    }
+
+    // Extract minutes
+    const minutesMatch = timeString.match(/(\d+)\s*minute/);
+    if (minutesMatch) {
+        minutes += parseInt(minutesMatch[1]);
+    }
+
+    // Handle the case of just "X hours" without days
+    if (!daysMatch && hoursMatch) {
+        console.log(`Parsed "${timeString}" as ${minutes} minutes (${parseInt(hoursMatch[1])} hours)`);
+    }
+
+    return minutes;
+}
+
+// Format time difference in minutes to a readable string
+function formatTimeDifference(differenceMinutes) {
+    const absMinutes = Math.abs(differenceMinutes);
+
+    if (differenceMinutes === 0) {
+        return "Exactly on time";
+    }
+
+    let result = "";
+    if (differenceMinutes < 0) {
+        result = "Earlier by ";
+    } else {
+        result = "Later by ";
+    }
+
+    if (absMinutes >= 24 * 60) {
+        const days = Math.floor(absMinutes / (24 * 60));
+        const hours = Math.floor((absMinutes % (24 * 60)) / 60);
+        result += `${days} day${days !== 1 ? 's' : ''}`;
+        if (hours > 0) {
+            result += `, ${hours} hour${hours !== 1 ? 's' : ''}`;
+        }
+    } else if (absMinutes >= 60) {
+        const hours = Math.floor(absMinutes / 60);
+        const mins = Math.floor(absMinutes % 60);
+        result += `${hours} hour${hours !== 1 ? 's' : ''}`;
+        if (mins > 0) {
+            result += `, ${mins} minute${mins !== 1 ? 's' : ''}`;
+        }
+    } else {
+        result += `${Math.round(absMinutes)} minute${Math.round(absMinutes) !== 1 ? 's' : ''}`;
+    }
+
+    return result;
+}
+
+// Convert minutes to formatted time string
+function formatMinutesToTime(minutes) {
+    if (minutes < 0) {
+        return "Already overdue";
+    }
+
+    if (minutes < 60) {
+        return `${Math.ceil(minutes)} minute${Math.ceil(minutes) !== 1 ? 's' : ''}`;
+    } else if (minutes < 24 * 60) {
+        const hours = Math.floor(minutes / 60);
+        const mins = Math.ceil(minutes % 60);
+        if (mins === 0) {
+            return `${hours} hour${hours !== 1 ? 's' : ''}`;
+        }
+        return `${hours} hour${hours !== 1 ? 's' : ''}, ${mins} minute${mins !== 1 ? 's' : ''}`;
+    } else {
+        const days = Math.floor(minutes / (24 * 60));
+        const hours = Math.ceil((minutes % (24 * 60)) / 60);
+        if (hours === 0) {
+            return `${days} day${days !== 1 ? 's' : ''}`;
+        }
+        return `${days} day${days !== 1 ? 's' : ''}, ${hours} hour${hours !== 1 ? 's' : ''}`;
+    }
+}
+
+// Update the displayPayoutComparison function to use better formatting
+function displayPayoutComparison(comparison) {
+    // Create a notification for the user
+    showToast(`Payout detected! Estimated: ${comparison.estimatedTime}, Actual: ${comparison.actualTime} (${comparison.difference}). Accuracy: ${comparison.accuracy}`);
+
+    // Update the UI with the latest payout comparison
+    const payoutInfoCard = $("#payoutMiscCard .card-body");
+
+    // Remove old comparison element if exists
+    $("#payout-comparison").remove();
+
+    // Create a new comparison element
+    const comparisonElement = $("<p id='payout-comparison'></p>");
+
+    // Format with colors based on accuracy
+    const accuracyNum = parseInt(comparison.accuracy);
+    // Get the current theme
+    const theme = getCurrentTheme();
+    let accuracyClass = "yellow"; // Default color class
+    let accuracyColor = theme.SHARED.YELLOW;
+    if (accuracyNum >= 90) {
+        accuracyClass = "green";
+        accuracyColor = theme.SHARED.GREEN;
+    } else if (accuracyNum < 70) {
+        accuracyClass = "red";
+        accuracyColor = theme.SHARED.RED;
+    }
+
+    // Format date using the earnings.js style formatter
+    const formattedDate = formatPayoutDate(comparison.timestamp);
+
+    comparisonElement.html(`
+        <strong>Last Payout:</strong>
+        <span class="metric-value ${accuracyClass}">${comparison.accuracy}</span> 
+        <span class="metric-note">${formattedDate} (${formatBTC(comparison.amountBTC)} BTC)</span>
+    `);
+
+    // Add to the payout card - insert after the Est. Time to Payout element
+    $("#est_time_to_payout").parent().after(comparisonElement);
+
+    // Also update the payout history display if it exists
+    if ($("#payout-history-container").is(":visible")) {
+        updatePayoutHistoryDisplay();
+    }
+}
+
+// Function to load payout history from localStorage
+function loadPayoutHistory() {
+    try {
+        const savedHistory = localStorage.getItem('payoutHistory');
+        if (savedHistory) {
+            lastPayoutTracking.payoutHistory = JSON.parse(savedHistory);
+        }
+    } catch (e) {
+        console.error("Error loading payout history from localStorage:", e);
+    }
+}
+
+// Update the init function to add the summary display
+function initPayoutTracking() {
+    loadPayoutHistory();
+
+    // Add a button to view payout history with theme-aware styling
+    const theme = getCurrentTheme();
+    const viewHistoryButton = $("<button>", {
+        id: "view-payout-history",
+        text: "VIEW PAYOUT HISTORY",
+        click: togglePayoutHistoryDisplay,
+        class: "btn btn-sm mt-2",
+        style: `background-color: ${theme.PRIMARY}; color: white;`
+    });
+
+    $("#est_time_to_payout").parent().after(viewHistoryButton);
+
+    // Create a container for the payout history (initially hidden)
+    $("<div>", {
+        id: "payout-history-container",
+        style: "display: none; margin-top: 10px;"
+    }).insertAfter(viewHistoryButton);
+
+    // Update theme-change listener for the button
+    $(document).on('themeChanged', function () {
+        const updatedTheme = getCurrentTheme();
+        $("#view-payout-history").css({
+            'background-color': updatedTheme.PRIMARY,
+            'color': 'white'
+        });
+    });
+
+    // Verify payouts against official records
+    verifyPayoutsAgainstOfficial();
+
+    // Schedule regular checks for new data
+    setInterval(verifyPayoutsAgainstOfficial, 30 * 60 * 1000); // Check every 30 minutes
+}
+
+// Update toggle function to include summary
+function togglePayoutHistoryDisplay() {
+    const container = $("#payout-history-container");
+    const button = $("#view-payout-history");
+
+    if (container.is(":visible")) {
+        container.slideUp();
+        button.text("VIEW PAYOUT HISTORY");
+    } else {
+        updatePayoutHistoryDisplay();
+        displayPayoutSummary();
+        container.slideDown();
+        button.text("HIDE PAYOUT HISTORY");
+    }
+}
+
+// New function to display a comprehensive payout summary
+function displayPayoutSummary() {
+    if (!lastPayoutTracking.payoutHistory || lastPayoutTracking.payoutHistory.length === 0) return;
+
+    // Get the payouts from the last 7 days
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const recentPayouts = lastPayoutTracking.payoutHistory.filter(payout =>
+        new Date(payout.timestamp) >= sevenDaysAgo
+    );
+
+    // If no recent payouts, don't show summary
+    if (recentPayouts.length === 0) return;
+
+    // Calculate total BTC and accuracy
+    let totalBtc = 0;
+    let accuracyScores = [];
+
+    recentPayouts.forEach(payout => {
+        totalBtc += parseFloat(payout.amountBTC || 0);
+
+        // Only include payouts with accuracy scores
+        if (payout.accuracy !== "N/A") {
+            const accuracyNum = parseInt(payout.accuracy);
+            if (!isNaN(accuracyNum)) {
+                accuracyScores.push(accuracyNum);
+            }
+        }
+    });
+
+    // Calculate average accuracy
+    let avgAccuracy = 0;
+    if (accuracyScores.length > 0) {
+        avgAccuracy = accuracyScores.reduce((a, b) => a + b, 0) / accuracyScores.length;
+    }
+
+    // Format for display
+    const formattedBtc = formatBTC(totalBtc);
+    const formattedAccuracy = accuracyScores.length > 0 ? `${avgAccuracy.toFixed(1)}%` : "N/A";
+
+    // Get theme colors for styling
+    const theme = getCurrentTheme();
+    let accuracyColor = theme.SHARED.YELLOW;
+    if (avgAccuracy >= 90) accuracyColor = theme.SHARED.GREEN;
+    else if (avgAccuracy < 70) accuracyColor = theme.SHARED.RED;
+
+    // Create the summary element
+    const summaryElement = $(`
+        <div id="payout-summary" class="mt-3 mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
+            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold;">Last 7 Days Summary</h6>
+            <div class="d-flex justify-content-between">
+                <div>
+                    <span class="small">Total Payouts:</span>
+                    <span class="badge bg-secondary">${recentPayouts.length}</span>
+                </div>
+                <div>
+                    <span class="small">Total BTC:</span>
+                    <span class="badge" style="background-color:${theme.PRIMARY}">${formattedBtc}</span>
+                </div>
+                <div>
+                    <span class="small">Avg Accuracy:</span>
+                    <span class="badge" style="background-color:${accuracyColor}">${formattedAccuracy}</span>
+                </div>
+            </div>
+        </div>
+    `);
+
+    // Add to DOM, replacing any existing summary
+    $("#payout-summary").remove();
+    $("#payout-history-container").prepend(summaryElement);
+}
+
+// Enhanced update function with more detailed display
+function updatePayoutHistoryDisplay() {
+    const container = $("#payout-history-container");
+
+    // Clear existing content
+    container.empty();
+
+    // Check if we have history to display
+    if (!lastPayoutTracking.payoutHistory || lastPayoutTracking.payoutHistory.length === 0) {
+        container.append("<p>No payout history available yet.</p>");
+        return;
+    }
+
+    // Get current theme for styling
+    const theme = getCurrentTheme();
+
+    // Create a table to display the history with enhanced styling
+    const table = $("<table>", {
+        class: "table table-sm table-dark table-striped table-hover",
+        style: "font-size: 0.65em;"
+    });
+
+    // Add header row with more columns
+    const header = $("<tr>");
+    header.append("<th>Date</th>");
+    header.append("<th>Amount</th>");
+    header.append("<th>Fiat Value</th>");
+    header.append("<th>Estimated Time</th>");
+    header.append("<th>Actual Time</th>");
+    header.append("<th>Accuracy</th>");
+    header.append("<th>Status</th>");
+
+    table.append($("<thead>").append(header));
+
+    // Create table body
+    const tableBody = $("<tbody>");
+
+    lastPayoutTracking.payoutHistory.forEach(entry => {
+        const row = $("<tr>");
+        row.addClass(entry.officialRecordOnly ? "official-record-row" : "");
+
+        // Format the date using timezone-aware formatting
+        let dateStr = formatPayoutDate(entry.timestamp);
+
+        // Format the amount
+        const amountStr = `${formatBTC(entry.amountBTC)} BTC`;
+
+        // Format fiat value if available
+        let fiatValueStr = "N/A";
+        if (entry.fiat_value !== undefined && entry.rate !== undefined) {
+            const currency = latestMetrics?.currency || 'USD';
+            const symbol = getCurrencySymbol(currency);
+            fiatValueStr = `${symbol}${numberWithCommas(entry.fiat_value.toFixed(2))}`;
+        }
+
+        // Apply accuracy color styling - improved to be more visually clear
+        let accuracyClass = "text-warning";  // Default - yellow
+        let accuracyDisplay = entry.accuracy || "N/A";
+
+        if (entry.accuracy === "N/A") {
+            accuracyClass = "text-muted";  // Gray for N/A
+        } else {
+            const accuracyNum = parseInt(entry.accuracy);
+            if (accuracyNum >= 90) {
+                accuracyClass = "text-success";  // Green for 90-100%
+            } else if (accuracyNum >= 70) {
+                accuracyClass = "text-info";     // Blue for 70-89%
+            } else if (accuracyNum >= 50) {
+                accuracyClass = "text-warning";  // Yellow for 50-69%
+            } else {
+                accuracyClass = "text-danger";   // Red for 0-49%
+            }
+
+            // Add a visual indicator based on accuracy
+            let indicator = '';
+            if (accuracyNum >= 90) indicator = ' 🎯'; // Perfect hit
+            else if (accuracyNum >= 70) indicator = ' ✓'; // Good
+            else if (accuracyNum < 50) indicator = ' ✗'; // Bad
+
+            accuracyDisplay = entry.accuracy + indicator;
+        }
+
+        // Format transaction link if available
+        let statusDisplay = entry.status || "pending";
+        if (entry.verified && entry.officialId) {
+            statusDisplay = `<span class="text-success">${entry.status || "confirmed"}</span> 
+                            <a href="https://mempool.guide/tx/${entry.officialId}" 
+                               target="_blank" 
+                               class="tx-link-small" 
+                               title="View transaction">
+                                <i class="fa-solid fa-external-link-alt"></i>
+                            </a>`;
+        } else if (entry.verified) {
+            statusDisplay = `<span class="text-success">verified</span>`;
+        } else {
+            statusDisplay = `<span class="text-warning">pending</span>`;
+        }
+
+        // Add all the cells to the row
+        row.append(`<td>${dateStr}</td>`);
+        row.append(`<td>${amountStr}</td>`);
+        row.append(`<td>${fiatValueStr}</td>`);
+        row.append(`<td>${entry.estimatedTime}</td>`);
+        row.append(`<td>${entry.actualTime}</td>`);
+        row.append(`<td class="${accuracyClass}">${accuracyDisplay}</td>`);
+        row.append(`<td>${statusDisplay}</td>`);
+
+        tableBody.append(row);
+    });
+
+    table.append(tableBody);
+    container.append(table);
+
+    // Add view more link to the earnings page
+    const viewMoreLink = $("<div class='text-center mt-3'></div>");
+    viewMoreLink.html(`
+        <a href='/earnings' class='btn btn-sm' style='background-color:${theme.PRIMARY};color:white;'>
+            Complete Payment History
+        </a>
+    `);
+    container.append(viewMoreLink);
+
+    // Add CSS styling for the table
+    $("<style>").text(`
+        #payout-history-container {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: rgba(0,0,0,0.2);
+        }
+        #payout-history-container .table {
+            margin-bottom: 0;
+        }
+        .official-record-row {
+            background-color: rgba(30, 60, 90, 0.3);
+        }
+        .tx-link-small {
+            font-size: 0.65em;
+            margin-left: 5px;
+            color: inherit;
+            text-decoration: none;
+        }
+        .tx-link-small:hover {
+            color: ${theme.PRIMARY};
+            text-decoration: none;
+        }
+    `).appendTo("head");
+}
+
+// Add these utility functions from earnings.js for better date formatting
+function formatPayoutDate(timestamp) {
+    // Use timezone-aware formatting consistent with earnings.js
+    const timezone = window.dashboardTimezone || 'America/Los_Angeles';
+    
+    return new Date(timestamp).toLocaleString('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+// Function to format BTC values consistently
+function formatBTC(btcValue) {
+    return parseFloat(btcValue).toFixed(8);
+}
+
+// Enhanced function to verify and enrich payout history with data from earnings
+function verifyPayoutsAgainstOfficial() {
+    // Fetch the official payment history from the earnings endpoint
+    $.ajax({
+        url: '/api/earnings',
+        method: 'GET',
+        success: function (data) {
+            if (!data || !data.payments || !data.payments.length) return;
+
+            // Get official payment records - newest first
+            const officialPayments = data.payments.sort((a, b) =>
+                new Date(b.date) - new Date(a.date)
+            );
+
+            // Get our detected payouts
+            const detectedPayouts = lastPayoutTracking.payoutHistory;
+
+            // 1. First match detected payouts with official records
+            detectedPayouts.forEach(detectedPayout => {
+                const payoutDate = new Date(detectedPayout.timestamp);
+
+                const matchingPayment = officialPayments.find(payment => {
+                    const paymentDate = new Date(payment.date);
+                    // Match if within 2 hours and similar amount
+                    return Math.abs(paymentDate - payoutDate) < (2 * 60 * 60 * 1000) &&
+                        Math.abs(parseFloat(payment.amount_btc) - parseFloat(detectedPayout.amountBTC)) < 0.00001;
+                });
+
+                if (matchingPayment) {
+                    // Enrich detected payout with official data
+                    detectedPayout.verified = true;
+                    detectedPayout.officialId = matchingPayment.txid || '';
+                    detectedPayout.status = matchingPayment.status || 'confirmed';
+
+                    // Calculate and add accuracy if it doesn't exist
+                    if (!detectedPayout.accuracy) {
+                        if (detectedPayout.estimatedTime && matchingPayment.date_iso) {
+                            const est = new Date(detectedPayout.timestamp);
+                            est.setMinutes(est.getMinutes() - parseEstimatedTimeToMinutes(detectedPayout.estimatedTime));
+
+                            const actual = new Date(matchingPayment.date_iso);
+                            const diffMinutes = Math.abs((actual - est) / 60000);
+
+                            let accuracy = Math.max(0, 100 - (diffMinutes / 10));
+                            detectedPayout.accuracy = `${accuracy.toFixed(0)}%`;
+                            console.log(`Calculated accuracy for previous payout: ${detectedPayout.accuracy}`);
+                        }
+                    }
+
+                    // Add exchange rate data if available
+                    if (matchingPayment.rate) {
+                        detectedPayout.rate = matchingPayment.rate;
+                        detectedPayout.fiat_value = parseFloat(detectedPayout.amountBTC) * matchingPayment.rate;
+                    }
+                } else {
+                    detectedPayout.verified = false;
+                }
+            });
+
+            // 2. Add any official records that weren't detected
+            // Find records from past 30 days that don't have matching detected payouts
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            officialPayments.forEach(payment => {
+                const paymentDate = new Date(payment.date);
+                if (paymentDate < thirtyDaysAgo) return; // Skip older than 30 days
+
+                // Check if we already have this payment in our detected list
+                const exists = detectedPayouts.some(payout => {
+                    if (payout.officialId && payment.txid) {
+                        return payout.officialId === payment.txid;
+                    }
+
+                    const payoutDate = new Date(payout.timestamp);
+                    return Math.abs(paymentDate - payoutDate) < (2 * 60 * 60 * 1000) &&
+                        Math.abs(parseFloat(payment.amount_btc) - parseFloat(payout.amountBTC)) < 0.00001;
+                });
+
+                if (!exists) {
+                    // This is a payment we didn't detect - add it to our list
+                    const syntheticPayout = {
+                        timestamp: paymentDate,
+                        estimatedTime: "Unknown",
+                        actualTime: "Official record",
+                        difference: "N/A",
+                        accuracy: "N/A",
+                        amountBTC: payment.amount_btc,
+                        verified: true,
+                        officialId: payment.txid || '',
+                        status: payment.status || 'confirmed',
+                        officialRecordOnly: true  // Flag to indicate this wasn't detected by our system
+                    };
+
+                    // Add exchange rate data if available
+                    if (payment.rate) {
+                        syntheticPayout.rate = payment.rate;
+                        syntheticPayout.fiat_value = parseFloat(payment.amount_btc) * payment.rate;
+                    }
+
+                    // Add to our history
+                    lastPayoutTracking.payoutHistory.push(syntheticPayout);
+                }
+            });
+
+            // Sort the combined list by date (newest first)
+            lastPayoutTracking.payoutHistory.sort((a, b) =>
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+
+            // Limit to most recent 30 entries to prevent unbounded growth
+            if (lastPayoutTracking.payoutHistory.length > 30) {
+                lastPayoutTracking.payoutHistory = lastPayoutTracking.payoutHistory.slice(0, 30);
+            }
+
+            // Update the display with enriched data
+            updatePayoutHistoryDisplay();
+
+            // Save the updated history
+            try {
+                localStorage.setItem('payoutHistory', JSON.stringify(lastPayoutTracking.payoutHistory));
+            } catch (e) {
+                console.error("Error saving enriched payout history to localStorage:", e);
+            }
+        },
+        error: function (error) {
+            console.error("Failed to fetch earnings data:", error);
+        }
+    });
 }
 
 // SSE Connection with Error Handling and Reconnection Logic
@@ -2584,6 +3313,9 @@ function updateUI() {
         updateIndicators(data);
         checkForBlockUpdates(data);
 
+        // Add this call before storing current metrics as previous metrics
+        trackPayoutPerformance(data);
+
         // Store current metrics for next comparison
         previousMetrics = { ...data };
 
@@ -3305,6 +4037,23 @@ $(document).ready(function () {
             }
         }
     };
+
+    // Initialize payout tracking
+    initPayoutTracking();
+
+    // Add this to the setupThemeChangeListener function or document.ready
+    $(document).on('themeChanged', function () {
+        // Refresh payout history display with new theme
+        if ($("#payout-history-container").is(":visible")) {
+            updatePayoutHistoryDisplay();
+        }
+
+        // Refresh any visible payout comparison with new theme
+        if (lastPayoutTracking.payoutHistory.length > 0) {
+            const latest = lastPayoutTracking.payoutHistory[0];
+            displayPayoutComparison(latest);
+        }
+    });
 
     // Load timezone setting early
     (function loadTimezoneEarly() {

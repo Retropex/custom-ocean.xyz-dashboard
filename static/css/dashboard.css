@@ -529,7 +529,7 @@ html.deepsea-theme .toggle-btn.active {
 .satellite-dish {
     display: inline-block;
     margin-left: 6px;
-    font-size: .8rem;
+    font-size: .75rem;
     position: relative;
     top: -1px;
 }

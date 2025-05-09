@@ -1066,8 +1066,16 @@ function togglePayoutHistoryDisplay() {
         container.slideUp();
         button.text("VIEW PAYOUT HISTORY");
     } else {
-        updatePayoutHistoryDisplay();
+        // Create or clear the container first
+        container.empty();
+
+        // Then add the summary BEFORE updating the table
         displayPayoutSummary();
+
+        // Then update the table
+        updatePayoutHistoryDisplay();
+
+        // Show the container and update button text
         container.slideDown();
         button.text("HIDE PAYOUT HISTORY");
     }

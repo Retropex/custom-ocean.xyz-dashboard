@@ -524,3 +524,132 @@ html.deepsea-theme .toggle-btn.active {
     top: -1.5px;
     opacity: 0.7;
 }
+
+/* ----- FLOATING WINDOW (Theme Compatible & Clickable) ----- */
+.floating-tab-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer; /* Makes overlay look clickable */
+    transition: background 0.2s;
+}
+
+    .floating-tab-overlay:hover {
+        background: rgba(0,0,0,0.55);
+    }
+
+.floating-tab {
+    background: var(--bg-color, #181c24);
+    border: 2px solid var(--primary-color, #ffd700);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(var(--primary-color-rgb, 255,215,0), 0.18), 0 0 0 1px rgba(0,0,0,0.12);
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    position: relative;
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-family: var(--terminal-font, 'VT323', monospace);
+    cursor: default; /* Prevents pointer on content itself */
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+    .floating-tab:hover {
+        box-shadow: 0 12px 40px 4px rgba(var(--primary-color-rgb, 255,215,0), 0.28), 0 0 0 2px var(--primary-color, #ffd700);
+        transform: scale(1.015);
+    }
+
+    .floating-tab iframe {
+        border: none;
+        width: 560px;
+        height: 315px;
+        max-width: 80vw;
+        max-height: 60vh;
+        background: #000;
+        border-radius: 4px;
+        box-shadow: 0 2px 12px rgba(var(--primary-color-rgb, 255,215,0), 0.10);
+    }
+
+.floating-tab-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: var(--primary-color, #ffd700);
+    color: #181c24;
+    border: none;
+    font-size: 2rem;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s, opacity 0.2s;
+    box-shadow: 0 2px 8px rgba(var(--primary-color-rgb, 255,215,0), 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    opacity: 0.95;
+}
+
+    .floating-tab-close:hover,
+    .floating-tab-close:focus {
+        background: #222;
+        color: var(--primary-color, #ffd700);
+        box-shadow: 0 0 0 3px var(--primary-color, #ffd700), 0 2px 8px rgba(var(--primary-color-rgb, 255,215,0), 0.25);
+        opacity: 1;
+        outline: none;
+    }
+
+    .floating-tab-close:active {
+        opacity: 0.8;
+        background: var(--primary-color, #ffd700);
+        color: #181c24;
+    }
+
+/* Theme overrides for deepsea/bitcoin */
+html.deepsea-theme .floating-tab {
+    background: var(--bg-color, #181c24);
+    border-color: var(--primary-color, #00dfff);
+    box-shadow: 0 8px 32px rgba(var(--primary-color-rgb, 0,223,255), 0.18), 0 0 0 1px rgba(0,0,0,0.12);
+}
+
+html.deepsea-theme .floating-tab-close {
+    background: var(--primary-color, #00dfff);
+    color: #181c24;
+}
+
+    html.deepsea-theme .floating-tab-close:hover,
+    html.deepsea-theme .floating-tab-close:focus {
+        background: #222;
+        color: var(--primary-color, #00dfff);
+        box-shadow: 0 0 0 3px var(--primary-color, #00dfff), 0 2px 8px rgba(var(--primary-color-rgb, 0,223,255), 0.25);
+    }
+
+html.bitcoin-theme .floating-tab {
+    background: var(--bg-color, #fffbe6);
+    border-color: var(--primary-color, #ffd700);
+    box-shadow: 0 8px 32px rgba(var(--primary-color-rgb, 255,215,0), 0.18), 0 0 0 1px rgba(0,0,0,0.12);
+}
+
+html.bitcoin-theme .floating-tab-close {
+    background: var(--primary-color, #ffd700);
+    color: #181c24;
+}
+
+    html.bitcoin-theme .floating-tab-close:hover,
+    html.bitcoin-theme .floating-tab-close:focus {
+        background: #222;
+        color: var(--primary-color, #ffd700);
+        box-shadow: 0 0 0 3px var(--primary-color, #ffd700), 0 2px 8px rgba(var(--primary-color-rgb, 255,215,0), 0.25);
+    }
+

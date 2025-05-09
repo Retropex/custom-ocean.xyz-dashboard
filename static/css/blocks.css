@@ -83,7 +83,6 @@
 /* ----- BLOCK CARD ----- */
 .block-card {
     background-color: var(--bg-color);
-    border: 1px solid var(--primary-color);
     box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
     position: relative;
     overflow: hidden;

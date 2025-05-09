@@ -3333,6 +3333,51 @@ $(document).ready(function () {
             });
     })();
 
+    // Floating YouTube tab logic
+    function showYouTubeFloatingTab() {
+        // Prevent multiple tabs
+        if (document.getElementById('youtubeFloatingTab')) return;
+
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'youtubeFloatingTab';
+        overlay.className = 'floating-tab-overlay';
+
+        // Create tab container
+        const tab = document.createElement('div');
+        tab.className = 'floating-tab';
+
+        // Close button
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'floating-tab-close';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = function () {
+            overlay.remove();
+        };
+
+        // Iframe
+        const iframe = document.createElement('iframe');
+        iframe.width = "560";
+        iframe.height = "315";
+        iframe.src = "https://www.youtube-nocookie.com/embed/e37cnuS0Lyo?si=Ml5SVSZmru6rlrml";
+        iframe.title = "YouTube video player";
+        iframe.frameBorder = "0";
+        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        iframe.referrerPolicy = "strict-origin-when-cross-origin";
+        iframe.allowFullscreen = true;
+
+        // Assemble
+        tab.appendChild(closeBtn);
+        tab.appendChild(iframe);
+        overlay.appendChild(tab);
+        document.body.appendChild(overlay);
+    }
+
+    // Attach click handler
+    $(document).on('click', '#btc_price', function () {
+        showYouTubeFloatingTab();
+    });
+
     // Override the manualRefresh function to update the shared lastRefreshTime
     const originalManualRefresh = manualRefresh;
     window.manualRefresh = function () {

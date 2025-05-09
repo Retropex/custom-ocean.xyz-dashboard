@@ -525,6 +525,48 @@ html.deepsea-theme .toggle-btn.active {
     opacity: 0.7;
 }
 
+/* ----- SATELLITE DISH INDICATOR ----- */
+.satellite-dish {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: .8rem;
+    position: relative;
+    top: -1px;
+}
+
+/* Connected state - uses theme-aware colors */
+.satellite-dish-connected {
+    color: #00ff00; /* Default green */
+    text-shadow: 0 0 5px #00ff00, 0 0 3px #00ff00;
+    animation: pulse-satellite 2s infinite;
+}
+
+/* Offline state */
+.satellite-dish-offline {
+    color: #ff5555;
+    text-shadow: 0 0 3px #ff5555;
+    opacity: 0.7;
+}
+
+/* Theme-specific colors for the satellite dish */
+html.deepsea-theme .satellite-dish-connected {
+    color: #32CD32; /* Use same green for consistency */
+    text-shadow: 0 0 5px #32CD32, 0 0 3px #32CD32;
+}
+
+@keyframes pulse-satellite {
+    0%, 100% {
+        opacity: 0.9;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+
 /* ----- FLOATING WINDOW (Theme Compatible & Clickable) ----- */
 .floating-tab-overlay {
     position: fixed;

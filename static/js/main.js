@@ -1218,6 +1218,13 @@ function updateWorkersCount() {
         } else {
             updateElementHTML("miner_status", "<span class='status-red'>OFFLINE</span> <span class='retro-led-offline'></span>");
         }
+
+        // Update DATUM GATEWAY status with satellite dish icon
+        if (latestMetrics.pool_fees_percentage !== undefined && latestMetrics.pool_fees_percentage >= 0.9 && latestMetrics.pool_fees_percentage <= 1.3) {
+            updateElementHTML("datum_status", "<span class='status-green'>CONNECTED</span> <i class='fa-solid fa-satellite-dish satellite-dish satellite-dish-connected'></i>");
+        } else {
+            updateElementHTML("datum_status", "<span class='status-red'>OFFLINE</span> <i class='fa-solid fa-satellite-dish satellite-dish satellite-dish-offline'></i>");
+        }
     }
 }
 

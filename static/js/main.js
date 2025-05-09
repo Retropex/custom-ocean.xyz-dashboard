@@ -1083,7 +1083,32 @@ function togglePayoutHistoryDisplay() {
 
 // New function to display a comprehensive payout summary
 function displayPayoutSummary() {
-    if (!lastPayoutTracking.payoutHistory || lastPayoutTracking.payoutHistory.length === 0) return;
+    // Get the container
+    const container = $("#payout-history-container");
+
+    // Get current theme for styling
+    const theme = getCurrentTheme();
+
+    // Create a base container for the summary
+    const summaryElement = $(`
+        <div id="payout-summary" class="mt-3 mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
+            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold;">Last 7 Days Summary</h6>
+            <div id="summary-content"></div>
+        </div>
+    `);
+
+    // Prepare the content area
+    const contentArea = summaryElement.find("#summary-content");
+
+    // Check if we have any payout history
+    if (!lastPayoutTracking.payoutHistory || lastPayoutTracking.payoutHistory.length === 0) {
+        contentArea.html('<p class="text-muted">No payout history available yet.</p>');
+
+        // Add to DOM, replacing any existing summary
+        $("#payout-summary").remove();
+        container.prepend(summaryElement);
+        return;
+    }
 
     // Get the payouts from the last 7 days
     const now = new Date();
@@ -1092,8 +1117,15 @@ function displayPayoutSummary() {
         new Date(payout.timestamp) >= sevenDaysAgo
     );
 
-    // If no recent payouts, don't show summary
-    if (recentPayouts.length === 0) return;
+    // If no recent payouts, show a message
+    if (recentPayouts.length === 0) {
+        contentArea.html('<p class="text-muted">No payouts in the last 7 days.</p>');
+
+        // Add to DOM, replacing any existing summary
+        $("#payout-summary").remove();
+        container.prepend(summaryElement);
+        return;
+    }
 
     // Calculate total BTC and accuracy
     let totalBtc = 0;
@@ -1122,43 +1154,47 @@ function displayPayoutSummary() {
     const formattedAccuracy = accuracyScores.length > 0 ? `${avgAccuracy.toFixed(1)}%` : "N/A";
 
     // Get theme colors for styling
-    const theme = getCurrentTheme();
     let accuracyColor = theme.SHARED.YELLOW;
     if (avgAccuracy >= 90) accuracyColor = theme.SHARED.GREEN;
     else if (avgAccuracy < 70) accuracyColor = theme.SHARED.RED;
 
-    // Create the summary element
-    const summaryElement = $(`
-        <div id="payout-summary" class="mt-3 mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
-            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold;">Last 7 Days Summary</h6>
-            <div class="d-flex justify-content-between">
-                <div>
-                    <span class="small">Total Payouts:</span>
-                    <span class="badge bg-secondary">${recentPayouts.length}</span>
-                </div>
-                <div>
-                    <span class="small">Total BTC:</span>
-                    <span class="badge" style="background-color:${theme.PRIMARY}">${formattedBtc}</span>
-                </div>
-                <div>
-                    <span class="small">Avg Accuracy:</span>
-                    <span class="badge" style="background-color:${accuracyColor}">${formattedAccuracy}</span>
-                </div>
+    // Create the summary content
+    contentArea.html(`
+        <div class="d-flex justify-content-between">
+            <div>
+                <span class="small">Total Payouts:</span>
+                <span class="badge bg-secondary">${recentPayouts.length}</span>
+            </div>
+            <div>
+                <span class="small">Total BTC:</span>
+                <span class="badge" style="background-color:${theme.PRIMARY}">${formattedBtc}</span>
+            </div>
+            <div>
+                <span class="small">Avg Accuracy:</span>
+                <span class="badge" style="background-color:${accuracyColor}">${formattedAccuracy}</span>
             </div>
         </div>
     `);
 
     // Add to DOM, replacing any existing summary
     $("#payout-summary").remove();
-    $("#payout-history-container").prepend(summaryElement);
+    container.prepend(summaryElement);
 }
 
 // Enhanced update function with more detailed display
 function updatePayoutHistoryDisplay() {
     const container = $("#payout-history-container");
 
+    // Get the existing summary element if it exists
+    const existingSummary = $("#payout-summary").detach(); // Detach preserves event handlers
+
     // Clear existing content
     container.empty();
+
+    // Re-add the summary at the top if it exists
+    if (existingSummary && existingSummary.length) {
+        container.append(existingSummary);
+    }
 
     // Check if we have history to display
     if (!lastPayoutTracking.payoutHistory || lastPayoutTracking.payoutHistory.length === 0) {

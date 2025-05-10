@@ -1230,7 +1230,7 @@ function displayPayoutSummary() {
     const viewMoreLink = $("<div class='text-center mt-3'></div>");
     viewMoreLink.html(`
         <a href='/earnings' class='btn btn-sm' style='background-color:${theme.PRIMARY};color:white;'>
-            Complete Payment History
+            Complete Payout History
         </a>
     `);
     container.append(viewMoreLink);

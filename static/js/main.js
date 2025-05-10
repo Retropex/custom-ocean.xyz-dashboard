@@ -1092,7 +1092,7 @@ function displayPayoutSummary() {
     // Create a base container for the summary
     const summaryElement = $(`
         <div id="payout-summary" class="mt-3 mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
-            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold;">Last Payout Summary</h6>
+            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold; font-size: 18px;">Last Payout Summary</h6>
             <div id="summary-content"></div>
         </div>
     `);
@@ -1173,7 +1173,8 @@ function displayPayoutSummary() {
         txLink = `
             <a href="https://mempool.guide/tx/${lastPayout.officialId}" 
                target="_blank" 
-               class="btn btn-sm btn-secondary ms-2" 
+               class="btn btn-sm btn-secondary ms-2"
+               style="font-size: 12px;"
                title="View transaction on mempool.guide">
                 <i class="fa-solid fa-external-link-alt"></i> View TX
             </a>`;
@@ -1181,7 +1182,7 @@ function displayPayoutSummary() {
 
     // Update the inner content area of the summary with dashboard-consistent styling
     contentArea.html(`
-        <div class="row equal-height">
+        <div class="row equal-height" style="font-size: 14px;">
             <div class="col-md-6">
                 <div class="d-flex flex-column">
                     <p>

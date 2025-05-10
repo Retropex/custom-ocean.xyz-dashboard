@@ -1003,7 +1003,7 @@ function displayPayoutComparison(comparison) {
 
     // Also update the payout history display if it exists
     if ($("#payout-history-container").is(":visible")) {
-        updatePayoutHistoryDisplay();
+        displayPayoutSummary();
     }
 }
 
@@ -1057,7 +1057,7 @@ function initPayoutTracking() {
     setInterval(verifyPayoutsAgainstOfficial, 30 * 60 * 1000); // Check every 30 minutes
 }
 
-// Update toggle function to include summary
+// Update toggle function to include only summary display
 function togglePayoutHistoryDisplay() {
     const container = $("#payout-history-container");
     const button = $("#view-payout-history");
@@ -1066,14 +1066,11 @@ function togglePayoutHistoryDisplay() {
         container.slideUp();
         button.text("VIEW PAYOUT ANALYTICS");
     } else {
-        // Create or clear the container first
+        // Clear the container first
         container.empty();
 
-        // Then add the summary BEFORE updating the table
+        // Display payout summary only - this now handles everything
         displayPayoutSummary();
-
-        // Then update the table
-        updatePayoutHistoryDisplay();
 
         // Show the container and update button text
         container.slideDown();
@@ -1081,7 +1078,7 @@ function togglePayoutHistoryDisplay() {
     }
 }
 
-// New function to display a comprehensive payout summary
+// Enhanced function to display complete payout summary information
 function displayPayoutSummary() {
     // Get the container
     const container = $("#payout-history-container");
@@ -1089,10 +1086,13 @@ function displayPayoutSummary() {
     // Get current theme for styling
     const theme = getCurrentTheme();
 
+    // Clear the container first
+    container.empty();
+
     // Create a base container for the summary
     const summaryElement = $(`
         <div id="payout-summary" class="mt-3 mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
-            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold;">Last 7 Days Summary</h6>
+            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold;">Last Payout Summary</h6>
             <div id="summary-content"></div>
         </div>
     `);
@@ -1104,203 +1104,126 @@ function displayPayoutSummary() {
     if (!lastPayoutTracking.payoutHistory || lastPayoutTracking.payoutHistory.length === 0) {
         contentArea.html('<p class="text-muted">No payout history available yet.</p>');
 
-        // Add to DOM, replacing any existing summary
-        $("#payout-summary").remove();
-        container.prepend(summaryElement);
+        // Add to container
+        container.append(summaryElement);
         return;
     }
 
-    // Get the payouts from the last 7 days
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-    const recentPayouts = lastPayoutTracking.payoutHistory.filter(payout =>
-        new Date(payout.timestamp) >= sevenDaysAgo
-    );
+    // Get the most recent payout (which is the first one in the array since it's sorted newest first)
+    const lastPayout = lastPayoutTracking.payoutHistory[0];
 
-    // If no recent payouts, show a message
-    if (recentPayouts.length === 0) {
-        contentArea.html('<p class="text-muted">No payouts in the last 7 days.</p>');
-
-        // Add to DOM, replacing any existing summary
-        $("#payout-summary").remove();
-        container.prepend(summaryElement);
+    // If no payout found (shouldn't happen but just in case), show a message
+    if (!lastPayout) {
+        contentArea.html('<p class="text-muted">No payout information available.</p>');
+        container.append(summaryElement);
         return;
     }
 
-    // Calculate total BTC and accuracy
-    let totalBtc = 0;
-    let accuracyScores = [];
+    // Format date for better display
+    const payoutDate = formatPayoutDate(lastPayout.timestamp);
 
-    recentPayouts.forEach(payout => {
-        totalBtc += parseFloat(payout.amountBTC || 0);
+    // Format the BTC amount
+    const btcAmount = formatBTC(lastPayout.amountBTC);
 
-        // Only include payouts with accuracy scores
-        if (payout.accuracy !== "N/A") {
-            const accuracyNum = parseInt(payout.accuracy);
-            if (!isNaN(accuracyNum)) {
-                accuracyScores.push(accuracyNum);
-            }
+    // Format fiat value if available
+    let fiatValueStr = "N/A";
+    if (lastPayout.fiat_value !== undefined && lastPayout.rate !== undefined) {
+        const currency = latestMetrics?.currency || 'USD';
+        const symbol = getCurrencySymbol(currency);
+        fiatValueStr = `${symbol}${numberWithCommas(lastPayout.fiat_value.toFixed(2))}`;
+    }
+
+    // Get accuracy color class
+    let accuracyClass = "badge bg-warning";  // Default - yellow
+    let accuracyDisplay = lastPayout.accuracy || "N/A";
+    let accuracyNum = 0; // Initialize accuracyNum here
+
+    if (lastPayout.accuracy === "N/A") {
+        accuracyClass = "badge bg-secondary";  // Gray for N/A
+    } else {
+        // Parse the accuracy percentage from string like "85%"
+        accuracyNum = parseInt(lastPayout.accuracy);
+
+        if (accuracyNum >= 90) {
+            accuracyClass = "badge bg-success";  // Green for 90-100%
+        } else if (accuracyNum >= 70) {
+            accuracyClass = "badge bg-info";     // Blue for 70-89%
+        } else if (accuracyNum >= 50) {
+            accuracyClass = "badge bg-warning";  // Yellow for 50-69%
+        } else {
+            accuracyClass = "badge bg-danger";   // Red for 0-49%
         }
-    });
 
-    // Calculate average accuracy
-    let avgAccuracy = 0;
-    if (accuracyScores.length > 0) {
-        avgAccuracy = accuracyScores.reduce((a, b) => a + b, 0) / accuracyScores.length;
+        // Add a visual indicator based on accuracy
+        let indicator = '';
+        if (accuracyNum >= 90) indicator = ' 🎯'; // Perfect hit
+        else if (accuracyNum >= 70) indicator = ' ✓'; // Good
+        else if (accuracyNum < 50) indicator = ' ✗'; // Bad
+
+        accuracyDisplay = lastPayout.accuracy + indicator;
     }
 
-    // Format for display
-    const formattedBtc = formatBTC(totalBtc);
-    const formattedAccuracy = accuracyScores.length > 0 ? `${avgAccuracy.toFixed(1)}%` : "N/A";
+    // Format transaction status and link if available
+    let statusDisplay = lastPayout.status || "pending";
+    const statusClass = lastPayout.verified ? "text-success" : "text-warning";
 
-    // Get theme colors for styling
-    let accuracyColor = theme.SHARED.YELLOW;
-    if (avgAccuracy >= 90) accuracyColor = theme.SHARED.GREEN;
-    else if (avgAccuracy < 70) accuracyColor = theme.SHARED.RED;
+    // Build HTML for the transaction link
+    let txLink = '';
+    if (lastPayout.officialId) {
+        txLink = `
+            <a href="https://mempool.guide/tx/${lastPayout.officialId}" 
+               target="_blank" 
+               class="btn btn-sm btn-secondary ms-2" 
+               title="View transaction on mempool.guide">
+                <i class="fa-solid fa-external-link-alt"></i> View TX
+            </a>`;
+    }
 
-    // Create the summary content
+    // Update the inner content area of the summary with dashboard-consistent styling
     contentArea.html(`
-        <div class="d-flex justify-content-between">
-            <div>
-                <span class="small">Total Payouts:</span>
-                <span class="badge bg-secondary">${recentPayouts.length}</span>
+        <div class="row equal-height">
+            <div class="col-md-6">
+                <div class="d-flex flex-column">
+                    <p>
+                        <strong>Date:</strong>
+                        <span class="metric-value white">${payoutDate}</span>
+                    </p>
+                    <p>
+                        <strong>Amount:</strong>
+                        <span class="metric-value yellow">${btcAmount} BTC</span>
+                    </p>
+                    <p>
+                        <strong>Fiat Value:</strong>
+                        <span class="metric-value green">${fiatValueStr}</span>
+                    </p>
+                </div>
             </div>
-            <div>
-                <span class="small">Total BTC:</span>
-                <span class="badge" style="background-color:${theme.PRIMARY}">${formattedBtc}</span>
-            </div>
-            <div>
-                <span class="small">Avg Accuracy:</span>
-                <span class="badge" style="background-color:${accuracyColor}">${formattedAccuracy}</span>
+            <div class="col-md-6">
+                <div class="d-flex flex-column">
+                    <p>
+                        <strong>Estimated Time:</strong>
+                        <span class="metric-value yellow">${lastPayout.estimatedTime || "N/A"}</span>
+                    </p>
+                    <p>
+                        <strong>Actual Time:</strong>
+                        <span class="metric-value white">${lastPayout.actualTime || "N/A"}</span>
+                    </p>
+                    <p>
+                        <strong>Prediction Accuracy:</strong>
+                        <span class="metric-value ${accuracyNum >= 90 ? 'green' : (accuracyNum >= 70 ? 'white' : 'red')}">${accuracyDisplay}</span>
+                    </p>
+                    <p>
+                        <strong>Status:</strong>
+                        <span class="metric-value ${lastPayout.verified ? 'green' : 'yellow'}">${statusDisplay}</span>
+                        ${txLink}
+                    </p>
+                </div>
             </div>
         </div>
     `);
 
-    // Add to DOM, replacing any existing summary
-    $("#payout-summary").remove();
-    container.prepend(summaryElement);
-}
-
-// Enhanced update function with more detailed display
-function updatePayoutHistoryDisplay() {
-    const container = $("#payout-history-container");
-
-    // Get the existing summary element if it exists
-    const existingSummary = $("#payout-summary").detach(); // Detach preserves event handlers
-
-    // Clear existing content
-    container.empty();
-
-    // Re-add the summary at the top if it exists
-    if (existingSummary && existingSummary.length) {
-        container.append(existingSummary);
-    }
-
-    // Check if we have history to display
-    if (!lastPayoutTracking.payoutHistory || lastPayoutTracking.payoutHistory.length === 0) {
-        container.append("<p>No payout history available yet.</p>");
-        return;
-    }
-
-    // Get current theme for styling
-    const theme = getCurrentTheme();
-
-    // Create a table to display the history with enhanced styling
-    const table = $("<table>", {
-        class: "table table-sm table-dark table-striped table-hover",
-        style: "font-size: 0.65em;"
-    });
-
-    // Add header row with more columns
-    const header = $("<tr>");
-    header.append("<th>Date</th>");
-    header.append("<th>Amount</th>");
-    header.append("<th>Fiat Value</th>");
-    header.append("<th>Estimated Time</th>");
-    header.append("<th>Actual Time</th>");
-    header.append("<th>Accuracy</th>");
-    header.append("<th>Status</th>");
-
-    table.append($("<thead>").append(header));
-
-    // Create table body
-    const tableBody = $("<tbody>");
-
-    lastPayoutTracking.payoutHistory.forEach(entry => {
-        const row = $("<tr>");
-        row.addClass(entry.officialRecordOnly ? "official-record-row" : "");
-
-        // Format the date using timezone-aware formatting
-        let dateStr = formatPayoutDate(entry.timestamp);
-
-        // Format the amount
-        const amountStr = `${formatBTC(entry.amountBTC)} BTC`;
-
-        // Format fiat value if available
-        let fiatValueStr = "N/A";
-        if (entry.fiat_value !== undefined && entry.rate !== undefined) {
-            const currency = latestMetrics?.currency || 'USD';
-            const symbol = getCurrencySymbol(currency);
-            fiatValueStr = `${symbol}${numberWithCommas(entry.fiat_value.toFixed(2))}`;
-        }
-
-        // Apply accuracy color styling - improved to be more visually clear
-        let accuracyClass = "text-warning";  // Default - yellow
-        let accuracyDisplay = entry.accuracy || "N/A";
-
-        if (entry.accuracy === "N/A") {
-            accuracyClass = "text-muted";  // Gray for N/A
-        } else {
-            const accuracyNum = parseInt(entry.accuracy);
-            if (accuracyNum >= 90) {
-                accuracyClass = "text-success";  // Green for 90-100%
-            } else if (accuracyNum >= 70) {
-                accuracyClass = "text-info";     // Blue for 70-89%
-            } else if (accuracyNum >= 50) {
-                accuracyClass = "text-warning";  // Yellow for 50-69%
-            } else {
-                accuracyClass = "text-danger";   // Red for 0-49%
-            }
-
-            // Add a visual indicator based on accuracy
-            let indicator = '';
-            if (accuracyNum >= 90) indicator = ' 🎯'; // Perfect hit
-            else if (accuracyNum >= 70) indicator = ' ✓'; // Good
-            else if (accuracyNum < 50) indicator = ' ✗'; // Bad
-
-            accuracyDisplay = entry.accuracy + indicator;
-        }
-
-        // Format transaction link if available
-        let statusDisplay = entry.status || "pending";
-        if (entry.verified && entry.officialId) {
-            statusDisplay = `<span class="text-success">${entry.status || "confirmed"}</span> 
-                            <a href="https://mempool.guide/tx/${entry.officialId}" 
-                               target="_blank" 
-                               class="tx-link-small" 
-                               title="View transaction">
-                                <i class="fa-solid fa-external-link-alt"></i>
-                            </a>`;
-        } else if (entry.verified) {
-            statusDisplay = `<span class="text-success">verified</span>`;
-        } else {
-            statusDisplay = `<span class="text-warning">pending</span>`;
-        }
-
-        // Add all the cells to the row
-        row.append(`<td>${dateStr}</td>`);
-        row.append(`<td>${amountStr}</td>`);
-        row.append(`<td>${fiatValueStr}</td>`);
-        row.append(`<td>${entry.estimatedTime}</td>`);
-        row.append(`<td>${entry.actualTime}</td>`);
-        row.append(`<td class="${accuracyClass}">${accuracyDisplay}</td>`);
-        row.append(`<td>${statusDisplay}</td>`);
-
-        tableBody.append(row);
-    });
-
-    table.append(tableBody);
-    container.append(table);
+    // Add to container
+    container.append(summaryElement);
 
     // Add view more link to the earnings page
     const viewMoreLink = $("<div class='text-center mt-3'></div>");
@@ -1311,31 +1234,37 @@ function updatePayoutHistoryDisplay() {
     `);
     container.append(viewMoreLink);
 
-    // Add CSS styling for the table
+    // Add CSS styling for the container
     $("<style>").text(`
-        #payout-history-container {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: rgba(0,0,0,0.2);
-        }
-        #payout-history-container .table {
-            margin-bottom: 0;
-        }
-        .official-record-row {
-            background-color: rgba(30, 60, 90, 0.3);
-        }
-        .tx-link-small {
-            font-size: 0.65em;
-            margin-left: 5px;
-            color: inherit;
-            text-decoration: none;
-        }
-        .tx-link-small:hover {
-            color: ${theme.PRIMARY};
-            text-decoration: none;
-        }
-    `).appendTo("head");
+    #payout-history-container {
+        background-color: var(--bg-color);
+        padding: 0.5rem;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--primary-color);
+        border-radius: 4px;
+        box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2);
+        position: relative;
+    }
+    
+    #payout-history-container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
+        pointer-events: none;
+        z-index: 1;
+    }
+    
+    #payout-summary {
+        position: relative;
+        z-index: 2;
+        margin-bottom: 0.75rem;
+    }
+`).appendTo("head");
 }
 
 // Add these utility functions from earnings.js for better date formatting
@@ -1474,8 +1403,10 @@ function verifyPayoutsAgainstOfficial() {
                 lastPayoutTracking.payoutHistory = lastPayoutTracking.payoutHistory.slice(0, 30);
             }
 
-            // Update the display with enriched data
-            updatePayoutHistoryDisplay();
+            // Update the display with enriched data if it's visible
+            if ($("#payout-history-container").is(":visible")) {
+                displayPayoutSummary();
+            }
 
             // Save the updated history
             try {
@@ -4089,7 +4020,7 @@ $(document).ready(function () {
     $(document).on('themeChanged', function () {
         // Refresh payout history display with new theme
         if ($("#payout-history-container").is(":visible")) {
-            updatePayoutHistoryDisplay();
+            displayPayoutSummary();
         }
 
         // Refresh any visible payout comparison with new theme

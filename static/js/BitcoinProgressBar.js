@@ -731,13 +731,9 @@ const BitcoinMinuteRefresh = (function () {
             addDraggingBehavior();
         }, 100);
 
-        // Start minimized on mobile, or if previously collapsed
-        if (
-            window.innerWidth < 768 ||
-            localStorage.getItem(STORAGE_KEYS.COLLAPSED) === 'true'
-        ) {
+        // Check if terminal was previously collapsed
+        if (localStorage.getItem(STORAGE_KEYS.COLLAPSED) === 'true') {
             terminalElement.classList.add('collapsed');
-            localStorage.setItem(STORAGE_KEYS.COLLAPSED, 'true');
         }
 
         // Add custom styles if not already present

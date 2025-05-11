@@ -963,8 +963,6 @@ function formatMinutesToTime(minutes) {
 
 // Update the displayPayoutComparison function to use better formatting
 function displayPayoutComparison(comparison) {
-    // Create a notification for the user
-    showToast(`Payout detected! Estimated: ${comparison.estimatedTime}, Actual: ${comparison.actualTime} (${comparison.difference}). Accuracy: ${comparison.accuracy}`);
 
     // Update the UI with the latest payout comparison
     const payoutInfoCard = $("#payoutMiscCard .card-body");
@@ -3595,6 +3593,252 @@ function updateCurrencyLabels(currency) {
     }
 }
 
+/**
+ * Function to optimize DeepSea theme for mobile and low-power devices
+ * This function reduces animations and effects for better performance
+ */
+function optimizeDeepSeaTheme() {
+    // Check if we're using DeepSea theme
+    if (localStorage.getItem('useDeepSeaTheme') !== 'true') return;
+
+    // Check if we're on a mobile device or a device with limited capabilities
+    const isMobile = window.innerWidth < 768;
+    const isLowPower = isMobile || navigator.hardwareConcurrency <= 4 || !matchMedia('(any-pointer: fine)').matches;
+
+    // Store settings in localStorage for persistence
+    const storedMode = localStorage.getItem('deepSeaPerformanceMode');
+    const performanceMode = storedMode || (isLowPower ? 'eco' : 'standard');
+
+    // If not previously set and this is a mobile device, use eco mode by default
+    if (!storedMode && isMobile) {
+        localStorage.setItem('deepSeaPerformanceMode', 'eco');
+    }
+
+    // Apply optimizations based on performance mode
+    if (performanceMode === 'eco' || isLowPower) {
+        console.log("Applying DeepSea eco mode optimizations...");
+
+        // 1. Reduce or disable background animations
+        const body = document.body;
+        body.style.animation = 'none'; // Remove water-movement animation
+
+        // 2. Find and optimize underwater effects
+        const rays = document.querySelector('.underwater-rays');
+        if (rays) {
+            rays.style.animation = 'none'; // Disable ray animations
+            rays.style.opacity = '0.1';    // Make rays more subtle
+        }
+
+        // 3. Optimize noise effect (reduce opacity or remove)
+        const noise = document.querySelector('.digital-noise');
+        if (noise) {
+            noise.style.animation = 'none';
+            noise.style.opacity = '0.01';
+        }
+
+        // 4. Clean up existing bubbles
+        const bubbleContainer = document.querySelector('.underwater-bubbles');
+        if (bubbleContainer) {
+            // Clear all existing intervals that might be adding bubbles
+            const highestId = window.setTimeout(() => { }, 0);
+            for (let i = highestId; i >= 0; i--) {
+                if (i !== pingInterval) {  // Don't clear essential app intervals
+                    window.clearInterval(i);
+                    window.clearTimeout(i);
+                }
+            }
+
+            // Remove all existing bubbles
+            bubbleContainer.innerHTML = '';
+
+            // Add minimal bubbles for atmosphere with reduced animation complexity
+            const miniBubbleCount = isMobile ? 3 : 5;
+
+            for (let i = 0; i < miniBubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                // Simplified properties
+                const size = Math.floor(Math.random() * 8) + 2;  // Smaller bubbles
+                const leftPos = Math.floor(Math.random() * 100);
+                const duration = Math.floor(Math.random() * 10) + 15;  // Slower bubbles
+
+                // Simplified styling without complex CSS animations
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${leftPos}%`;
+                bubble.style.opacity = '0.03';
+                bubble.style.animation = `bubble-rise ${duration}s linear 1`;
+
+                bubbleContainer.appendChild(bubble);
+
+                // Remove bubble once animation completes
+                setTimeout(() => {
+                    if (bubble && bubble.parentNode === bubbleContainer) {
+                        bubbleContainer.removeChild(bubble);
+                    }
+                }, duration * 1000);
+            }
+
+            // Add occasional new bubble for subtle effect
+            setInterval(() => {
+                if (bubbleContainer.childElementCount < miniBubbleCount * 1.5) {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'bubble';
+
+                    const size = Math.floor(Math.random() * 8) + 2;
+                    const leftPos = Math.floor(Math.random() * 100);
+                    const duration = Math.floor(Math.random() * 10) + 15;
+
+                    bubble.style.width = `${size}px`;
+                    bubble.style.height = `${size}px`;
+                    bubble.style.left = `${leftPos}%`;
+                    bubble.style.opacity = '0.03';
+                    bubble.style.animation = `bubble-rise ${duration}s linear 1`;
+
+                    bubbleContainer.appendChild(bubble);
+
+                    setTimeout(() => {
+                        if (bubble && bubble.parentNode === bubbleContainer) {
+                            bubbleContainer.removeChild(bubble);
+                        }
+                    }, duration * 1000);
+                }
+            }, 5000);  // Add a new bubble every 5 seconds
+        }
+
+        // 5. Remove or optimize water overlay effect
+        const waterOverlay = document.querySelector('.deep-water-overlay');
+        if (waterOverlay) {
+            waterOverlay.style.background = 'none';
+        }
+
+        // 6. Disable CRT effect on mobile
+        if (isMobile) {
+            const style = document.createElement('style');
+            style.textContent = `
+            body::before, html.deepsea-theme body::before {
+                content: none !important;
+            }
+            html.deepsea-theme body::after {
+                animation: none !important;
+                background: none !important;
+            }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Add performance mode toggle UI to the footer
+        addPerformanceModeToggle();
+    }
+}
+
+/**
+ * Add performance mode toggle to the footer
+ * Provides a UI for switching between eco and standard animation modes
+ */
+function addPerformanceModeToggle() {
+    console.log("Attempting to add performance mode toggle");
+
+    // Check if toggle already exists
+    if (document.getElementById('perfModeToggle')) {
+        console.log("Toggle already exists");
+        return;
+    }
+
+    // First try to find footer with more debugging
+    console.log("Looking for footer element...");
+
+    // Try different selectors and log results
+    let footerElement = document.querySelector('footer.footer');
+    if (footerElement) console.log("Found footer with 'footer.footer' selector");
+
+    if (!footerElement) {
+        footerElement = document.querySelector('footer');
+        if (footerElement) console.log("Found footer with 'footer' tag selector");
+    }
+
+    if (!footerElement) {
+        footerElement = document.querySelector('.footer');
+        if (footerElement) console.log("Found footer with '.footer' class selector");
+    }
+
+    // If footer isn't found yet, try again after a short delay
+    if (!footerElement) {
+        console.log("Footer not found, retrying in 1000ms...");
+        setTimeout(addPerformanceModeToggle, 1000);
+        return;
+    }
+
+    console.log("Found footer element, adding performance toggle");
+
+    // Get current mode
+    const currentMode = localStorage.getItem('deepSeaPerformanceMode') || 'standard';
+
+    // Create toggle UI with improved styling
+    const toggleContainer = document.createElement('div');
+    toggleContainer.id = 'perfModeToggle';
+    toggleContainer.style.marginTop = '10px';
+    toggleContainer.style.fontSize = '0.8rem';
+    toggleContainer.style.opacity = '0.7';
+    toggleContainer.style.padding = '5px';
+
+    toggleContainer.innerHTML = `
+        <span>DeepSea Animation: </span>
+        <a href="#" id="ecoModeLink" style="color: ${currentMode === 'eco' ? '#0088cc' : 'grey'}; margin-right: 10px; text-decoration: none;">Eco</a> | 
+        <a href="#" id="standardModeLink" style="color: ${currentMode === 'standard' ? '#0088cc' : 'grey'}; margin-left: 10px; text-decoration: none;">Standard</a>
+    `;
+
+    // Add to footer
+    footerElement.appendChild(toggleContainer);
+    console.log("Performance mode toggle added successfully");
+
+    // Add event listeners
+    document.getElementById('ecoModeLink').addEventListener('click', function (e) {
+        e.preventDefault();
+        localStorage.setItem('deepSeaPerformanceMode', 'eco');
+        window.location.reload();
+    });
+
+    document.getElementById('standardModeLink').addEventListener('click', function (e) {
+        e.preventDefault();
+        localStorage.setItem('deepSeaPerformanceMode', 'standard');
+        window.location.reload();
+    });
+}
+
+/**
+ * Initialize DeepSea theme optimizations
+ * Determines if optimizations are needed and applies them
+ */
+function initializeDeepSeaTheme() {
+    console.log("Initializing DeepSea theme optimizations");
+
+    // First check if the theme is active
+    if (localStorage.getItem('useDeepSeaTheme') !== 'true') {
+        console.log("DeepSea theme not active, skipping optimizations");
+        return;
+    }
+
+    // Apply optimizations after a longer delay to ensure DOM elements exist
+    setTimeout(function () {
+        console.log("Applying DeepSea optimizations now");
+        optimizeDeepSeaTheme();
+    }, 1000);
+
+    // Also optimize when theme changes
+    $(document).on('themeChanged', function () {
+        console.log("Theme changed - reapplying optimizations");
+        setTimeout(optimizeDeepSeaTheme, 800);
+    });
+
+    // Listen for orientation changes on mobile
+    window.addEventListener('orientationchange', function () {
+        console.log("Orientation changed - reapplying optimizations");
+        setTimeout(optimizeDeepSeaTheme, 800);
+    });
+}
+
 $(document).ready(function () {
     // Apply theme based on stored preference - moved to beginning for better initialization
     try {
@@ -3607,6 +3851,10 @@ $(document).ready(function () {
     } catch (e) {
         console.error("Error handling theme:", e);
     }
+
+    console.log("Document ready - checking for DeepSea theme");
+    // Initialize DeepSea theme optimizations
+    initializeDeepSeaTheme();
 
     // Initialize chart points preference from localStorage
     try {

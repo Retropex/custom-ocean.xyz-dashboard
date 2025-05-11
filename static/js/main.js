@@ -1089,7 +1089,7 @@ function displayPayoutSummary() {
 
     // Create a base container for the summary
     const summaryElement = $(`
-        <div id="payout-summary" class="mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
+        <div id="payout-summary" class="mb-3 p-2" style="background-color:rgba(0,0,0,0.2);">
             <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold; font-size: 18px;">Last Payout Summary</h6>
             <div id="summary-content"></div>
         </div>
@@ -1258,7 +1258,6 @@ function displayPayoutSummary() {
         margin-top: 1rem;
         margin-bottom: 1rem;
         border: 1px solid var(--primary-color);
-        border-radius: 4px;
         box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2);
         position: relative;
     }
@@ -1626,7 +1625,7 @@ function showConnectionIssue(message) {
     const theme = getCurrentTheme();
     let $connectionStatus = $("#connectionStatus");
     if (!$connectionStatus.length) {
-        $("body").append(`<div id="connectionStatus" style="position: fixed; top: 10px; right: 10px; background: rgba(255,0,0,0.7); color: white; padding: 10px; border-radius: 5px; z-index: 9999;"></div>`);
+        $("body").append(`<div id="connectionStatus" style="position: fixed; top: 10px; right: 10px; background: rgba(255,0,0,0.7); color: white; padding: 10px; z-index: 9999;"></div>`);
         $connectionStatus = $("#connectionStatus");
     }
     $connectionStatus.html(`<i class="fas fa-exclamation-triangle"></i> ${message}`).show();
@@ -3509,7 +3508,6 @@ function showHashrateNormalizeNotice() {
                 color: ${theme.PRIMARY};
                 border: 1px solid ${theme.PRIMARY};
                 padding: 15px 20px;
-                border-radius: 4px;
                 z-index: 9999;
                 max-width: 300px;
                 font-family: 'VT323', monospace;
@@ -4209,7 +4207,7 @@ $(document).ready(function () {
     setInterval(updateServerTime, 30000);
 
     // Update the manual refresh button color
-    $("body").append('<button id="refreshButton" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #0088cc; color: white; border: none; padding: 8px 16px; display: none; border-radius: 4px; cursor: pointer;">Refresh Data</button>');
+    $("body").append('<button id="refreshButton" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #0088cc; color: white; border: none; padding: 8px 16px; display: none; cursor: pointer;">Refresh Data</button>');
 
     $("#refreshButton").on("click", function () {
         $(this).text("Refreshing...");

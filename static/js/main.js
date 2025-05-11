@@ -963,8 +963,6 @@ function formatMinutesToTime(minutes) {
 
 // Update the displayPayoutComparison function to use better formatting
 function displayPayoutComparison(comparison) {
-    // Create a notification for the user
-    showToast(`Payout detected! Estimated: ${comparison.estimatedTime}, Actual: ${comparison.actualTime} (${comparison.difference}). Accuracy: ${comparison.accuracy}`);
 
     // Update the UI with the latest payout comparison
     const payoutInfoCard = $("#payoutMiscCard .card-body");

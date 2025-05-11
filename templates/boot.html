@@ -231,6 +231,18 @@
             // Create initial set of droplets
             createInitialDroplets(dropletConfig);
 
+            // Randomly select a non-dripping droplet and make it drip
+            function initiateRandomDrip(config) {
+                const droplets = Array.from(document.querySelectorAll('.water-droplet:not(.dripping)'));
+                if (droplets.length === 0) return;
+
+                // Pick a random droplet to drip
+                const randomIndex = Math.floor(Math.random() * droplets.length);
+                const selectedDroplet = droplets[randomIndex];
+
+                makeDropletDrip(selectedDroplet, config);
+            }
+
             // Periodically add new droplets - less frequently on mobile
             setInterval(() => {
                 // Check current device type again in case of resize

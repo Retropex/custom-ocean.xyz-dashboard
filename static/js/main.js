@@ -1123,12 +1123,29 @@ function displayPayoutSummary() {
     // Format the BTC amount
     const btcAmount = formatBTC(lastPayout.amountBTC);
 
-    // Format fiat value if available
+    // Format fiat value using current currency and exchange rate
     let fiatValueStr = "N/A";
-    if (lastPayout.fiat_value !== undefined && lastPayout.rate !== undefined) {
+    if (lastPayout.amountBTC !== undefined) {
+        // Get current user currency and exchange rate from latestMetrics
         const currency = latestMetrics?.currency || 'USD';
-        const symbol = getCurrencySymbol(currency);
-        fiatValueStr = `${symbol}${numberWithCommas(lastPayout.fiat_value.toFixed(2))}`;
+        const exchangeRate = (latestMetrics?.exchange_rates && latestMetrics.exchange_rates[currency])
+            ? latestMetrics.exchange_rates[currency]
+            : 1.0;
+
+        // Calculate fiat value using current BTC price and exchange rate
+        const btcPrice = latestMetrics?.btc_price || 0;
+        if (btcPrice > 0) {
+            const fiatValue = parseFloat(lastPayout.amountBTC) * btcPrice * exchangeRate;
+            const symbol = getCurrencySymbol(currency);
+            fiatValueStr = `${symbol}${numberWithCommas(fiatValue.toFixed(2))}`;
+        }
+        // Fallback to stored fiat value if available
+        else if (lastPayout.fiat_value !== undefined && lastPayout.rate !== undefined) {
+            // Apply current exchange rate to convert from USD to selected currency
+            const fiatValue = lastPayout.fiat_value * exchangeRate;
+            const symbol = getCurrencySymbol(currency);
+            fiatValueStr = `${symbol}${numberWithCommas(fiatValue.toFixed(2))}`;
+        }
     }
 
     // Get accuracy color class

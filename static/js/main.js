@@ -1052,7 +1052,7 @@ function initPayoutTracking() {
     verifyPayoutsAgainstOfficial();
 
     // Schedule regular checks for new data
-    setInterval(verifyPayoutsAgainstOfficial, 30 * 60 * 1000); // Check every 30 minutes
+    setInterval(verifyPayoutsAgainstOfficial, 5 * 60 * 1000); // Check every 5 minutes
 }
 
 // Update toggle function to include only summary display
@@ -1089,7 +1089,7 @@ function displayPayoutSummary() {
 
     // Create a base container for the summary
     const summaryElement = $(`
-        <div id="payout-summary" class="mt-3 mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
+        <div id="payout-summary" class="mb-3 p-2" style="background-color:rgba(0,0,0,0.2);border-radius:4px;">
             <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold; font-size: 18px;">Last Payout Summary</h6>
             <div id="summary-content"></div>
         </div>
@@ -1242,7 +1242,7 @@ function displayPayoutSummary() {
     container.append(summaryElement);
 
     // Add view more link to the earnings page
-    const viewMoreLink = $("<div class='text-center mt-3'></div>");
+    const viewMoreLink = $("<div class='text-center'></div>");
     viewMoreLink.html(`
         <a href='/earnings' class='btn btn-sm' style='background-color:${theme.PRIMARY};color:white;'>
             Complete Payout History
@@ -3402,6 +3402,19 @@ function resetWalletAddress() {
                     trendChart.update('none');
                 }
 
+                // Clear payout history data from localStorage
+                try {
+                    localStorage.removeItem('payoutHistory');
+                    lastPayoutTracking.payoutHistory = [];
+                    console.log("Payout history cleared for wallet change");
+
+                    // Remove any visible payout comparison elements
+                    $("#payout-comparison").remove();
+                    $("#payout-history-container").empty().hide();
+                } catch (e) {
+                    console.error("Error clearing payout history:", e);
+                }
+
                 // Then reset wallet address
                 fetch('/api/config')
                     .then(response => response.json())
@@ -3442,8 +3455,21 @@ function resetWalletAddress() {
     }
 }
 
-// Fallback function if chart reset fails
+// Fallback function if chart reset fails - also updated to clear payout history
 function resetWalletAddressOnly() {
+    // Clear payout history data from localStorage
+    try {
+        localStorage.removeItem('payoutHistory');
+        lastPayoutTracking.payoutHistory = [];
+        console.log("Payout history cleared for wallet change");
+
+        // Remove any visible payout comparison elements
+        $("#payout-comparison").remove();
+        $("#payout-history-container").empty().hide();
+    } catch (e) {
+        console.error("Error clearing payout history:", e);
+    }
+
     fetch('/api/config')
         .then(response => response.json())
         .then(config => {

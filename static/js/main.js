@@ -1290,7 +1290,7 @@ function displayPayoutSummary() {
     .deepsea-theme #payout-history-container .metric-value {
         position: relative;
         z-index: 1;
-        opacity: 0.75;
+        opacity: 0.85;
     }
 `).appendTo("head");
 }

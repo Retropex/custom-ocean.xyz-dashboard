@@ -344,12 +344,6 @@ function applyDeepSeaTheme() {
                 color: #00ffff !important;
             }
             
-            /* CONGRATULATIONS MESSAGE */
-            #congratsMessage {
-                background: var(--primary-color) !important;
-                box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.7) !important;
-            }
-            
             /* ANIMATIONS */
             @keyframes waitingPulse {
                 0%, 100% { box-shadow: 0 0 10px var(--primary-color), 0 0 10px var(--primary-color) !important; opacity: 0.8; }

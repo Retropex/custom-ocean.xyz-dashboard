@@ -1960,12 +1960,21 @@ function checkForBlockUpdates(data) {
     }
 }
 
-// Helper function to show congratulatory messages with timestamps
+// Enhanced function to show congratulatory messages with DeepSea theme effects
 function showCongrats(message) {
-    const $congrats = $("#congratsMessage");
+    // Get or create the congrats message element
+    let $congrats = $("#congratsMessage");
+
+    if ($congrats.length === 0) {
+        $('body').append('<div id="congratsMessage"></div>');
+        $congrats = $("#congratsMessage");
+    }
+
+    // Clear any existing content and stop any ongoing animations
+    $congrats.empty().stop(true, true);
 
     // Add timestamp to the message
-    const now = new Date(Date.now() + serverTimeOffset); // Use server time offset for accuracy
+    const now = new Date(Date.now() + serverTimeOffset);
     const options = {
         year: 'numeric',
         month: 'short',
@@ -1980,11 +1989,54 @@ function showCongrats(message) {
     // Format the message with the timestamp
     const messageWithTimestamp = `${message} [${timeString}]`;
 
-    // Display the message
-    $congrats.text(messageWithTimestamp).fadeIn(500, function () {
-        setTimeout(function () {
-            $congrats.fadeOut(500);
-        }, 900000); // 15 minutes fade out
+    // Check if DeepSea theme is active
+    const isDeepSea = $('html').hasClass('deepsea-theme');
+
+    // For DeepSea theme, add bubbles and special effects
+    if (isDeepSea) {
+        // Create bubble container
+        const $bubbleContainer = $('<div class="congrats-bubbles"></div>');
+
+        // Add several bubbles with random sizes and positions
+        const isMobile = window.innerWidth < 768;
+        const bubbleCount = isMobile ? 3 : 8; // Fewer bubbles on mobile
+
+        for (let i = 0; i < bubbleCount; i++) {
+            const size = Math.floor(Math.random() * 8) + 4; // 4-12px
+            const left = Math.floor(Math.random() * 100); // 0-100%
+            const animDuration = (Math.random() * 3) + 2; // 2-5s
+            const delay = Math.random() * 1.5; // 0-1.5s
+            const drift = Math.random() * 10 - 5; // -5 to 5 drift
+
+            $('<div class="congrats-bubble"></div>')
+                .css({
+                    'width': size + 'px',
+                    'height': size + 'px',
+                    'left': left + '%',
+                    '--drift': drift,
+                    'animation-duration': animDuration + 's',
+                    'animation-delay': delay + 's'
+                })
+                .appendTo($bubbleContainer);
+        }
+
+        // Add bubbles to the congrats message
+        $congrats.append($bubbleContainer);
+    }
+
+    // Add the message text
+    $congrats
+        .append(`<span class="congrats-text">${messageWithTimestamp}</span>`)
+        .fadeIn(500);
+
+    // Set auto-hide timer
+    setTimeout(function () {
+        $congrats.fadeOut(800);
+    }, 15000); // 15 seconds display time
+
+    // Add click to dismiss
+    $congrats.off('click').on('click', function () {
+        $(this).fadeOut(500);
     });
 }
 

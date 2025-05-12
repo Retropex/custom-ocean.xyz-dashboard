@@ -276,22 +276,6 @@ html.deepsea-theme .toggle-btn.active {
     line-height: 1.2;
 }
 
-/* ----- NOTIFICATION ELEMENTS ----- */
-#congratsMessage {
-    display: none;
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-    background: var(--primary-color);
-    color: #000;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 0 15px rgba(var(--primary-color-rgb), 0.7);
-    text-transform: uppercase;
-}
-
 /* ----- ANIMATIONS ----- */
 @keyframes bounceUp {
     0%, 50%, 100% {

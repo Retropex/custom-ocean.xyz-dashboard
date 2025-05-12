@@ -199,15 +199,25 @@
         {% endblock %}
 
         {% block navigation %}
-        <div class="navigation-links">
-            <a href="/dashboard" class="nav-link {% block dashboard_active %}{% endblock %}">DASHBOARD</a>
-            <a href="/workers" class="nav-link {% block workers_active %}{% endblock %}">WORKERS</a>
-            <a href="/earnings" class="nav-link {% block earnings_active %}{% endblock %}">EARNINGS</a>
-            <a href="/blocks" class="nav-link {% block blocks_active %}{% endblock %}">BLOCKS</a>
-            <a href="/notifications" class="nav-link {% block notifications_active %}{% endblock %}">
-                NOTIFICATIONS
-                <span id="nav-unread-badge" class="nav-badge"></span>
-            </a>
+        <div class="nav-container">
+            <!-- Mobile hamburger menu button (visible only on small screens) -->
+            <div class="mobile-nav-wrapper">
+                <button id="mobileNavToggle" class="mobile-nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+    
+            <!-- Navigation links (horizontal on desktop, vertical on mobile) -->
+            <div class="navigation-links" id="navLinks">
+                <a href="/dashboard" class="nav-link {% block dashboard_active %}{% endblock %}">DASHBOARD</a>
+                <a href="/workers" class="nav-link {% block workers_active %}{% endblock %}">WORKERS</a>
+                <a href="/earnings" class="nav-link {% block earnings_active %}{% endblock %}">EARNINGS</a>
+                <a href="/blocks" class="nav-link {% block blocks_active %}{% endblock %}">BLOCKS</a>
+                <a href="/notifications" class="nav-link {% block notifications_active %}{% endblock %}">
+                    NOTIFICATIONS
+                    <span id="nav-unread-badge" class="nav-badge"></span>
+                </a>
+            </div>
         </div>
         {% endblock %}
 
@@ -262,5 +272,99 @@
 
     <!-- Bitcoin Progress Bar -->
     <script src="/static/js/BitcoinProgressBar.js"></script>
+
+    <!-- Mobile Navigation Script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if we're on mobile
+        const isMobile = window.innerWidth < 600;
+        const navToggle = document.getElementById('mobileNavToggle');
+        const navLinks = document.getElementById('navLinks');
+    
+        // Only set up mobile navigation if elements exist
+        if (navToggle && navLinks) {
+            // Apply theme colors to the toggle button
+            const isDeepSea = localStorage.getItem('useDeepSeaTheme') === 'true';
+            if (isDeepSea) {
+                navToggle.style.borderColor = '#0088cc';
+                navToggle.style.color = '#0088cc';
+            } else {
+                navToggle.style.borderColor = '#f2a900';
+                navToggle.style.color = '#f2a900';
+            }
+        
+            // Toggle menu open/closed when hamburger is clicked
+            navToggle.addEventListener('click', function() {
+                navLinks.classList.toggle('is-open');
+                const isOpen = navLinks.classList.contains('is-open');
+                navToggle.setAttribute('aria-expanded', isOpen);
+            
+                // Change icon based on state
+                const icon = navToggle.querySelector('i');
+                if (icon) {
+                    if (isOpen) {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    } else {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                }
+            });
+        
+            // Close menu when clicking outside
+            document.addEventListener('click', function(event) {
+                // Check if the menu is open and the click was outside
+                if (navLinks.classList.contains('is-open') && 
+                    !navLinks.contains(event.target) && 
+                    !navToggle.contains(event.target)) {
+                
+                    // Close the menu
+                    navLinks.classList.remove('is-open');
+                    navToggle.setAttribute('aria-expanded', false);
+                
+                    // Reset icon
+                    const icon = navToggle.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                }
+            });
+        
+            // Close menu after clicking a navigation link
+            const links = navLinks.querySelectorAll('.nav-link');
+            links.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 600) {
+                        navLinks.classList.remove('is-open');
+                        navToggle.setAttribute('aria-expanded', false);
+                    
+                        // Reset icon
+                        const icon = navToggle.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('fa-times');
+                            icon.classList.add('fa-bars');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Update colors on theme change
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'useDeepSeaTheme' && navToggle) {
+                const useDeepSea = e.newValue === 'true';
+                if (useDeepSea) {
+                    navToggle.style.borderColor = '#0088cc';
+                    navToggle.style.color = '#0088cc';
+                } else {
+                    navToggle.style.borderColor = '#f2a900';
+                    navToggle.style.color = '#f2a900';
+                }
+            }
+        });
+    });
+    </script>
 </body>
 </html>

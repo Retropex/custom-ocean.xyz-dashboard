@@ -1042,3 +1042,97 @@ html.deepsea-theme #congratsMessage {
         max-width: 90vw;
     }
 }
+
+/* Mobile Navigation System - Updated with 600px breakpoint */
+.nav-container {
+    position: relative;
+    width: 100%;
+    margin-top: 12px;
+}
+
+/* Wrapper for centering hamburger button */
+.mobile-nav-wrapper {
+    display: none;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+/* Hamburger button styling with theme compatibility */
+.mobile-nav-toggle {
+    display: inline-block;
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    font-size: 1.25rem;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    position: relative;
+    z-index: 1010;
+    border-radius: 0;
+    font-family: var(--terminal-font);
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px rgba(var(--primary-color-rgb), 0.3);
+}
+
+    .mobile-nav-toggle:hover {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+    }
+
+    .mobile-nav-toggle:active {
+        transform: translateY(1px);
+    }
+
+    .mobile-nav-toggle:focus {
+        outline: none;
+    }
+
+/* Mobile navigation adjustments - Changed from 767px to 599px */
+@media (max-width: 599px) {
+    .mobile-nav-wrapper {
+        display: block;
+    }
+
+    .navigation-links {
+        flex-direction: column;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        gap: 0;
+        background-color: var(--bg-color);
+        border-left: 1px solid var(--primary-color);
+        border-right: 1px solid var(--primary-color);
+        border-bottom: 1px solid var(--primary-color);
+        position: absolute;
+        z-index: 1000;
+        box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.3);
+    }
+
+        .navigation-links.is-open {
+            max-height: 300px;
+        }
+
+    .nav-link {
+        width: 100%;
+        margin: 0;
+        padding: 10px 16px;
+        border: none;
+        border-bottom: 1px solid rgba(var(--primary-color-rgb), 0.3);
+        text-align: center;
+    }
+
+        .nav-link:last-child {
+            border-bottom: none;
+        }
+
+        .nav-link:hover {
+            transform: none;
+        }
+
+        .nav-link.active {
+            border-left: 3px solid var(--primary-color);
+            border-right: 3px solid var(--primary-color);
+        }
+}

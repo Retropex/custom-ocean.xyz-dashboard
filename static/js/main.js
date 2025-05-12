@@ -1025,10 +1025,10 @@ function initPayoutTracking() {
     const theme = getCurrentTheme();
     const viewHistoryButton = $("<button>", {
         id: "view-payout-history",
-        text: "VIEW PAYOUT ANALYTICS",
+        text: "VIEW LAST PAYOUT",
         click: togglePayoutHistoryDisplay,
         class: "btn btn-sm mt-2",
-        style: `background-color: ${theme.PRIMARY}; color: white;`
+        style: `background-color: ${theme.PRIMARY}; color: white; border-radius: 0;`
     });
 
     $("#est_time_to_payout").parent().after(viewHistoryButton);
@@ -1062,7 +1062,7 @@ function togglePayoutHistoryDisplay() {
 
     if (container.is(":visible")) {
         container.slideUp();
-        button.text("VIEW PAYOUT ANALYTICS");
+        button.text("VIEW LAST PAYOUT");
     } else {
         // Clear the container first
         container.empty();
@@ -1072,7 +1072,7 @@ function togglePayoutHistoryDisplay() {
 
         // Show the container and update button text
         container.slideDown();
-        button.text("HIDE PAYOUT ANALYTICS");
+        button.text("HIDE LAST PAYOUT");
     }
 }
 

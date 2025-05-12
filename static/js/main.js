@@ -1276,8 +1276,21 @@ function displayPayoutSummary() {
     
     #payout-summary {
         position: relative;
-        z-index: 2;
+        z-index: 1;
         margin-bottom: 0.75rem;
+    }
+
+    /* DeepSea specific styling for payout content */
+    .deepsea-theme #payout-history-container {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Make payout text respect the DeepSea overlay opacity */  
+    .deepsea-theme #payout-history-container .metric-value {
+        position: relative;
+        z-index: 1;
+        opacity: 0.75;
     }
 `).appendTo("head");
 }

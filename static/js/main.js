@@ -2769,8 +2769,8 @@ function updateUI() {
         }
         
         .metric-divider-note {
-            font-size: 0.75em;
-            opacity: 0.8;
+            font-size: 0.85em;
+            opacity: 0.7;
             color: white;
             font-weight: normal;
         }

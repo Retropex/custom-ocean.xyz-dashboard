@@ -272,7 +272,11 @@ function applyDeepSeaTheme() {
             #pool_luck.lucky {
                 color: #32CD32 !important;
             }
-            
+
+            #btc_price {
+                cursor: pointer;
+            }
+
             /* ----- RETRO LED ----- */
             .retro-led {
                 display: inline-block;

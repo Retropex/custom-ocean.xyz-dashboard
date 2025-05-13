@@ -1064,7 +1064,7 @@ html.deepsea-theme #congratsMessage {
     border: 1px solid var(--primary-color);
     color: var(--primary-color);
     font-size: 1.25rem;
-    padding: 0.4rem 0.75rem;
+    padding: 0.3rem 0.65rem;
     cursor: pointer;
     position: relative;
     z-index: 1010;

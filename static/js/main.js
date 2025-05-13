@@ -1023,12 +1023,20 @@ function initPayoutTracking() {
 
     // Add a button to view payout history with theme-aware styling
     const theme = getCurrentTheme();
+    const isDeepSea = localStorage.getItem('useDeepSeaTheme') === 'true';
+
+    // Create button with theme-aware text color
     const viewHistoryButton = $("<button>", {
         id: "view-payout-history",
         text: "VIEW LAST PAYOUT",
         click: togglePayoutHistoryDisplay,
         class: "btn btn-sm mt-2",
-        style: `background-color: ${theme.PRIMARY}; color: white; border-radius: 0;`
+        style: `
+            background-color: ${theme.PRIMARY}; 
+            color: ${isDeepSea ? 'white' : 'black'};
+            border-radius: 0;
+            font-style: bold;
+        `
     });
 
     $("#est_time_to_payout").parent().after(viewHistoryButton);
@@ -1039,12 +1047,15 @@ function initPayoutTracking() {
         style: "display: none; margin-top: 10px;"
     }).insertAfter(viewHistoryButton);
 
-    // Update theme-change listener for the button
+    // Update theme-change listener for the button with fixed colors for each theme
     $(document).on('themeChanged', function () {
         const updatedTheme = getCurrentTheme();
+        // Check if DeepSea theme is active
+        const isDeepSeaActive = localStorage.getItem('useDeepSeaTheme') === 'true';
+
         $("#view-payout-history").css({
             'background-color': updatedTheme.PRIMARY,
-            'color': 'white'
+            'color': isDeepSeaActive ? 'white' : 'black'  // White for DeepSea, Black for Bitcoin
         });
     });
 
@@ -1243,8 +1254,9 @@ function displayPayoutSummary() {
 
     // Add view more link to the earnings page
     const viewMoreLink = $("<div class='text-center'></div>");
+    const isDeepSea = localStorage.getItem('useDeepSeaTheme') === 'true';
     viewMoreLink.html(`
-        <a href='/earnings' class='btn btn-sm' style='background-color:${theme.PRIMARY};color:white;'>
+        <a href='/earnings' class='btn btn-sm' style='background-color:${theme.PRIMARY};color:${isDeepSea ? 'white' : 'black'};'>
             Complete Payout History
         </a>
     `);
@@ -1261,7 +1273,7 @@ function displayPayoutSummary() {
         box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.2);
         position: relative;
     }
-    
+
     #payout-history-container::after {
         content: '';
         position: absolute;
@@ -1273,7 +1285,7 @@ function displayPayoutSummary() {
         pointer-events: none;
         z-index: 1;
     }
-    
+
     #payout-summary {
         position: relative;
         z-index: 1;
@@ -1286,13 +1298,22 @@ function displayPayoutSummary() {
         z-index: 1;
     }
 
+    /* Theme-specific styling for the "Complete Payout History" button */
+    .deepsea-theme #payout-history-container .btn {
+        color: white !important;
+    }
+    .bitcoin-theme #payout-history-container .btn, 
+    html:not(.deepsea-theme) #payout-history-container .btn {
+        color: black !important;
+    }
+
     /* Make payout text respect the DeepSea overlay opacity */  
     .deepsea-theme #payout-history-container .metric-value {
         position: relative;
         z-index: 1;
         opacity: 0.85;
     }
-`).appendTo("head");
+    `).appendTo("head");
 }
 
 // Add these utility functions from earnings.js for better date formatting

@@ -805,7 +805,7 @@ const BitcoinMinuteRefresh = (function () {
         // Terminal content - simplified for uptime-only
         terminalElement.innerHTML = `
           <div class="terminal-header">
-            <div class="terminal-title">UPTIME MONITOR</div>
+            <div class="terminal-title">SYSTEM MONITOR  </div>
             <div class="terminal-controls">
               <div class="terminal-dot minimize" title="Minimize" onclick="BitcoinMinuteRefresh.toggleTerminal()">
                 <span class="control-symbol">-</span>

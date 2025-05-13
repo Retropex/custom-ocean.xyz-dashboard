@@ -3379,7 +3379,7 @@ function updateUI() {
     }
 }
 
-// Update unread notifications badge in navigation
+// Update unread notifications badge in navigation with animation effects
 function updateNotificationBadge() {
     $.ajax({
         url: "/api/notifications/unread_count",
@@ -3388,55 +3388,161 @@ function updateNotificationBadge() {
             const unreadCount = data.unread_count;
             const badge = $("#nav-unread-badge");
 
+            // Store the previous count to detect increases
+            const previousCount = badge.text() ? parseInt(badge.text()) : 0;
+
             if (unreadCount > 0) {
-                badge.text(unreadCount).show();
+                badge.text(unreadCount);
+                badge.addClass('has-unread');
+
+                // Add animation when count increases
+                if (unreadCount > previousCount) {
+                    // Remove animation if it's already applied
+                    badge.removeClass('badge-pulse');
+
+                    // Force DOM reflow to restart animation
+                    void badge[0].offsetWidth;
+
+                    // Apply animation
+                    badge.addClass('badge-pulse');
+                }
             } else {
-                badge.hide();
+                badge.text('');
+                badge.removeClass('has-unread badge-pulse');
             }
+        },
+        error: function (xhr, status, error) {
+            console.error("Error fetching notification count:", error);
         }
     });
 }
 
-// Initialize notification badge checking
+// Enhanced notification badge update with mobile support
+function updateNotificationBadge() {
+    $.ajax({
+        url: "/api/notifications/unread_count",
+        method: "GET",
+        success: function (data) {
+            const unreadCount = data.unread_count;
+            const badge = $("#nav-unread-badge");
+            const mobileBadge = $("#mobile-nav-unread-badge");
+
+            // Store previous count to detect increases
+            const previousCount = parseInt(badge.text()) || 0;
+
+            if (unreadCount > 0) {
+                // Update count for desktop and mobile badges
+                badge.text(unreadCount).addClass('has-unread');
+
+                // Handle mobile badge if it exists
+                if (mobileBadge.length > 0) {
+                    mobileBadge.text(unreadCount).addClass('has-unread');
+                }
+
+                // Add animation effect when count increases
+                if (unreadCount > previousCount) {
+                    badge.addClass('badge-pulse');
+                    if (mobileBadge.length > 0) {
+                        mobileBadge.addClass('badge-pulse');
+                    }
+
+                    // Remove animation class after it completes
+                    setTimeout(function () {
+                        badge.removeClass('badge-pulse');
+                        if (mobileBadge.length > 0) {
+                            mobileBadge.removeClass('badge-pulse');
+                        }
+                    }, 1000);
+                }
+            } else {
+                // Hide badges when no notifications
+                badge.text('').removeClass('has-unread badge-pulse');
+                if (mobileBadge.length > 0) {
+                    mobileBadge.text('').removeClass('has-unread badge-pulse');
+                }
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Error fetching notification count:", error);
+        }
+    });
+}
+
+// Initialize notification badge checking with mobile support
 function initNotificationBadge() {
+    // Add CSS for enhanced badge styling on both desktop and mobile
+    $("<style>")
+        .prop("type", "text/css")
+        .html(`
+            /* Common badge styling */
+            .nav-badge {
+                background-color: var(--primary-color);
+                color: var(--bg-color);
+                border-radius: 50%;
+                font-size: 0.7rem;
+                min-width: 18px;
+                height: 18px;
+                padding: 0 4px;
+                text-align: center;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                position: absolute;
+                top: -5px;
+                right: -8px;
+                opacity: 0;
+                transform: scale(0);
+                transition: transform 0.2s ease, opacity 0.2s ease;
+                font-weight: bold;
+                box-shadow: 0 0 4px rgba(var(--primary-color-rgb), 0.5);
+            }
+            
+            /* Badge visibility class */
+            .nav-badge.has-unread {
+                opacity: 1;
+                transform: scale(1);
+                display: inline-flex !important;
+            }
+            
+            /* Pulse animation for new notifications */
+            @keyframes badgePulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.4); }
+                100% { transform: scale(1); }
+            }
+            
+            .badge-pulse {
+                animation: badgePulse 0.5s ease-out;
+            }
+            
+            /* Mobile-specific adjustments */
+            @media (max-width: 767px) {
+                #mobile-nav-unread-badge {
+                    top: 0;
+                    right: -5px;
+                }
+                
+                /* Make notification icon container relative for proper badge positioning */
+                .mobile-nav-item {
+                    position: relative;
+                }
+            }
+        `)
+        .appendTo("head");
+
     // Update immediately
     updateNotificationBadge();
 
     // Update every 60 seconds
     setInterval(updateNotificationBadge, 60000);
+
+    // Also update when page becomes visible again
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) {
+            updateNotificationBadge();
+        }
+    });
 }
-
-// Modify the resetDashboardChart function
-function resetDashboardChart() {
-    console.log("Resetting dashboard chart data");
-
-    if (trendChart) {
-        // Reset chart data arrays first (always succeeds)
-        trendChart.data.labels = [];
-        trendChart.data.datasets[0].data = [];
-        trendChart.update('none');
-
-        // Show immediate feedback
-        showConnectionIssue("Resetting chart data...");
-
-        // Then call the API to clear underlying data
-        $.ajax({
-            url: '/api/reset-chart-data',
-            method: 'POST',
-            success: function (response) {
-                console.log("Server data reset:", response);
-                showConnectionIssue("Chart data reset successfully");
-                setTimeout(hideConnectionIssue, 3000);
-            },
-            error: function (xhr, status, error) {
-                console.error("Error resetting chart data:", error);
-                showConnectionIssue("Chart display reset (backend error: " + error + ")");
-                setTimeout(hideConnectionIssue, 5000);
-            }
-        });
-    }
-}
-
 
 // Add keyboard event listener for Alt+W to reset wallet address
 $(document).keydown(function (event) {

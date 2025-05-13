@@ -518,8 +518,8 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
- * Add snapping functionality to the draggable terminal
- */
+     * Add snapping functionality to the draggable terminal
+     */
     function addSnappingBehavior() {
         // Get terminal height to calculate proper bottom positions
         const getTerminalHeight = () => {
@@ -540,24 +540,81 @@ const BitcoinMinuteRefresh = (function () {
             return window.innerHeight - terminalHeight - 20;
         };
 
+        // Helper function to get terminal width
+        const getTerminalWidth = () => {
+            const terminal = document.getElementById(DOM_IDS.TERMINAL) ||
+                document.querySelector('.bitcoin-terminal');
+            return terminal ? terminal.offsetWidth : 230;
+        };
+
         // Define snap points for expanded state
         const expandedSnapPoints = [
+            // Original points
             { name: 'topLeft', x: 20, y: 20 },
             { name: 'topRight', x: window.innerWidth - 250, y: 20 },
             { name: 'bottomLeft', x: 20, y: calculateBottomY() },
             { name: 'bottomRight', x: window.innerWidth - 250, y: calculateBottomY() },
             { name: 'center', x: (window.innerWidth - 230) / 2, y: 20 },
-            { name: 'centerBottom', x: (window.innerWidth - 230) / 2, y: calculateBottomY() }
+            { name: 'centerBottom', x: (window.innerWidth - 230) / 2, y: calculateBottomY() },
+
+            // New edge snap points
+            { name: 'topCenter', x: (window.innerWidth - 230) / 2, y: 20 },
+            { name: 'leftCenter', x: 20, y: (window.innerHeight - getTerminalHeight()) / 2 },
+            { name: 'rightCenter', x: window.innerWidth - 250, y: (window.innerHeight - getTerminalHeight()) / 2 },
+            { name: 'trueCenter', x: (window.innerWidth - 230) / 2, y: (window.innerHeight - getTerminalHeight()) / 2 },
+
+            // Quarter positions
+            { name: 'topLeftQuarter', x: window.innerWidth / 4 - 115, y: 20 },
+            { name: 'topRightQuarter', x: (window.innerWidth / 4) * 3 - 115, y: 20 },
+            { name: 'bottomLeftQuarter', x: window.innerWidth / 4 - 115, y: calculateBottomY() },
+            { name: 'bottomRightQuarter', x: (window.innerWidth / 4) * 3 - 115, y: calculateBottomY() },
+
+            // Side positions at thirds
+            { name: 'leftUpperThird', x: 20, y: window.innerHeight / 3 - getTerminalHeight() / 2 },
+            { name: 'leftLowerThird', x: 20, y: (window.innerHeight / 3) * 2 - getTerminalHeight() / 2 },
+            { name: 'rightUpperThird', x: window.innerWidth - 250, y: window.innerHeight / 3 - getTerminalHeight() / 2 },
+            { name: 'rightLowerThird', x: window.innerWidth - 250, y: (window.innerHeight / 3) * 2 - getTerminalHeight() / 2 },
+
+            // Top and bottom third positions
+            { name: 'topLeftThird', x: window.innerWidth / 3 - 115, y: 20 },
+            { name: 'topRightThird', x: (window.innerWidth / 3) * 2 - 115, y: 20 },
+            { name: 'bottomLeftThird', x: window.innerWidth / 3 - 115, y: calculateBottomY() },
+            { name: 'bottomRightThird', x: (window.innerWidth / 3) * 2 - 115, y: calculateBottomY() }
         ];
 
         // Define snap points for minimized/collapsed state - optimized for smaller height
         const collapsedSnapPoints = [
+            // Original points
             { name: 'topLeft', x: 20, y: 20 },
             { name: 'topRight', x: window.innerWidth - 250, y: 20 },
             { name: 'bottomLeft', x: 20, y: calculateBottomY() },
             { name: 'bottomRight', x: window.innerWidth - 250, y: calculateBottomY() },
             { name: 'center', x: (window.innerWidth - 230) / 2, y: 20 },
-            { name: 'centerBottom', x: (window.innerWidth - 230) / 2, y: calculateBottomY() }
+            { name: 'centerBottom', x: (window.innerWidth - 230) / 2, y: calculateBottomY() },
+
+            // New edge snap points - same names as expanded for consistency
+            { name: 'topCenter', x: (window.innerWidth - 230) / 2, y: 20 },
+            { name: 'leftCenter', x: 20, y: (window.innerHeight - getTerminalHeight()) / 2 },
+            { name: 'rightCenter', x: window.innerWidth - 250, y: (window.innerHeight - getTerminalHeight()) / 2 },
+            { name: 'trueCenter', x: (window.innerWidth - 230) / 2, y: (window.innerHeight - getTerminalHeight()) / 2 },
+
+            // Quarter positions
+            { name: 'topLeftQuarter', x: window.innerWidth / 4 - 115, y: 20 },
+            { name: 'topRightQuarter', x: (window.innerWidth / 4) * 3 - 115, y: 20 },
+            { name: 'bottomLeftQuarter', x: window.innerWidth / 4 - 115, y: calculateBottomY() },
+            { name: 'bottomRightQuarter', x: (window.innerWidth / 4) * 3 - 115, y: calculateBottomY() },
+
+            // Side positions at thirds
+            { name: 'leftUpperThird', x: 20, y: window.innerHeight / 3 - getTerminalHeight() / 2 },
+            { name: 'leftLowerThird', x: 20, y: (window.innerHeight / 3) * 2 - getTerminalHeight() / 2 },
+            { name: 'rightUpperThird', x: window.innerWidth - 250, y: window.innerHeight / 3 - getTerminalHeight() / 2 },
+            { name: 'rightLowerThird', x: window.innerWidth - 250, y: (window.innerHeight / 3) * 2 - getTerminalHeight() / 2 },
+
+            // Top and bottom third positions
+            { name: 'topLeftThird', x: window.innerWidth / 3 - 115, y: 20 },
+            { name: 'topRightThird', x: (window.innerWidth / 3) * 2 - 115, y: 20 },
+            { name: 'bottomLeftThird', x: window.innerWidth / 3 - 115, y: calculateBottomY() },
+            { name: 'bottomRightThird', x: (window.innerWidth / 3) * 2 - 115, y: calculateBottomY() }
         ];
 
         // Snap sensitivity - how close the terminal needs to be to snap (in pixels)
@@ -598,26 +655,93 @@ const BitcoinMinuteRefresh = (function () {
         // Update snap points on window resize
         function updateSnapPoints() {
             const bottomY = calculateBottomY();
+            const termWidth = getTerminalWidth();
+            const halfTermWidth = termWidth / 2;
+            const termHeight = getTerminalHeight();
+            const halfTermHeight = termHeight / 2;
+            const verticalCenter = (window.innerHeight - termHeight) / 2;
 
-            // Update expanded snap points
-            expandedSnapPoints[1].x = window.innerWidth - 250; // topRight
-            expandedSnapPoints[3].x = window.innerWidth - 250; // bottomRight
-            expandedSnapPoints[4].x = (window.innerWidth - 230) / 2; // center
-            expandedSnapPoints[5].x = (window.innerWidth - 230) / 2; // centerBottom
+            // Update original snap points
+            expandedSnapPoints[1].x = window.innerWidth - termWidth - 20; // topRight
+            expandedSnapPoints[3].x = window.innerWidth - termWidth - 20; // bottomRight
+            expandedSnapPoints[4].x = (window.innerWidth - termWidth) / 2; // center
+            expandedSnapPoints[5].x = (window.innerWidth - termWidth) / 2; // centerBottom
 
             expandedSnapPoints[2].y = bottomY; // bottomLeft
             expandedSnapPoints[3].y = bottomY; // bottomRight
             expandedSnapPoints[5].y = bottomY; // centerBottom
 
-            // Update collapsed snap points
-            collapsedSnapPoints[1].x = window.innerWidth - 250; // topRight
-            collapsedSnapPoints[3].x = window.innerWidth - 250; // bottomRight
-            collapsedSnapPoints[4].x = (window.innerWidth - 230) / 2; // center
-            collapsedSnapPoints[5].x = (window.innerWidth - 230) / 2; // centerBottom
+            // Update new edge snap points for expanded
+            expandedSnapPoints[6].x = (window.innerWidth - termWidth) / 2; // topCenter
+            expandedSnapPoints[7].y = verticalCenter; // leftCenter
+            expandedSnapPoints[8].x = window.innerWidth - termWidth - 20; // rightCenter
+            expandedSnapPoints[8].y = verticalCenter; // rightCenter
+            expandedSnapPoints[9].x = (window.innerWidth - termWidth) / 2; // trueCenter
+            expandedSnapPoints[9].y = verticalCenter; // trueCenter
+
+            // Update quarter positions for expanded
+            expandedSnapPoints[10].x = window.innerWidth / 4 - halfTermWidth; // topLeftQuarter
+            expandedSnapPoints[11].x = (window.innerWidth / 4) * 3 - halfTermWidth; // topRightQuarter
+            expandedSnapPoints[12].x = window.innerWidth / 4 - halfTermWidth; // bottomLeftQuarter
+            expandedSnapPoints[12].y = bottomY; // bottomLeftQuarter
+            expandedSnapPoints[13].x = (window.innerWidth / 4) * 3 - halfTermWidth; // bottomRightQuarter
+            expandedSnapPoints[13].y = bottomY; // bottomRightQuarter
+
+            // Update thirds positions for expanded
+            expandedSnapPoints[14].y = window.innerHeight / 3 - halfTermHeight; // leftUpperThird
+            expandedSnapPoints[15].y = (window.innerHeight / 3) * 2 - halfTermHeight; // leftLowerThird
+            expandedSnapPoints[16].x = window.innerWidth - termWidth - 20; // rightUpperThird
+            expandedSnapPoints[16].y = window.innerHeight / 3 - halfTermHeight; // rightUpperThird
+            expandedSnapPoints[17].x = window.innerWidth - termWidth - 20; // rightLowerThird
+            expandedSnapPoints[17].y = (window.innerHeight / 3) * 2 - halfTermHeight; // rightLowerThird
+
+            expandedSnapPoints[18].x = window.innerWidth / 3 - halfTermWidth; // topLeftThird
+            expandedSnapPoints[19].x = (window.innerWidth / 3) * 2 - halfTermWidth; // topRightThird
+            expandedSnapPoints[20].x = window.innerWidth / 3 - halfTermWidth; // bottomLeftThird
+            expandedSnapPoints[20].y = bottomY; // bottomLeftThird
+            expandedSnapPoints[21].x = (window.innerWidth / 3) * 2 - halfTermWidth; // bottomRightThird
+            expandedSnapPoints[21].y = bottomY; // bottomRightThird
+
+            // Do the same for collapsed snap points
+            collapsedSnapPoints[1].x = window.innerWidth - termWidth - 20; // topRight
+            collapsedSnapPoints[3].x = window.innerWidth - termWidth - 20; // bottomRight
+            collapsedSnapPoints[4].x = (window.innerWidth - termWidth) / 2; // center
+            collapsedSnapPoints[5].x = (window.innerWidth - termWidth) / 2; // centerBottom
 
             collapsedSnapPoints[2].y = bottomY; // bottomLeft
             collapsedSnapPoints[3].y = bottomY; // bottomRight
             collapsedSnapPoints[5].y = bottomY; // centerBottom
+
+            // Update new edge snap points for collapsed
+            collapsedSnapPoints[6].x = (window.innerWidth - termWidth) / 2; // topCenter
+            collapsedSnapPoints[7].y = verticalCenter; // leftCenter
+            collapsedSnapPoints[8].x = window.innerWidth - termWidth - 20; // rightCenter
+            collapsedSnapPoints[8].y = verticalCenter; // rightCenter
+            collapsedSnapPoints[9].x = (window.innerWidth - termWidth) / 2; // trueCenter
+            collapsedSnapPoints[9].y = verticalCenter; // trueCenter
+
+            // Update quarter positions for collapsed
+            collapsedSnapPoints[10].x = window.innerWidth / 4 - halfTermWidth; // topLeftQuarter
+            collapsedSnapPoints[11].x = (window.innerWidth / 4) * 3 - halfTermWidth; // topRightQuarter
+            collapsedSnapPoints[12].x = window.innerWidth / 4 - halfTermWidth; // bottomLeftQuarter
+            collapsedSnapPoints[12].y = bottomY; // bottomLeftQuarter
+            collapsedSnapPoints[13].x = (window.innerWidth / 4) * 3 - halfTermWidth; // bottomRightQuarter
+            collapsedSnapPoints[13].y = bottomY; // bottomRightQuarter
+
+            // Update thirds positions for collapsed
+            collapsedSnapPoints[14].y = window.innerHeight / 3 - halfTermHeight; // leftUpperThird
+            collapsedSnapPoints[15].y = (window.innerHeight / 3) * 2 - halfTermHeight; // leftLowerThird
+            collapsedSnapPoints[16].x = window.innerWidth - termWidth - 20; // rightUpperThird
+            collapsedSnapPoints[16].y = window.innerHeight / 3 - halfTermHeight; // rightUpperThird
+            collapsedSnapPoints[17].x = window.innerWidth - termWidth - 20; // rightLowerThird
+            collapsedSnapPoints[17].y = (window.innerHeight / 3) * 2 - halfTermHeight; // rightLowerThird
+
+            collapsedSnapPoints[18].x = window.innerWidth / 3 - halfTermWidth; // topLeftThird
+            collapsedSnapPoints[19].x = (window.innerWidth / 3) * 2 - halfTermWidth; // topRightThird
+            collapsedSnapPoints[20].x = window.innerWidth / 3 - halfTermWidth; // bottomLeftThird
+            collapsedSnapPoints[20].y = bottomY; // bottomLeftThird
+            collapsedSnapPoints[21].x = (window.innerWidth / 3) * 2 - halfTermWidth; // bottomRightThird
+            collapsedSnapPoints[21].y = bottomY; // bottomRightThird
         }
 
         // Initial setup
@@ -634,7 +758,7 @@ const BitcoinMinuteRefresh = (function () {
             getSnapPointMapping: function () {
                 // Direct mapping between expanded and collapsed snap points
                 return {
-                    // Expanded -> Collapsed
+                    // Original points
                     'topLeft': 'topLeft',
                     'topRight': 'topRight',
                     'bottomLeft': 'bottomLeft',
@@ -642,8 +766,23 @@ const BitcoinMinuteRefresh = (function () {
                     'center': 'center',
                     'centerBottom': 'centerBottom',
 
-                    // These are the same in both directions
-                    // since our point names match
+                    // New points
+                    'topCenter': 'topCenter',
+                    'leftCenter': 'leftCenter',
+                    'rightCenter': 'rightCenter',
+                    'trueCenter': 'trueCenter',
+                    'topLeftQuarter': 'topLeftQuarter',
+                    'topRightQuarter': 'topRightQuarter',
+                    'bottomLeftQuarter': 'bottomLeftQuarter',
+                    'bottomRightQuarter': 'bottomRightQuarter',
+                    'leftUpperThird': 'leftUpperThird',
+                    'leftLowerThird': 'leftLowerThird',
+                    'rightUpperThird': 'rightUpperThird',
+                    'rightLowerThird': 'rightLowerThird',
+                    'topLeftThird': 'topLeftThird',
+                    'topRightThird': 'topRightThird',
+                    'bottomLeftThird': 'bottomLeftThird',
+                    'bottomRightThird': 'bottomRightThird'
                 };
             },
 
@@ -655,8 +794,8 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
- * Create and inject the retro terminal element into the DOM
- */
+     * Create and inject the retro terminal element into the DOM
+     */
     function createTerminalElement() {
         // Container element
         terminalElement = document.createElement('div');
@@ -747,8 +886,8 @@ const BitcoinMinuteRefresh = (function () {
     }
 
     /**
- * Restore terminal position from localStorage
- */
+     * Restore terminal position from localStorage
+     */
     function restoreTerminalPosition() {
         // Only restore position on desktop
         if (window.innerWidth >= 768 && terminalElement) {

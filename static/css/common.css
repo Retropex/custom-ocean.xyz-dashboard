@@ -1060,7 +1060,7 @@ html.deepsea-theme #congratsMessage {
 /* Hamburger button styling with theme compatibility */
 .mobile-nav-toggle {
     display: inline-block;
-    background: transparent;
+    background: black;
     border: 1px solid var(--primary-color);
     color: var(--primary-color);
     font-size: 1.25rem;

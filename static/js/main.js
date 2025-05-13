@@ -4322,7 +4322,7 @@ $(document).ready(function () {
         const iframe = document.createElement('iframe');
         iframe.width = "560";
         iframe.height = "315";
-        iframe.src = "https://www.youtube-nocookie.com/embed/e37cnuS0Lyo?si=Ml5SVSZmru6rlrml";
+        iframe.src = "https://www.youtube-nocookie.com/embed/myPHyYjn76Y?si=q7xhkRYiwBYwvwab";
         iframe.title = "YouTube video player";
         iframe.frameBorder = "0";
         iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";

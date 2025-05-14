@@ -342,7 +342,7 @@ function initializePage() {
     }
 }
 
-// Enhanced notification badge update with mobile support
+// Update unread notifications badge in navigation
 function updateNotificationBadge() {
     $.ajax({
         url: "/api/notifications/unread_count",
@@ -350,123 +350,23 @@ function updateNotificationBadge() {
         success: function (data) {
             const unreadCount = data.unread_count;
             const badge = $("#nav-unread-badge");
-            const mobileBadge = $("#mobile-nav-unread-badge");
-
-            // Store previous count to detect increases
-            const previousCount = parseInt(badge.text()) || 0;
 
             if (unreadCount > 0) {
-                // Update count for desktop and mobile badges
-                badge.text(unreadCount).addClass('has-unread');
-
-                // Handle mobile badge if it exists
-                if (mobileBadge.length > 0) {
-                    mobileBadge.text(unreadCount).addClass('has-unread');
-                }
-
-                // Add animation effect when count increases
-                if (unreadCount > previousCount) {
-                    badge.addClass('badge-pulse');
-                    if (mobileBadge.length > 0) {
-                        mobileBadge.addClass('badge-pulse');
-                    }
-
-                    // Remove animation class after it completes
-                    setTimeout(function () {
-                        badge.removeClass('badge-pulse');
-                        if (mobileBadge.length > 0) {
-                            mobileBadge.removeClass('badge-pulse');
-                        }
-                    }, 1000);
-                }
+                badge.text(unreadCount).show();
             } else {
-                // Hide badges when no notifications
-                badge.text('').removeClass('has-unread badge-pulse');
-                if (mobileBadge.length > 0) {
-                    mobileBadge.text('').removeClass('has-unread badge-pulse');
-                }
+                badge.hide();
             }
-        },
-        error: function (xhr, status, error) {
-            console.error("Error fetching notification count:", error);
         }
     });
 }
 
-// Initialize notification badge checking with mobile support
+// Initialize notification badge checking
 function initNotificationBadge() {
-    // Add CSS for enhanced badge styling on both desktop and mobile
-    $("<style>")
-        .prop("type", "text/css")
-        .html(`
-            /* Common badge styling */
-            .nav-badge {
-                background-color: var(--primary-color);
-                color: var(--bg-color);
-                border-radius: 50%;
-                font-size: 0.7rem;
-                min-width: 18px;
-                height: 18px;
-                padding: 0 4px;
-                text-align: center;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                position: absolute;
-                top: -5px;
-                right: -8px;
-                opacity: 0;
-                transform: scale(0);
-                transition: transform 0.2s ease, opacity 0.2s ease;
-                font-weight: bold;
-                box-shadow: 0 0 4px rgba(var(--primary-color-rgb), 0.5);
-            }
-            
-            /* Badge visibility class */
-            .nav-badge.has-unread {
-                opacity: 1;
-                transform: scale(1);
-                display: inline-flex !important;
-            }
-            
-            /* Pulse animation for new notifications */
-            @keyframes badgePulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.4); }
-                100% { transform: scale(1); }
-            }
-            
-            .badge-pulse {
-                animation: badgePulse 0.5s ease-out;
-            }
-            
-            /* Mobile-specific adjustments */
-            @media (max-width: 767px) {
-                #mobile-nav-unread-badge {
-                    top: 0;
-                    right: -5px;
-                }
-                
-                /* Make notification icon container relative for proper badge positioning */
-                .mobile-nav-item {
-                    position: relative;
-                }
-            }
-        `)
-        .appendTo("head");
-
     // Update immediately
     updateNotificationBadge();
 
     // Update every 60 seconds
     setInterval(updateNotificationBadge, 60000);
-
-    // Also update when page becomes visible again
-    document.addEventListener("visibilitychange", function () {
-        if (!document.hidden) {
-            updateNotificationBadge();
-        }
-    });
 }
 
 // Server time update via polling - enhanced to use shared storage

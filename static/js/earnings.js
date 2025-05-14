@@ -194,3 +194,122 @@ function initNotificationBadge() {
     // Update every 60 seconds
     setInterval(updateNotificationBadge, 60000);
 }
+
+// Add keyboard event listener for Alt+W to reset wallet address
+$(document).keydown(function (event) {
+    // Check if Alt+W is pressed (key code 87 is 'W')
+    if (event.altKey && event.keyCode === 87) {
+        resetWalletAddress();
+
+        // Prevent default browser behavior
+        event.preventDefault();
+    }
+});
+
+// Function to reset wallet address in configuration and clear chart data
+function resetWalletAddress() {
+    if (confirm("Are you sure you want to reset your wallet address? This will also clear all chart data and redirect you to the configuration page.")) {
+        // First clear chart data using the existing API endpoint
+        $.ajax({
+            url: '/api/reset-chart-data',
+            method: 'POST',
+            success: function () {
+                console.log("Chart data reset successfully");
+
+                // Then reset the chart display locally
+                if (trendChart) {
+                    trendChart.data.labels = [];
+                    trendChart.data.datasets[0].data = [];
+                    trendChart.update('none');
+                }
+
+                // Clear payout history data from localStorage
+                try {
+                    localStorage.removeItem('payoutHistory');
+                    lastPayoutTracking.payoutHistory = [];
+                    console.log("Payout history cleared for wallet change");
+
+                    // Remove any visible payout comparison elements
+                    $("#payout-comparison").remove();
+                    $("#payout-history-container").empty().hide();
+                } catch (e) {
+                    console.error("Error clearing payout history:", e);
+                }
+
+                // Then reset wallet address
+                fetch('/api/config')
+                    .then(response => response.json())
+                    .then(config => {
+                        // Reset the wallet address to default
+                        config.wallet = "yourwallethere";
+                        // Add special flag to indicate config reset
+                        config.config_reset = true;
+
+                        // Save the updated configuration
+                        return fetch('/api/config', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(config)
+                        });
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Wallet address reset successfully:", data);
+                        // Also clear arrow indicator states
+                        arrowIndicator.clearAll();
+                        // Redirect to the boot page for reconfiguration
+                        window.location.href = window.location.origin + "/";
+                    })
+                    .catch(error => {
+                        console.error("Error resetting wallet address:", error);
+                        alert("There was an error resetting your wallet address. Please try again.");
+                    });
+            },
+            error: function (xhr, status, error) {
+                console.error("Error clearing chart data:", error);
+                // Continue with wallet reset even if chart reset fails
+                resetWalletAddressOnly();
+            }
+        });
+    }
+}
+
+// Fallback function if chart reset fails - also updated to clear payout history
+function resetWalletAddressOnly() {
+    // Clear payout history data from localStorage
+    try {
+        localStorage.removeItem('payoutHistory');
+        lastPayoutTracking.payoutHistory = [];
+        console.log("Payout history cleared for wallet change");
+
+        // Remove any visible payout comparison elements
+        $("#payout-comparison").remove();
+        $("#payout-history-container").empty().hide();
+    } catch (e) {
+        console.error("Error clearing payout history:", e);
+    }
+
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(config => {
+            config.wallet = "yourwallethere";
+            return fetch('/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            });
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Wallet address reset successfully (without chart reset):", data);
+            window.location.href = window.location.origin + "/";
+        })
+        .catch(error => {
+            console.error("Error resetting wallet address:", error);
+            alert("There was an error resetting your wallet address. Please try again.");
+        });
+}

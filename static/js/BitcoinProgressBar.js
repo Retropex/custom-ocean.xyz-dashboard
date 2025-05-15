@@ -56,6 +56,11 @@ const BitcoinMinuteRefresh = (function () {
     let currentThemeRGB = '';
     let dragListenersAdded = false;
 
+    // Helper function to check if DeepSea theme is active
+    function isDeepSea() {
+        return localStorage.getItem('useDeepSeaTheme') === 'true';
+    }
+
     /**
      * Get theme colors from CSS variables
      */
@@ -177,6 +182,7 @@ const BitcoinMinuteRefresh = (function () {
         const showButton = document.getElementById(DOM_IDS.SHOW_BUTTON);
         if (showButton) {
             showButton.style.backgroundColor = themeConfig.color;
+            showButton.style.color = isDeepSea() ? '#ffffff' : '#000000';
             showButton.style.boxShadow = `0 0 10px rgba(${currentThemeRGB}, 0.5)`;
         }
     }
@@ -1166,7 +1172,7 @@ const BitcoinMinuteRefresh = (function () {
         bottom: 10px;
         right: 10px;
         background-color: var(--primary-color, ${theme.color});
-        color: #000;
+        color: ${isDeepSea() ? '#ffffff' : '#000000'};
         border: none;
         padding: 8px 12px;
         font-family: 'VT323', monospace;

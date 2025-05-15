@@ -4196,7 +4196,7 @@ $(document).ready(function () {
             });
     })();
 
-    // Floating YouTube tab logic
+    // Floating Oracle tab logic
     function showYouTubeFloatingTab() {
         // Prevent multiple tabs
         if (document.getElementById('youtubeFloatingTab')) return;
@@ -4218,14 +4218,13 @@ $(document).ready(function () {
             overlay.remove();
         };
 
-        // Iframe
+        // Iframe for UTXO Oracle
         const iframe = document.createElement('iframe');
         iframe.width = "560";
         iframe.height = "315";
-        iframe.src = "https://www.youtube-nocookie.com/embed/myPHyYjn76Y?si=q7xhkRYiwBYwvwab";
-        iframe.title = "YouTube video player";
+        iframe.src = "https://utxo.live/oracle/";
+        iframe.title = "UTXO Oracle";
         iframe.frameBorder = "0";
-        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
         iframe.referrerPolicy = "strict-origin-when-cross-origin";
         iframe.allowFullscreen = true;
 

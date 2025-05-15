@@ -1174,6 +1174,7 @@ const BitcoinMinuteRefresh = (function () {
         z-index: 9999;
         display: none;
         box-shadow: 0 0 10px rgba(var(--primary-color-rgb, ${theme.rgb}), 0.5);
+        opacity: 0.85;
       }
       
       /* CRT scanline effect */

@@ -380,6 +380,9 @@ function applyDeepSeaTheme() {
             headerElement.innerHTML = headerElement.innerHTML.replace("BITCOIN", "DEEPSEA");
         }
 
+        // Update chart controls label
+        updateChartControlsLabel(true);
+
         // Update theme toggle button
         const themeToggle = document.getElementById('themeToggle');
         if (themeToggle) {
@@ -496,12 +499,14 @@ function loadThemePreference() {
         // Apply theme based on preference
         if (useDeepSea) {
             applyDeepSeaTheme();
+            updateChartControlsLabel(true);
         } else {
             // Make sure the toggle button is styled correctly for Bitcoin theme
             const themeToggle = document.getElementById('themeToggle');
             if (themeToggle) {
                 themeToggle.style.borderColor = '#f2a900';
                 themeToggle.style.color = '#f2a900';
+                updateChartControlsLabel(false);
             }
         }
     } catch (e) {
@@ -514,3 +519,11 @@ document.addEventListener('DOMContentLoaded', loadThemePreference);
 
 // For pages that load content dynamically, also check when the window loads
 window.addEventListener('load', loadThemePreference);
+
+function updateChartControlsLabel(useDeepSea) {
+    // Find the label element (adjust selector if needed)
+    const label = document.querySelector('.chart-controls-label');
+    if (label) {
+        label.textContent = useDeepSea ? 'Depth:' : 'History:';
+    }
+}

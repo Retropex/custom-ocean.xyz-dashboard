@@ -816,8 +816,8 @@ class MiningDashboardService:
     
         # Add mempool.space APIs
         mempool_urls = {
-            "hashrate": "https://mempool.space/api/v1/mining/hashrate/3d",
-            "prices": "https://mempool.space/api/v1/prices"
+            "hashrate": "https://mempool.guide/api/v1/mining/hashrate/3d",
+            "prices": "https://mempool.guide/api/v1/prices"
         }
     
         # Use previous cached values as defaults if available

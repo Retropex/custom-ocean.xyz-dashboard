@@ -801,8 +801,8 @@ class MiningDashboardService:
     def get_bitcoin_stats(self):
         """
         Fetch Bitcoin network statistics with improved error handling and caching.
-        Uses mempool.space APIs for more accurate network hashrate and multi-currency price data.
-    
+        Uses mempool.space APIs for more accurate network hashrate, block height, and multi-currency price data.
+
         Returns:
             tuple: (difficulty, network_hashrate, btc_price, block_count)
         """
@@ -811,41 +811,42 @@ class MiningDashboardService:
             "difficulty": "https://blockchain.info/q/getdifficulty",
             "hashrate": "https://blockchain.info/q/hashrate",  # Keep as fallback
             "ticker": "https://blockchain.info/ticker",  # Keep as fallback
-            "blockcount": "https://blockchain.info/q/getblockcount"
+            "blockcount": "https://blockchain.info/q/getblockcount"  # Keep as fallback
         }
-    
+
         # Add mempool.space APIs
         mempool_urls = {
-            "hashrate": "https://mempool.guide/api/v1/mining/hashrate/3d",
-            "prices": "https://mempool.guide/api/v1/prices"
+            "hashrate": "https://mempool.guide/api/v1/mining/hashrate/3d", # Includes network difficulty
+            "prices": "https://mempool.guide/api/v1/prices",
+            "block_height": "https://mempool.guide/api/blocks/tip/height"  # New API endpoint for block height
         }
-    
+
         # Use previous cached values as defaults if available
         difficulty = self.cache.get("difficulty")
         network_hashrate = self.cache.get("network_hashrate")
         btc_price = self.cache.get("btc_price")
         block_count = self.cache.get("block_count")
-    
+
         try:
             with ThreadPoolExecutor(max_workers=6) as executor:
                 # Add all API endpoints to futures
                 futures = {}
-            
+        
                 # Add blockchain.info endpoints
                 for key, url in blockchain_info_urls.items():
                     futures[key] = executor.submit(self.fetch_url, url)
-                
+            
                 # Add mempool.space endpoints
                 for key, url in mempool_urls.items():
                     futures[f"mempool_{key}"] = executor.submit(self.fetch_url, url)
-            
+        
                 # Get all responses
                 responses = {key: futures[key].result(timeout=5) for key in futures}
-            
+        
                 # Get currency setting from config
                 from config import get_currency
                 currency = get_currency()
-            
+        
                 # Process mempool.space price data (primary source)
                 price_data = {}
                 mempool_price_response = responses.get("mempool_prices")
@@ -861,17 +862,17 @@ class MiningDashboardService:
                             btc_price = float(price_data.get("USD"))
                             self.cache["btc_price"] = btc_price
                             logging.info(f"Using USD price from mempool.space as fallback: {btc_price}")
-                    
+                
                         # Cache other currencies for potential use in currency conversion
                         for curr, value in price_data.items():
                             if curr != "time":  # Skip the timestamp entry
                                 self.cache[f"btc_price_{curr}"] = float(value)
-                            
+                        
                     except (ValueError, TypeError, json.JSONDecodeError) as e:
                         logging.error(f"Error parsing mempool.space price data: {e}")
                 else:
                     logging.warning("Could not fetch price data from mempool.space, falling back to blockchain.info")
-                
+            
                 # Fall back to blockchain.info for price if mempool.space failed or currency not available
                 if btc_price is None and responses["ticker"] and responses["ticker"].ok:
                     try:
@@ -884,7 +885,21 @@ class MiningDashboardService:
                         logging.info(f"Using blockchain.info price: {btc_price}")
                     except (ValueError, TypeError, json.JSONDecodeError) as e:
                         logging.error(f"Error parsing blockchain.info price: {e}")
-                
+            
+                # Process mempool.space block height (primary source) - NEW SECTION
+                block_height_response = responses.get("mempool_block_height")
+                if block_height_response and block_height_response.ok:
+                    try:
+                        # The API returns just the block height as a simple integer value
+                        block_count = int(block_height_response.text)
+                        self.cache["block_count"] = block_count
+                        logging.info(f"Successfully fetched latest block height from mempool.space: {block_count}")
+                    except (ValueError, TypeError) as e:
+                        logging.error(f"Error parsing block height from mempool.space: {e}")
+                        # Will fall back to blockchain.info below if this fails
+                else:
+                    logging.warning("Could not fetch block height from mempool.space, falling back to blockchain.info")
+            
                 # Process mempool.space hashrate data (primary source)
                 mempool_hashrate_response = responses.get("mempool_hashrate")
                 if mempool_hashrate_response and mempool_hashrate_response.ok:
@@ -892,21 +907,21 @@ class MiningDashboardService:
                         hashrate_data = mempool_hashrate_response.json()
                         # Use currentHashrate from the API (already in H/s)
                         network_hashrate = hashrate_data.get("currentHashrate")
-                
+            
                         # Also update difficulty if available in the response
                         if "currentDifficulty" in hashrate_data:
                             difficulty = hashrate_data.get("currentDifficulty")
-                
+            
                         # Cache the updated values
                         self.cache["network_hashrate"] = network_hashrate
                         self.cache["difficulty"] = difficulty
-                
+            
                         logging.info(f"Successfully fetched network hashrate from mempool.space: {network_hashrate/1e18:.2f} EH/s")
                     except (ValueError, TypeError, json.JSONDecodeError) as e:
                         logging.error(f"Error parsing mempool.space hashrate data: {e}")
                 else:
                     logging.warning("Could not fetch hashrate from mempool.space, falling back to blockchain.info")
-        
+    
                 # Process blockchain.info hashrate as fallback
                 if network_hashrate is None and responses["hashrate"] and responses["hashrate"].ok:
                     try:
@@ -916,7 +931,7 @@ class MiningDashboardService:
                         logging.info(f"Using blockchain.info network hashrate: {network_hashrate/1e18:.2f} EH/s")
                     except (ValueError, TypeError) as e:
                         logging.error(f"Error parsing network hashrate from blockchain.info: {e}")
-        
+    
                 # Handle difficulty (if not already set by mempool.space)
                 if difficulty is None and responses["difficulty"] and responses["difficulty"].ok:
                     try:
@@ -924,18 +939,19 @@ class MiningDashboardService:
                         self.cache["difficulty"] = difficulty
                     except (ValueError, TypeError) as e:
                         logging.error(f"Error parsing difficulty: {e}")
-                
-                # Handle block count
-                if responses["blockcount"] and responses["blockcount"].ok:
+            
+                # Handle blockchain.info block count as fallback if mempool.space failed
+                if block_count is None and responses["blockcount"] and responses["blockcount"].ok:
                     try:
                         block_count = int(responses["blockcount"].text)
                         self.cache["block_count"] = block_count
+                        logging.info(f"Using blockchain.info block height: {block_count}")
                     except (ValueError, TypeError) as e:
                         logging.error(f"Error parsing block count: {e}")
-                
+            
         except Exception as e:
             logging.error(f"Error fetching Bitcoin stats: {e}")
-    
+
         return difficulty, network_hashrate, btc_price, block_count
 
     def get_all_worker_rows(self):

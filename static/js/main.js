@@ -4228,6 +4228,9 @@ $(document).ready(function () {
         iframe.referrerPolicy = "strict-origin-when-cross-origin";
         iframe.allowFullscreen = true;
 
+        // Add required permissions explicitly
+        iframe.setAttribute('allow', 'autoplay; encrypted-media');
+
         // Assemble
         tab.appendChild(closeBtn);
         tab.appendChild(iframe);

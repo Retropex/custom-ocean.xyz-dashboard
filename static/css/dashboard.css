@@ -574,7 +574,6 @@ html.deepsea-theme .satellite-dish-connected {
 .floating-tab {
     background: var(--bg-color, #181c24);
     border: 2px solid var(--primary-color, #ffd700);
-    border-radius: 8px;
     box-shadow: 0 8px 32px rgba(var(--primary-color-rgb, 255,215,0), 0.18), 0 0 0 1px rgba(0,0,0,0.12);
     padding: 1.5rem 1.5rem 1rem 1.5rem;
     position: relative;
@@ -586,6 +585,7 @@ html.deepsea-theme .satellite-dish-connected {
     font-family: var(--terminal-font, 'VT323', monospace);
     cursor: default; /* Prevents pointer on content itself */
     transition: box-shadow 0.2s, transform 0.2s;
+    width: 80%;
 }
 
     .floating-tab:hover {
@@ -595,8 +595,8 @@ html.deepsea-theme .satellite-dish-connected {
 
     .floating-tab iframe {
         border: none;
-        width: 560px;
-        height: 315px;
+        width: 100%;
+        height: 600px;
         max-width: 80vw;
         max-height: 60vh;
         background: #000;

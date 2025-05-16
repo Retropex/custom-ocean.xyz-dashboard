@@ -576,13 +576,11 @@ class MiningDashboardService:
                 # Find the payments table
                 payments_table = soup.find('tbody', id='payouts-tablerows')
                 if not payments_table:
-                    logging.warning(f"No payment table found on page {page_num}")
                     if page_num == 0:
-                        # If we can't find the table on the first page, something is wrong
-                        logging.error("Payment history table not found on main page")
+                        logging.error("Payment history table not found on the first (main) page. This may indicate a parsing issue or a change in the Ocean.xyz page structure.")
                         return []
                     else:
-                        # If we found payments before but not on this page, we've reached the end
+                        logging.info(f"Reached the end of payment history: no payment table found on page {page_num}. All available payments have been collected.")
                         break
         
                 # Find all payment rows
@@ -803,6 +801,7 @@ class MiningDashboardService:
     def get_bitcoin_stats(self):
         """
         Fetch Bitcoin network statistics with improved error handling and caching.
+        Uses mempool.space APIs for more accurate network hashrate and multi-currency price data.
     
         Returns:
             tuple: (difficulty, network_hashrate, btc_price, block_count)
@@ -811,12 +810,15 @@ class MiningDashboardService:
         blockchain_info_urls = {
             "difficulty": "https://blockchain.info/q/getdifficulty",
             "hashrate": "https://blockchain.info/q/hashrate",  # Keep as fallback
-            "ticker": "https://blockchain.info/ticker",
+            "ticker": "https://blockchain.info/ticker",  # Keep as fallback
             "blockcount": "https://blockchain.info/q/getblockcount"
         }
     
-        # Add mempool.space API for more accurate hashrate
-        mempool_url = "https://mempool.space/api/v1/mining/hashrate/3d"
+        # Add mempool.space APIs
+        mempool_urls = {
+            "hashrate": "https://mempool.space/api/v1/mining/hashrate/3d",
+            "prices": "https://mempool.space/api/v1/prices"
+        }
     
         # Use previous cached values as defaults if available
         difficulty = self.cache.get("difficulty")
@@ -825,39 +827,88 @@ class MiningDashboardService:
         block_count = self.cache.get("block_count")
     
         try:
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                # Add mempool hashrate API to futures
-                futures = {key: executor.submit(self.fetch_url, url) for key, url in blockchain_info_urls.items()}
-                futures["mempool_hashrate"] = executor.submit(self.fetch_url, mempool_url)
+            with ThreadPoolExecutor(max_workers=6) as executor:
+                # Add all API endpoints to futures
+                futures = {}
+            
+                # Add blockchain.info endpoints
+                for key, url in blockchain_info_urls.items():
+                    futures[key] = executor.submit(self.fetch_url, url)
+                
+                # Add mempool.space endpoints
+                for key, url in mempool_urls.items():
+                    futures[f"mempool_{key}"] = executor.submit(self.fetch_url, url)
             
                 # Get all responses
                 responses = {key: futures[key].result(timeout=5) for key in futures}
+            
+                # Get currency setting from config
+                from config import get_currency
+                currency = get_currency()
+            
+                # Process mempool.space price data (primary source)
+                price_data = {}
+                mempool_price_response = responses.get("mempool_prices")
+                if mempool_price_response and mempool_price_response.ok:
+                    try:
+                        price_data = mempool_price_response.json()
+                        # Update BTC price based on configured currency
+                        if currency in price_data:
+                            btc_price = float(price_data.get(currency))
+                            self.cache["btc_price"] = btc_price
+                            logging.info(f"Successfully fetched {currency} price from mempool.space: {btc_price}")
+                        elif "USD" in price_data:  # Fall back to USD if preferred currency not available
+                            btc_price = float(price_data.get("USD"))
+                            self.cache["btc_price"] = btc_price
+                            logging.info(f"Using USD price from mempool.space as fallback: {btc_price}")
+                    
+                        # Cache other currencies for potential use in currency conversion
+                        for curr, value in price_data.items():
+                            if curr != "time":  # Skip the timestamp entry
+                                self.cache[f"btc_price_{curr}"] = float(value)
+                            
+                    except (ValueError, TypeError, json.JSONDecodeError) as e:
+                        logging.error(f"Error parsing mempool.space price data: {e}")
+                else:
+                    logging.warning("Could not fetch price data from mempool.space, falling back to blockchain.info")
                 
-                # First try to get network hashrate from mempool.space API
+                # Fall back to blockchain.info for price if mempool.space failed or currency not available
+                if btc_price is None and responses["ticker"] and responses["ticker"].ok:
+                    try:
+                        ticker_data = responses["ticker"].json()
+                        if currency in ticker_data:
+                            btc_price = float(ticker_data.get(currency, {}).get("last", 0))
+                        else:
+                            btc_price = float(ticker_data.get("USD", {}).get("last", 0))
+                        self.cache["btc_price"] = btc_price
+                        logging.info(f"Using blockchain.info price: {btc_price}")
+                    except (ValueError, TypeError, json.JSONDecodeError) as e:
+                        logging.error(f"Error parsing blockchain.info price: {e}")
+                
+                # Process mempool.space hashrate data (primary source)
                 mempool_hashrate_response = responses.get("mempool_hashrate")
                 if mempool_hashrate_response and mempool_hashrate_response.ok:
                     try:
                         hashrate_data = mempool_hashrate_response.json()
                         # Use currentHashrate from the API (already in H/s)
                         network_hashrate = hashrate_data.get("currentHashrate")
-                    
+                
                         # Also update difficulty if available in the response
                         if "currentDifficulty" in hashrate_data:
                             difficulty = hashrate_data.get("currentDifficulty")
-                    
+                
                         # Cache the updated values
                         self.cache["network_hashrate"] = network_hashrate
                         self.cache["difficulty"] = difficulty
-                    
+                
                         logging.info(f"Successfully fetched network hashrate from mempool.space: {network_hashrate/1e18:.2f} EH/s")
                     except (ValueError, TypeError, json.JSONDecodeError) as e:
                         logging.error(f"Error parsing mempool.space hashrate data: {e}")
-                        # Will fall back to blockchain.info if this fails
                 else:
                     logging.warning("Could not fetch hashrate from mempool.space, falling back to blockchain.info")
-            
-                # Process blockchain.info responses with error handling
-                if (network_hashrate is None and responses["hashrate"] and responses["hashrate"].ok):
+        
+                # Process blockchain.info hashrate as fallback
+                if network_hashrate is None and responses["hashrate"] and responses["hashrate"].ok:
                     try:
                         # blockchain.info returns hashrate in GH/s, convert to H/s for consistency
                         network_hashrate = float(responses["hashrate"].text) * 1e9
@@ -865,24 +916,15 @@ class MiningDashboardService:
                         logging.info(f"Using blockchain.info network hashrate: {network_hashrate/1e18:.2f} EH/s")
                     except (ValueError, TypeError) as e:
                         logging.error(f"Error parsing network hashrate from blockchain.info: {e}")
-            
+        
                 # Handle difficulty (if not already set by mempool.space)
-                if (difficulty is None and responses["difficulty"] and responses["difficulty"].ok):
+                if difficulty is None and responses["difficulty"] and responses["difficulty"].ok:
                     try:
                         difficulty = float(responses["difficulty"].text)
                         self.cache["difficulty"] = difficulty
                     except (ValueError, TypeError) as e:
                         logging.error(f"Error parsing difficulty: {e}")
-                    
-                # Handle BTC price
-                if responses["ticker"] and responses["ticker"].ok:
-                    try:
-                        ticker_data = responses["ticker"].json()
-                        btc_price = float(ticker_data.get("USD", {}).get("last", btc_price))
-                        self.cache["btc_price"] = btc_price
-                    except (ValueError, TypeError, json.JSONDecodeError) as e:
-                        logging.error(f"Error parsing BTC price: {e}")
-                    
+                
                 # Handle block count
                 if responses["blockcount"] and responses["blockcount"].ok:
                     try:
@@ -890,10 +932,10 @@ class MiningDashboardService:
                         self.cache["block_count"] = block_count
                     except (ValueError, TypeError) as e:
                         logging.error(f"Error parsing block count: {e}")
-                    
+                
         except Exception as e:
             logging.error(f"Error fetching Bitcoin stats: {e}")
-        
+    
         return difficulty, network_hashrate, btc_price, block_count
 
     def get_all_worker_rows(self):

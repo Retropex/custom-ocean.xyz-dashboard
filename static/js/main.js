@@ -1725,13 +1725,24 @@ function showConnectionIssue(message) {
     $connectionStatus.html(`<i class="fas fa-exclamation-triangle"></i> ${message}`).show();
 
     // Show manual refresh button with theme color
-    $("#refreshButton").css('background-color', theme.PRIMARY).show();
+    updateRefreshButtonColor();
+    $("#refreshButton").show();
 }
 
 // Helper function to hide connection issue message
 function hideConnectionIssue() {
     $("#connectionStatus").hide();
     $("#refreshButton").hide();
+}
+
+// Update the manual refresh button color based on the current theme
+function updateRefreshButtonColor() {
+    const theme = getCurrentTheme();
+    const textColor = theme.PRIMARY === '#f2a900' ? 'black' : 'white';
+    $("#refreshButton").css({
+        backgroundColor: theme.PRIMARY,
+        color: textColor
+    });
 }
 
 // Improved manual refresh function as fallback
@@ -4361,8 +4372,9 @@ $(document).ready(function () {
     updateServerTime();
     setInterval(updateServerTime, 30000);
 
-    // Update the manual refresh button color
+    // Add a manual refresh button and style it using the current theme
     $("body").append('<button id="refreshButton" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #0088cc; color: white; border: none; padding: 8px 16px; display: none; cursor: pointer;">Refresh Data</button>');
+    updateRefreshButtonColor();
 
     $("#refreshButton").on("click", function () {
         $(this).text("Refreshing...");

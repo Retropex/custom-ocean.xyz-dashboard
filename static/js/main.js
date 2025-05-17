@@ -4026,95 +4026,85 @@ $(document).ready(function () {
         }
     }
 
+    // Handle theme changes for chart and UI elements
+    function handleThemeChange(useDeepSea) {
+        if (useDeepSea) {
+            if (typeof applyDeepSeaTheme === 'function') {
+                applyDeepSeaTheme();
+            }
+        } else if (typeof applyBitcoinTheme === 'function') {
+            applyBitcoinTheme();
+        }
+
+        if (trendChart) {
+            // Save all font configurations
+            const fontConfig = {
+                xTicks: { ...trendChart.options.scales.x.ticks.font },
+                yTicks: { ...trendChart.options.scales.y.ticks.font },
+                yTitle: { ...trendChart.options.scales.y.title.font },
+                tooltip: {
+                    title: { ...trendChart.options.plugins.tooltip.titleFont },
+                    body: { ...trendChart.options.plugins.tooltip.bodyFont }
+                }
+            };
+
+            const isMobile = window.innerWidth < 768;
+
+            const xTicksFontSize = fontConfig.xTicks.size || 14;
+            const yTicksFontSize = fontConfig.yTicks.size || 14;
+            const yTitleFontSize = fontConfig.yTitle.size || 16;
+
+            trendChart.destroy();
+            trendChart = initializeChart();
+
+            if (isMobile) {
+                trendChart.options.scales.x.ticks.font = {
+                    ...fontConfig.xTicks,
+                    size: xTicksFontSize
+                };
+                trendChart.options.scales.y.ticks.font = {
+                    ...fontConfig.yTicks,
+                    size: yTicksFontSize
+                };
+                trendChart.options.scales.y.title.font = {
+                    ...fontConfig.yTitle,
+                    size: yTitleFontSize
+                };
+                trendChart.options.plugins.tooltip.titleFont = {
+                    ...fontConfig.tooltip.title,
+                    size: fontConfig.tooltip.title.size || 16
+                };
+                trendChart.options.plugins.tooltip.bodyFont = {
+                    ...fontConfig.tooltip.body,
+                    size: fontConfig.tooltip.body.size || 14
+                };
+            } else {
+                trendChart.options.scales.x.ticks.font = fontConfig.xTicks;
+                trendChart.options.scales.y.ticks.font = fontConfig.yTicks;
+                trendChart.options.scales.y.title.font = fontConfig.yTitle;
+                trendChart.options.plugins.tooltip.titleFont = fontConfig.tooltip.title;
+                trendChart.options.plugins.tooltip.bodyFont = fontConfig.tooltip.body;
+            }
+
+            updateChartWithNormalizedData(trendChart, latestMetrics);
+            updateBlockAnnotations(trendChart);
+            trendChart.update('none');
+        }
+
+        updateRefreshButtonColor();
+        $(document).trigger('themeChanged');
+    }
+
     // Add this function to the document ready section
     function setupThemeChangeListener() {
         window.addEventListener('storage', function (event) {
             if (event.key === 'useDeepSeaTheme') {
-                if (trendChart) {
-                    // Save all font configurations
-                    const fontConfig = {
-                        xTicks: { ...trendChart.options.scales.x.ticks.font },
-                        yTicks: { ...trendChart.options.scales.y.ticks.font },
-                        yTitle: { ...trendChart.options.scales.y.title.font },
-                        tooltip: {
-                            title: { ...trendChart.options.plugins.tooltip.titleFont },
-                            body: { ...trendChart.options.plugins.tooltip.bodyFont }
-                        }
-                    };
-
-                    // No need to create a copy of lowHashrateState here, 
-                    // as we'll load it from localStorage after chart recreation
-
-                    // Save the low hashrate indicator element if it exists
-                    const wasInLowHashrateMode = trendChart.lowHashrateState &&
-                        trendChart.lowHashrateState.isLowHashrateMode;
-
-                    // Check if we're on mobile (viewport width < 768px)
-                    const isMobile = window.innerWidth < 768;
-
-                    // Store the original sizes before destroying chart
-                    const xTicksFontSize = fontConfig.xTicks.size || 14;
-                    const yTicksFontSize = fontConfig.yTicks.size || 14;
-                    const yTitleFontSize = fontConfig.yTitle.size || 16;
-
-                    // Recreate the chart with new theme colors
-                    trendChart.destroy();
-                    trendChart = initializeChart();
-
-                    // The state will be automatically loaded from localStorage in updateChartWithNormalizedData
-
-                    // Ensure font sizes are explicitly set to original values
-                    // This is especially important for mobile
-                    if (isMobile) {
-                        // On mobile, set explicit font sizes (based on the originals)
-                        trendChart.options.scales.x.ticks.font = {
-                            ...fontConfig.xTicks,
-                            size: xTicksFontSize
-                        };
-
-                        trendChart.options.scales.y.ticks.font = {
-                            ...fontConfig.yTicks,
-                            size: yTicksFontSize
-                        };
-
-                        trendChart.options.scales.y.title.font = {
-                            ...fontConfig.yTitle,
-                            size: yTitleFontSize
-                        };
-
-                        // Also set tooltip font sizes explicitly
-                        trendChart.options.plugins.tooltip.titleFont = {
-                            ...fontConfig.tooltip.title,
-                            size: fontConfig.tooltip.title.size || 16
-                        };
-
-                        trendChart.options.plugins.tooltip.bodyFont = {
-                            ...fontConfig.tooltip.body,
-                            size: fontConfig.tooltip.body.size || 14
-                        };
-
-                        console.log('Mobile device detected: Setting explicit font sizes for chart labels');
-                    } else {
-                        // On desktop, use the full font config objects as before
-                        trendChart.options.scales.x.ticks.font = fontConfig.xTicks;
-                        trendChart.options.scales.y.ticks.font = fontConfig.yTicks;
-                        trendChart.options.scales.y.title.font = fontConfig.yTitle;
-                        trendChart.options.plugins.tooltip.titleFont = fontConfig.tooltip.title;
-                        trendChart.options.plugins.tooltip.bodyFont = fontConfig.tooltip.body;
-                    }
-
-                    // Update with data and force an immediate chart update
-                    updateChartWithNormalizedData(trendChart, latestMetrics);
-                    updateBlockAnnotations(trendChart);
-                    trendChart.update('none');
-                }
-
-                // Update refresh button color
-                updateRefreshButtonColor();
-
-                // Trigger custom event
-                $(document).trigger('themeChanged');
+                handleThemeChange(event.newValue === 'true');
             }
+        });
+
+        window.addEventListener('themePreferenceChanged', function (e) {
+            handleThemeChange(e.detail);
         });
     }
 

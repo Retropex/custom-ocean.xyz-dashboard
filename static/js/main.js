@@ -381,8 +381,12 @@ function updateBlockAnnotations(chart) {
     if (!chart.options.plugins) chart.options.plugins = {};
     if (!chart.options.plugins.annotation) chart.options.plugins.annotation = { annotations: {} };
 
-    const anns = chart.options.plugins.annotation.annotations || {};
-    // remove old block annotations
+    let anns = chart.options.plugins.annotation.annotations;
+    if (!anns) {
+        anns = {};
+        chart.options.plugins.annotation.annotations = anns;
+    }
+
     Object.keys(anns).forEach(key => {
         if (key.startsWith('blockEvent')) delete anns[key];
     });
@@ -406,7 +410,6 @@ function updateBlockAnnotations(chart) {
             }
         };
     });
-    chart.options.plugins.annotation.annotations = anns;
 }
 
 // Hashrate Normalization Utilities
@@ -1711,13 +1714,24 @@ function showConnectionIssue(message) {
     $connectionStatus.html(`<i class="fas fa-exclamation-triangle"></i> ${message}`).show();
 
     // Show manual refresh button with theme color
-    $("#refreshButton").css('background-color', theme.PRIMARY).show();
+    updateRefreshButtonColor();
+    $("#refreshButton").show();
 }
 
 // Helper function to hide connection issue message
 function hideConnectionIssue() {
     $("#connectionStatus").hide();
     $("#refreshButton").hide();
+}
+
+// Update the manual refresh button color based on the current theme
+function updateRefreshButtonColor() {
+    const theme = getCurrentTheme();
+    const textColor = theme.PRIMARY === '#f2a900' ? 'black' : 'white';
+    $("#refreshButton").css({
+        backgroundColor: theme.PRIMARY,
+        color: textColor
+    });
 }
 
 // Improved manual refresh function as fallback
@@ -4013,6 +4027,7 @@ $(document).ready(function () {
         }
     }
 
+
     // Placeholder for backward compatibility; theme changes now require a page refresh
     function setupThemeChangeListener() {
         window.addEventListener('storage', function (event) {
@@ -4020,6 +4035,88 @@ $(document).ready(function () {
                 window.location.reload();
             }
         });
+
+    // Handle theme changes for chart and UI elements
+    function handleThemeChange(useDeepSea) {
+        if (useDeepSea) {
+            if (typeof applyDeepSeaTheme === 'function') {
+                applyDeepSeaTheme();
+            }
+        } else if (typeof applyBitcoinTheme === 'function') {
+            applyBitcoinTheme();
+        }
+
+        if (trendChart) {
+            // Save all font configurations
+            const fontConfig = {
+                xTicks: { ...trendChart.options.scales.x.ticks.font },
+                yTicks: { ...trendChart.options.scales.y.ticks.font },
+                yTitle: { ...trendChart.options.scales.y.title.font },
+                tooltip: {
+                    title: { ...trendChart.options.plugins.tooltip.titleFont },
+                    body: { ...trendChart.options.plugins.tooltip.bodyFont }
+                }
+            };
+
+            const isMobile = window.innerWidth < 768;
+
+            const xTicksFontSize = fontConfig.xTicks.size || 14;
+            const yTicksFontSize = fontConfig.yTicks.size || 14;
+            const yTitleFontSize = fontConfig.yTitle.size || 16;
+
+            trendChart.destroy();
+            trendChart = initializeChart();
+
+            if (isMobile) {
+                trendChart.options.scales.x.ticks.font = {
+                    ...fontConfig.xTicks,
+                    size: xTicksFontSize
+                };
+                trendChart.options.scales.y.ticks.font = {
+                    ...fontConfig.yTicks,
+                    size: yTicksFontSize
+                };
+                trendChart.options.scales.y.title.font = {
+                    ...fontConfig.yTitle,
+                    size: yTitleFontSize
+                };
+                trendChart.options.plugins.tooltip.titleFont = {
+                    ...fontConfig.tooltip.title,
+                    size: fontConfig.tooltip.title.size || 16
+                };
+                trendChart.options.plugins.tooltip.bodyFont = {
+                    ...fontConfig.tooltip.body,
+                    size: fontConfig.tooltip.body.size || 14
+                };
+            } else {
+                trendChart.options.scales.x.ticks.font = fontConfig.xTicks;
+                trendChart.options.scales.y.ticks.font = fontConfig.yTicks;
+                trendChart.options.scales.y.title.font = fontConfig.yTitle;
+                trendChart.options.plugins.tooltip.titleFont = fontConfig.tooltip.title;
+                trendChart.options.plugins.tooltip.bodyFont = fontConfig.tooltip.body;
+            }
+
+            updateChartWithNormalizedData(trendChart, latestMetrics);
+            updateBlockAnnotations(trendChart);
+            trendChart.update('none');
+        }
+
+        updateRefreshButtonColor();
+        $(document).trigger('themeChanged');
+    }
+
+    // Add this function to the document ready section
+    function setupThemeChangeListener() {
+        window.addEventListener('storage', function (event) {
+            if (event.key === 'useDeepSeaTheme') {
+                handleThemeChange(event.newValue === 'true');
+            }
+        });
+
+        window.addEventListener('themePreferenceChanged', function (e) {
+            handleThemeChange(e.detail);
+        });
+
     }
 
     setupThemeChangeListener();
@@ -4252,8 +4349,9 @@ $(document).ready(function () {
     updateServerTime();
     setInterval(updateServerTime, 30000);
 
-    // Update the manual refresh button color
+    // Add a manual refresh button and style it using the current theme
     $("body").append('<button id="refreshButton" style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; background: #0088cc; color: white; border: none; padding: 8px 16px; display: none; cursor: pointer;">Refresh Data</button>');
+    updateRefreshButtonColor();
 
     $("#refreshButton").on("click", function () {
         $(this).text("Refreshing...");

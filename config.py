@@ -19,7 +19,8 @@ def load_config():
         "wallet": "yourwallethere",
         "timezone": "America/Los_Angeles",
         "network_fee": 0.0,  # Add default network fee
-        "currency": "USD" # Default currency
+        "currency": "USD",  # Default currency
+        "EXCHANGE_RATE_API_KEY": ""
     }
     
     if os.path.exists(CONFIG_FILE):
@@ -32,6 +33,10 @@ def load_config():
             if "network_fee" not in config:
                 config["network_fee"] = default_config["network_fee"]
                 logging.info("Added missing network_fee to config with default value")
+
+            if "EXCHANGE_RATE_API_KEY" not in config:
+                config["EXCHANGE_RATE_API_KEY"] = default_config["EXCHANGE_RATE_API_KEY"]
+                logging.info("Added missing EXCHANGE_RATE_API_KEY to config with default value")
                 
             return config
         except Exception as e:
@@ -117,3 +122,12 @@ def get_currency():
     
     # Default to USD
     return "USD"
+
+def get_exchange_rate_api_key():
+    """Get the ExchangeRate API key from env or config."""
+    env_key = os.environ.get("EXCHANGE_RATE_API_KEY")
+    if env_key:
+        return env_key
+
+    config = load_config()
+    return config.get("EXCHANGE_RATE_API_KEY", "")

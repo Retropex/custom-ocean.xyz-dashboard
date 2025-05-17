@@ -4,5 +4,6 @@
     "wallet": "yourwallethere",
     "timezone": "America/Los_Angeles",
     "network_fee": 0.0,
-    "currency": "USD"
+    "currency": "USD",
+    "EXCHANGE_RATE_API_KEY": ""
 }

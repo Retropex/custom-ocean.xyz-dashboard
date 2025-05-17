@@ -70,68 +70,13 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Retro Glitch Effects**: Subtle animations for a nostalgic feel.
 - **Theme Toggle**: Switch between Bitcoin and DeepSea themes with a single click.
 
-## Quick Start
+## Documentation
 
-### Installation
+Comprehensive guides have been moved to the `docs` directory:
 
-1. Clone the repository
-   ```
-   git clone https://github.com/Djobleezy/DeepSea-Dashboard.git
-   cd DeepSea-Dashboard
-   ```
-
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-3. Run the setup script:
-   ```
-   python setup.py
-   ```
-
-4. Start the application:
-   ```
-   python App.py
-   ```
-
-5. Open your browser at `http://localhost:5000`
-
-For detailed deployment instructions with Redis persistence and Gunicorn configuration, see [deployment_steps.md](deployment_steps.md).
-
-## Using docker-compose (with Redis)
-
-The `docker-compose.yml` file makes it easy to deploy the dashboard and its dependencies.
-
-### Steps to Deploy
-
-1. **Start the services**:
-   Run the following command in the project root:
-   ```
-   docker-compose up -d
-   ```
-
-2. **Access the dashboard**:
-   Open your browser at `http://localhost:5000`.
-
-3. **Stop the services**:
-   To stop the services, run:
-   ```
-   docker-compose down
-   ```
-### Customization
-
-You can modify the following environment variables in the `docker-compose.yml` file:
-- `WALLET`: Your Bitcoin wallet address.
-- `POWER_COST`: Cost of power per kWh.
-- `POWER_USAGE`: Power usage in watts.
-- `NETWORK_FEE`: Additional fees beyond pool fees (e.g., firmware fees).
-- `TIMEZONE`: Local timezone for displaying time information.
-- `CURRENCY`: Preferred fiat currency for earnings display.
-
-Redis data is stored in a persistent volume (`redis_data`), and application logs are saved in the `./logs` directory.
-
-For more details, refer to the [docker-compose documentation](https://docs.docker.com/compose/).
+- [Installation guide](docs/INSTALL.md)
+- [Deployment guide](docs/DEPLOYMENT.md)
+- [Configuration options](docs/CONFIGURATION.md)
 
 ## Dashboard Components
 
@@ -268,7 +213,7 @@ DeepSea-Dashboard/
 │       ├── BitcoinProgressBar.js # System monitor functionality
 │       └── theme.js           # Theme toggle functionality
 │
-├── deployment_steps.md         # Deployment guide
+├── docs/DEPLOYMENT.md          # Deployment guide
 ├── project_structure.md        # Additional structure documentation
 ├── LICENSE.md                  # License information
 └── logs/                       # Application logs (generated at runtime)

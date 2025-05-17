@@ -78,6 +78,21 @@ Comprehensive guides have been moved to the `docs` directory:
 - [Deployment guide](docs/DEPLOYMENT.md)
 - [Configuration options](docs/CONFIGURATION.md)
 
+### Customization
+
+You can modify the following environment variables in the `docker-compose.yml` file:
+- `WALLET`: Your Bitcoin wallet address.
+- `POWER_COST`: Cost of power per kWh.
+- `POWER_USAGE`: Power usage in watts.
+- `NETWORK_FEE`: Additional fees beyond pool fees (e.g., firmware fees).
+- `TIMEZONE`: Local timezone for displaying time information.
+- `CURRENCY`: Preferred fiat currency for earnings display.
+- `EXCHANGE_RATE_API_KEY`: ExchangeRate-API key used for fetching currency rates. Falls back to `config.json` if unset. Metrics requiring currency conversion will not work without a valid key.
+
+Redis data is stored in a persistent volume (`redis_data`), and application logs are saved in the `./logs` directory.
+
+For more details, refer to the [docker-compose documentation](https://docs.docker.com/compose/).
+
 ## Dashboard Components
 
 ### Main Dashboard

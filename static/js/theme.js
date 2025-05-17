@@ -1,5 +1,4 @@
 ﻿// Add this flag at the top of your file, outside the function
-let isApplyingTheme = false;
 
 // Bitcoin Orange theme (default)
 const BITCOIN_THEME = {
@@ -53,7 +52,6 @@ window.THEME = THEME;
 window.getCurrentTheme = getCurrentTheme;
 
 // Use window-scoped variable to prevent conflicts
-window.themeProcessing = false;
 
 // Function to update the dashboard header for theme changes
 function updateDashboardDataText(useDeepSea) {
@@ -102,16 +100,8 @@ function updateDashboardDataText(useDeepSea) {
     }
 }
 
-// Fixed applyDeepSeaTheme function with recursion protection
+// Apply DeepSea theme styles
 function applyDeepSeaTheme() {
-    // Check if we're already applying the theme to prevent recursion
-    if (window.themeProcessing) {
-        console.log("Theme application already in progress, avoiding recursion");
-        return;
-    }
-
-    // Set the guard flag
-    isApplyingTheme = true;
 
     try {
         console.log("Applying DeepSea theme...");
@@ -395,10 +385,58 @@ function applyDeepSeaTheme() {
             themeToggle.style.color = '#0088cc';
         }
 
+
+        console.log("DeepSea theme applied with color adjustments");
+    } catch (e) {
+        console.error("Error applying DeepSea theme:", e);
+    }
+}
+
+// Revert to Bitcoin theme defaults
+function applyBitcoinTheme() {
+
+    try {
+        console.log("Applying Bitcoin theme...");
+
+        updateDashboardDataText(false);
+        document.documentElement.classList.add('bitcoin-theme');
+        document.documentElement.classList.remove('deepsea-theme');
+
+        const existingStyle = document.getElementById('deepSeaThemeStyles');
+        if (existingStyle) {
+            existingStyle.parentNode.removeChild(existingStyle);
+        }
+
+        document.documentElement.style.setProperty('--primary-color', '#f2a900');
+        document.documentElement.style.setProperty('--primary-color-rgb', '242, 169, 0');
+        document.documentElement.style.setProperty('--accent-color', '#ffd700');
+        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #0a0a0a, #1a1a1a)');
+
+        document.title = document.title.replace('DeepSea', 'BTC-OS');
+
+        const headerElement = document.querySelector('h1');
+        if (headerElement) {
+            headerElement.innerHTML = headerElement.innerHTML.replace('DeepSea', 'BTC-OS');
+            headerElement.innerHTML = headerElement.innerHTML.replace('DEEPSEA', 'BTC-OS');
+        }
+
+        updateChartControlsLabel(false);
+
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.style.borderColor = '#f2a900';
+            themeToggle.style.color = '#f2a900';
+        }
+
+        console.log("Bitcoin theme applied with color adjustments");
+    } catch (e) {
+        console.error("Error applying Bitcoin theme:", e);
+
 console.log("DeepSea theme applied with color adjustments");
     } finally {
         // Reset the guard flag when done, even if there's an error
         setTimeout(() => { isApplyingTheme = false; }, 100);
+
     }
 }
 

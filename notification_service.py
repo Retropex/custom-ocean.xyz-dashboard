@@ -708,3 +708,52 @@ class NotificationService:
             return True
         time_since_last_notification = self._get_current_time() - self.last_payout_notification_time
         return time_since_last_notification.total_seconds() > ONE_DAY_SECONDS
+
+    def update_notification_currency(self, new_currency: Optional[str] = None) -> int:
+        """Update stored notifications to reflect the selected currency.
+
+        Args:
+            new_currency: Currency code to convert values to. If ``None`` the
+                value will be loaded from the configuration.
+
+        Returns:
+            int: Number of notifications that were updated.
+        """
+        try:
+            if not new_currency:
+                config = load_config()
+                new_currency = config.get("currency", "USD")
+
+            exchange_rates = get_exchange_rates()
+
+            updated = 0
+            for notif in self.notifications:
+                data = notif.get("data", {})
+                if isinstance(data, dict) and "daily_profit" in data:
+                    profit_usd = data.get("daily_profit")
+                    if profit_usd is None:
+                        continue
+
+                    try:
+                        profit_usd = float(profit_usd)
+                    except (ValueError, TypeError):
+                        continue
+
+                    converted_value = profit_usd * exchange_rates.get(new_currency, 1.0)
+                    data["daily_profit"] = converted_value
+                    data["currency"] = new_currency
+
+                    # Update message if it contains a formatted profit value
+                    if notif.get("message") and "(" in notif["message"] and ")" in notif["message"]:
+                        formatted = format_currency_value(profit_usd, new_currency, exchange_rates)
+                        notif["message"] = re.sub(r"\([^\)]*\)", f"({formatted})", notif["message"])
+
+                    updated += 1
+
+            if updated:
+                self._save_notifications()
+
+            return updated
+        except Exception as e:
+            logging.error(f"[NotificationService] Error updating notification currency: {e}")
+            return 0

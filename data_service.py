@@ -171,9 +171,14 @@ class MiningDashboardService:
             # Add currency to metrics
             metrics["currency"] = selected_currency
 
-            # Only fetch exchange rates if not using USD
             if selected_currency != "USD":
                 exchange_rates = self.fetch_exchange_rates()
+                rate = exchange_rates.get(selected_currency, 1.0)
+                metrics["btc_price"] = round(metrics["btc_price"] * rate, 2)
+                metrics["daily_revenue"] = round(metrics["daily_revenue"] * rate, 2)
+                metrics["daily_power_cost"] = round(metrics["daily_power_cost"] * rate, 2)
+                metrics["daily_profit_usd"] = round(metrics["daily_profit_usd"] * rate, 2)
+                metrics["monthly_profit_usd"] = round(metrics["monthly_profit_usd"] * rate, 2)
                 metrics["exchange_rates"] = exchange_rates
             else:
                 metrics["exchange_rates"] = {}
@@ -831,13 +836,31 @@ class MiningDashboardService:
                 "est_time_to_payout": ocean_data.est_time_to_payout if ocean_data else None,
                 "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
             }
-    
-            # Add last payment date if available
             if payments:
                 result["last_payment_date"] = payments[0]["date"]
                 result["last_payment_amount_btc"] = payments[0]["amount_btc"]
                 result["last_payment_amount_sats"] = payments[0]["amount_sats"]
-    
+
+            from config import get_currency
+            selected_currency = get_currency()
+            result["currency"] = selected_currency
+            if selected_currency != "USD":
+                exchange_rates = self.fetch_exchange_rates()
+                rate = exchange_rates.get(selected_currency, 1.0)
+                result["btc_price"] = round(result["btc_price"] * rate, 2)
+                result["total_paid_fiat"] = round(total_paid_usd * rate, 2)
+                for payment in result["payments"]:
+                    if "fiat_value" in payment:
+                        payment["fiat_value"] = round(payment["fiat_value"] * rate, 2)
+                for month in result["monthly_summaries"]:
+                    month["total_fiat"] = round(month["total_usd"] * rate, 2)
+                result["exchange_rates"] = exchange_rates
+            else:
+                result["total_paid_fiat"] = total_paid_usd
+                for month in result["monthly_summaries"]:
+                    month["total_fiat"] = month["total_usd"]
+                result["exchange_rates"] = {}
+
             return result
     
         except Exception as e:
@@ -896,9 +919,6 @@ class MiningDashboardService:
                 # Get all responses
                 responses = {key: futures[key].result(timeout=5) for key in futures}
         
-                # Get currency setting from config
-                from config import get_currency
-                currency = get_currency()
         
                 # Process mempool.space price data (primary source)
                 price_data = {}
@@ -906,19 +926,13 @@ class MiningDashboardService:
                 if mempool_price_response and mempool_price_response.ok:
                     try:
                         price_data = mempool_price_response.json()
-                        # Update BTC price based on configured currency
-                        if currency in price_data:
-                            btc_price = float(price_data.get(currency))
-                            self.cache["btc_price"] = btc_price
-                            logging.info(f"Successfully fetched {currency} price from mempool.space: {btc_price}")
-                        elif "USD" in price_data:  # Fall back to USD if preferred currency not available
+                        if "USD" in price_data:
                             btc_price = float(price_data.get("USD"))
                             self.cache["btc_price"] = btc_price
-                            logging.info(f"Using USD price from mempool.space as fallback: {btc_price}")
-                
-                        # Cache other currencies for potential use in currency conversion
+                            self.cache["btc_price_USD"] = btc_price
+                            logging.info(f"Successfully fetched USD price from mempool.space: {btc_price}")
                         for curr, value in price_data.items():
-                            if curr != "time":  # Skip the timestamp entry
+                            if curr != "time":
                                 self.cache[f"btc_price_{curr}"] = float(value)
                         
                     except (ValueError, TypeError, json.JSONDecodeError) as e:
@@ -930,16 +944,12 @@ class MiningDashboardService:
                 if btc_price is None and responses["ticker"] and responses["ticker"].ok:
                     try:
                         ticker_data = responses["ticker"].json()
-                        if currency in ticker_data:
-                            btc_price = float(ticker_data.get(currency, {}).get("last", 0))
-                        else:
-                            btc_price = float(ticker_data.get("USD", {}).get("last", 0))
+                        btc_price = float(ticker_data.get("USD", {}).get("last", 0))
                         self.cache["btc_price"] = btc_price
+                        self.cache["btc_price_USD"] = btc_price
                         logging.info(f"Using blockchain.info price: {btc_price}")
                     except (ValueError, TypeError, json.JSONDecodeError) as e:
                         logging.error(f"Error parsing blockchain.info price: {e}")
-            
-                # Process mempool.space block height (primary source) - NEW SECTION
                 block_height_response = responses.get("mempool_block_height")
                 if block_height_response and block_height_response.ok:
                     try:

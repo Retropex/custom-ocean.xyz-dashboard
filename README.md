@@ -49,7 +49,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 
 ### Earnings Page
 - **Detailed Earnings Breakdown**: View earnings by time period (daily, weekly, monthly)
-- **Currency Conversion**: Automatically convert earnings to your preferred fiat currency
+ - **Currency Conversion**: Automatically convert earnings to your preferred fiat currency. All profitability metrics are calculated in USD first and converted using live exchange rates.
 - **Historical Data**: Access past earnings data for analysis
 
 ### System Resilience

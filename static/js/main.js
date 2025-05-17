@@ -381,8 +381,12 @@ function updateBlockAnnotations(chart) {
     if (!chart.options.plugins) chart.options.plugins = {};
     if (!chart.options.plugins.annotation) chart.options.plugins.annotation = { annotations: {} };
 
-    const anns = chart.options.plugins.annotation.annotations || {};
-    // remove old block annotations
+    let anns = chart.options.plugins.annotation.annotations;
+    if (!anns) {
+        anns = {};
+        chart.options.plugins.annotation.annotations = anns;
+    }
+
     Object.keys(anns).forEach(key => {
         if (key.startsWith('blockEvent')) delete anns[key];
     });
@@ -406,7 +410,6 @@ function updateBlockAnnotations(chart) {
             }
         };
     });
-    chart.options.plugins.annotation.annotations = anns;
 }
 
 // Hashrate Normalization Utilities

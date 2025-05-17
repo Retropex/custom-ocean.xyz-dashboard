@@ -84,6 +84,8 @@ class StateManager:
             
             state_json = self.redis_client.get(self.STATE_KEY)
             if state_json:
+                if isinstance(state_json, bytes):
+                    state_json = state_json.decode("utf-8")
                 state = json.loads(state_json)
                 
                 # Handle different versions of the data format
@@ -92,9 +94,12 @@ class StateManager:
                     compact_arrow_history = state.get("arrow_history", {})
                     for key, values in compact_arrow_history.items():
                         arrow_history[key] = [
-                            {"time": entry.get("t", ""), 
-                             "value": entry.get("v", 0), 
-                             "arrow": entry.get("a", "")}  # Use saved arrow value
+                            {
+                                "time": entry.get("t", ""),
+                                "value": entry.get("v", 0),
+                                "arrow": entry.get("a", ""),
+                                "unit": entry.get("u", "th/s"),
+                            }
                             for entry in values
                         ]
                     

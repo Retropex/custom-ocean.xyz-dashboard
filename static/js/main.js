@@ -1203,17 +1203,16 @@ function displayPayoutSummary() {
             ? latestMetrics.exchange_rates[currency]
             : 1.0;
 
-        // Calculate fiat value using current BTC price and exchange rate
+        // Calculate fiat value using current BTC price
         const btcPrice = latestMetrics?.btc_price || 0;
         if (btcPrice > 0) {
-            const fiatValue = parseFloat(lastPayout.amountBTC) * btcPrice * exchangeRate;
+            const fiatValue = parseFloat(lastPayout.amountBTC) * btcPrice;
             const symbol = getCurrencySymbol(currency);
             fiatValueStr = `${symbol}${numberWithCommas(fiatValue.toFixed(2))}`;
         }
         // Fallback to stored fiat value if available
         else if (lastPayout.fiat_value !== undefined && lastPayout.rate !== undefined) {
-            // Apply current exchange rate to convert from USD to selected currency
-            const fiatValue = lastPayout.fiat_value * exchangeRate;
+            const fiatValue = lastPayout.fiat_value;
             const symbol = getCurrencySymbol(currency);
             fiatValueStr = `${symbol}${numberWithCommas(fiatValue.toFixed(2))}`;
         }
@@ -3271,7 +3270,7 @@ function updateUI() {
 
         // Update BTC price with currency conversion and symbol
         if (data.btc_price != null) {
-            const btcPriceValue = data.btc_price * exchangeRate;
+            const btcPriceValue = data.btc_price;
             const symbol = getCurrencySymbol(currency);
 
             updateElementText("btc_price", formatCurrencyValue(btcPriceValue, currency));
@@ -3301,7 +3300,7 @@ function updateUI() {
 
         // Daily revenue with currency conversion
         if (data.daily_revenue != null) {
-            const dailyRevenue = data.daily_revenue * exchangeRate;
+            const dailyRevenue = data.daily_revenue;
             updateElementText("daily_revenue", formatCurrencyValue(dailyRevenue, currency));
         } else {
             updateElementText("daily_revenue", formatCurrencyValue(0, currency));
@@ -3309,7 +3308,7 @@ function updateUI() {
 
         // Daily power cost with currency conversion
         if (data.daily_power_cost != null) {
-            const dailyPowerCost = data.daily_power_cost * exchangeRate;
+            const dailyPowerCost = data.daily_power_cost;
             updateElementText("daily_power_cost", formatCurrencyValue(dailyPowerCost, currency));
         } else {
             updateElementText("daily_power_cost", formatCurrencyValue(0, currency));
@@ -3317,7 +3316,7 @@ function updateUI() {
 
         // Daily profit with currency conversion and color
         if (data.daily_profit_usd != null) {
-            const dailyProfit = data.daily_profit_usd * exchangeRate;
+            const dailyProfit = data.daily_profit_usd;
             const dailyProfitElement = document.getElementById("daily_profit_usd");
             if (dailyProfitElement) {
                 dailyProfitElement.textContent = formatCurrencyValue(dailyProfit, currency);
@@ -3333,7 +3332,7 @@ function updateUI() {
 
         // Monthly profit with currency conversion and color
         if (data.monthly_profit_usd != null) {
-            const monthlyProfit = data.monthly_profit_usd * exchangeRate;
+            const monthlyProfit = data.monthly_profit_usd;
             const monthlyProfitElement = document.getElementById("monthly_profit_usd");
             if (monthlyProfitElement) {
                 monthlyProfitElement.textContent = formatCurrencyValue(monthlyProfit, currency);

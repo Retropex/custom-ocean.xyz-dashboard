@@ -1,5 +1,4 @@
 ﻿// Add this flag at the top of your file, outside the function
-let isApplyingTheme = false;
 
 // Bitcoin Orange theme (default)
 const BITCOIN_THEME = {
@@ -53,7 +52,6 @@ window.THEME = THEME;
 window.getCurrentTheme = getCurrentTheme;
 
 // Use window-scoped variable to prevent conflicts
-window.themeProcessing = false;
 
 // Function to update the dashboard header for theme changes
 function updateDashboardDataText(useDeepSea) {
@@ -102,22 +100,17 @@ function updateDashboardDataText(useDeepSea) {
     }
 }
 
-// Fixed applyDeepSeaTheme function with recursion protection
+// Apply DeepSea theme styles
 function applyDeepSeaTheme() {
-    // Check if we're already applying the theme to prevent recursion
-    if (window.themeProcessing) {
-        console.log("Theme application already in progress, avoiding recursion");
-        return;
-    }
-
-    // Set the guard flag
-    isApplyingTheme = true;
 
     try {
         console.log("Applying DeepSea theme...");
 
         // Update the data-text attribute for DeepSea theme
         updateDashboardDataText(true);
+        // Switch HTML class
+        document.documentElement.classList.add('deepsea-theme');
+        document.documentElement.classList.remove('bitcoin-theme');
 
         // Create or update CSS variables for the DeepSea theme
         const styleElement = document.createElement('style');
@@ -393,16 +386,59 @@ function applyDeepSeaTheme() {
         }
 
         console.log("DeepSea theme applied with color adjustments");
-    } finally {
-        // Reset the guard flag when done, even if there's an error
-        setTimeout(() => { isApplyingTheme = false; }, 100);
+    } catch (e) {
+        console.error("Error applying DeepSea theme:", e);
+    }
+}
+
+// Revert to Bitcoin theme defaults
+function applyBitcoinTheme() {
+
+    try {
+        console.log("Applying Bitcoin theme...");
+
+        updateDashboardDataText(false);
+        document.documentElement.classList.add('bitcoin-theme');
+        document.documentElement.classList.remove('deepsea-theme');
+
+        const existingStyle = document.getElementById('deepSeaThemeStyles');
+        if (existingStyle) {
+            existingStyle.parentNode.removeChild(existingStyle);
+        }
+
+        document.documentElement.style.setProperty('--primary-color', '#f2a900');
+        document.documentElement.style.setProperty('--primary-color-rgb', '242, 169, 0');
+        document.documentElement.style.setProperty('--accent-color', '#ffd700');
+        document.documentElement.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #0a0a0a, #1a1a1a)');
+
+        document.title = document.title.replace('DeepSea', 'BTC-OS');
+
+        const headerElement = document.querySelector('h1');
+        if (headerElement) {
+            headerElement.innerHTML = headerElement.innerHTML.replace('DeepSea', 'BTC-OS');
+            headerElement.innerHTML = headerElement.innerHTML.replace('DEEPSEA', 'BTC-OS');
+        }
+
+        updateChartControlsLabel(false);
+
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.style.borderColor = '#f2a900';
+            themeToggle.style.color = '#f2a900';
+        }
+
+        console.log("Bitcoin theme applied with color adjustments");
+    } catch (e) {
+        console.error("Error applying Bitcoin theme:", e);
     }
 }
 
 // Make the function accessible globally
 window.applyDeepSeaTheme = applyDeepSeaTheme;
+window.applyBitcoinTheme = applyBitcoinTheme;
 
 // Toggle theme with hard page refresh
+
 function toggleTheme() {
     const useDeepSea = localStorage.getItem('useDeepSeaTheme') !== 'true';
 
@@ -503,13 +539,7 @@ function loadThemePreference() {
             applyDeepSeaTheme();
             updateChartControlsLabel(true);
         } else {
-            // Make sure the toggle button is styled correctly for Bitcoin theme
-            const themeToggle = document.getElementById('themeToggle');
-            if (themeToggle) {
-                themeToggle.style.borderColor = '#f2a900';
-                themeToggle.style.color = '#f2a900';
-                updateChartControlsLabel(false);
-            }
+            applyBitcoinTheme();
         }
     } catch (e) {
         console.error("Error loading theme preference:", e);

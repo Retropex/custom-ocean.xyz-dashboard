@@ -1104,17 +1104,6 @@ function initPayoutTracking() {
         style: "display: none; margin-top: 10px;"
     }).insertAfter(viewHistoryButton);
 
-    // Update theme-change listener for the button with fixed colors for each theme
-    $(document).on('themeChanged', function () {
-        const updatedTheme = getCurrentTheme();
-        // Check if DeepSea theme is active
-        const isDeepSeaActive = localStorage.getItem('useDeepSeaTheme') === 'true';
-
-        $("#view-payout-history").css({
-            'background-color': updatedTheme.PRIMARY,
-            'color': isDeepSeaActive ? 'white' : 'black'  // White for DeepSea, Black for Bitcoin
-        });
-    });
 
     // Verify payouts against official records
     verifyPayoutsAgainstOfficial();
@@ -3797,8 +3786,6 @@ $(document).ready(function () {
         if (useDeepSea) {
             applyDeepSeaTheme();
         }
-        // Setup theme change listener
-        setupThemeChangeListener();
         loadBlockAnnotations();
     } catch (e) {
         console.error("Error handling theme:", e);
@@ -4026,94 +4013,11 @@ $(document).ready(function () {
         }
     }
 
-    // Add this function to the document ready section
+    // Placeholder for backward compatibility; theme changes now require a page refresh
     function setupThemeChangeListener() {
         window.addEventListener('storage', function (event) {
             if (event.key === 'useDeepSeaTheme') {
-                if (trendChart) {
-                    // Save all font configurations
-                    const fontConfig = {
-                        xTicks: { ...trendChart.options.scales.x.ticks.font },
-                        yTicks: { ...trendChart.options.scales.y.ticks.font },
-                        yTitle: { ...trendChart.options.scales.y.title.font },
-                        tooltip: {
-                            title: { ...trendChart.options.plugins.tooltip.titleFont },
-                            body: { ...trendChart.options.plugins.tooltip.bodyFont }
-                        }
-                    };
-
-                    // No need to create a copy of lowHashrateState here, 
-                    // as we'll load it from localStorage after chart recreation
-
-                    // Save the low hashrate indicator element if it exists
-                    const wasInLowHashrateMode = trendChart.lowHashrateState &&
-                        trendChart.lowHashrateState.isLowHashrateMode;
-
-                    // Check if we're on mobile (viewport width < 768px)
-                    const isMobile = window.innerWidth < 768;
-
-                    // Store the original sizes before destroying chart
-                    const xTicksFontSize = fontConfig.xTicks.size || 14;
-                    const yTicksFontSize = fontConfig.yTicks.size || 14;
-                    const yTitleFontSize = fontConfig.yTitle.size || 16;
-
-                    // Recreate the chart with new theme colors
-                    trendChart.destroy();
-                    trendChart = initializeChart();
-
-                    // The state will be automatically loaded from localStorage in updateChartWithNormalizedData
-
-                    // Ensure font sizes are explicitly set to original values
-                    // This is especially important for mobile
-                    if (isMobile) {
-                        // On mobile, set explicit font sizes (based on the originals)
-                        trendChart.options.scales.x.ticks.font = {
-                            ...fontConfig.xTicks,
-                            size: xTicksFontSize
-                        };
-
-                        trendChart.options.scales.y.ticks.font = {
-                            ...fontConfig.yTicks,
-                            size: yTicksFontSize
-                        };
-
-                        trendChart.options.scales.y.title.font = {
-                            ...fontConfig.yTitle,
-                            size: yTitleFontSize
-                        };
-
-                        // Also set tooltip font sizes explicitly
-                        trendChart.options.plugins.tooltip.titleFont = {
-                            ...fontConfig.tooltip.title,
-                            size: fontConfig.tooltip.title.size || 16
-                        };
-
-                        trendChart.options.plugins.tooltip.bodyFont = {
-                            ...fontConfig.tooltip.body,
-                            size: fontConfig.tooltip.body.size || 14
-                        };
-
-                        console.log('Mobile device detected: Setting explicit font sizes for chart labels');
-                    } else {
-                        // On desktop, use the full font config objects as before
-                        trendChart.options.scales.x.ticks.font = fontConfig.xTicks;
-                        trendChart.options.scales.y.ticks.font = fontConfig.yTicks;
-                        trendChart.options.scales.y.title.font = fontConfig.yTitle;
-                        trendChart.options.plugins.tooltip.titleFont = fontConfig.tooltip.title;
-                        trendChart.options.plugins.tooltip.bodyFont = fontConfig.tooltip.body;
-                    }
-
-                    // Update with data and force an immediate chart update
-                    updateChartWithNormalizedData(trendChart, latestMetrics);
-                    updateBlockAnnotations(trendChart);
-                    trendChart.update('none');
-                }
-
-                // Update refresh button color
-                updateRefreshButtonColor();
-
-                // Trigger custom event
-                $(document).trigger('themeChanged');
+                window.location.reload();
             }
         });
     }
@@ -4216,19 +4120,6 @@ $(document).ready(function () {
     // Initialize payout tracking
     initPayoutTracking();
 
-    // Add this to the setupThemeChangeListener function or document.ready
-    $(document).on('themeChanged', function () {
-        // Refresh payout history display with new theme
-        if ($("#payout-history-container").is(":visible")) {
-            displayPayoutSummary();
-        }
-
-        // Refresh any visible payout comparison with new theme
-        if (lastPayoutTracking.payoutHistory.length > 0) {
-            const latest = lastPayoutTracking.payoutHistory[0];
-            displayPayoutComparison(latest);
-        }
-    });
 
     // Load timezone setting early
     (function loadTimezoneEarly() {
@@ -4353,13 +4244,6 @@ $(document).ready(function () {
         }
     }
 
-    // Update BitcoinProgressBar theme when theme changes
-    $(document).on('themeChanged', function () {
-        if (typeof BitcoinMinuteRefresh !== 'undefined' &&
-            typeof BitcoinMinuteRefresh.updateTheme === 'function') {
-            BitcoinMinuteRefresh.updateTheme();
-        }
-    });
 
     // Set up event source for SSE
     setupEventSource();

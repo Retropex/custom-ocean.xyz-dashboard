@@ -730,14 +730,23 @@ class NotificationService:
             for notif in self.notifications:
                 data = notif.get("data", {})
                 if isinstance(data, dict) and "daily_profit" in data:
-                    profit_usd = data.get("daily_profit")
-                    if profit_usd is None:
+                    # Value is stored in the currency specified by data["currency"].
+                    # Convert it back to USD before converting to the new currency.
+                    profit_value = data.get("daily_profit")
+                    old_currency = data.get("currency", "USD")
+                    if profit_value is None:
                         continue
 
                     try:
-                        profit_usd = float(profit_usd)
+                        profit_value = float(profit_value)
                     except (ValueError, TypeError):
                         continue
+
+                    old_rate = exchange_rates.get(old_currency, 1.0)
+                    try:
+                        profit_usd = profit_value / old_rate
+                    except Exception:
+                        profit_usd = profit_value
 
                     converted_value = profit_usd * exchange_rates.get(new_currency, 1.0)
                     data["daily_profit"] = converted_value

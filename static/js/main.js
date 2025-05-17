@@ -1107,6 +1107,17 @@ function initPayoutTracking() {
         style: "display: none; margin-top: 10px;"
     }).insertAfter(viewHistoryButton);
 
+    // Update theme-change listener for the button with fixed colors for each theme
+    $(document).on('themeChanged', function () {
+        const updatedTheme = getCurrentTheme();
+        // Check if DeepSea theme is active
+        const isDeepSeaActive = localStorage.getItem('useDeepSeaTheme') === 'true';
+
+        $("#view-payout-history").css({
+            'background-color': updatedTheme.PRIMARY,
+            'color': isDeepSeaActive ? 'white' : 'black'  // White for DeepSea, Black for Bitcoin
+        });
+    });
 
     // Verify payouts against official records
     verifyPayoutsAgainstOfficial();
@@ -3800,6 +3811,8 @@ $(document).ready(function () {
         if (useDeepSea) {
             applyDeepSeaTheme();
         }
+        // Setup theme change listener
+        setupThemeChangeListener();
         loadBlockAnnotations();
     } catch (e) {
         console.error("Error handling theme:", e);
@@ -4027,15 +4040,6 @@ $(document).ready(function () {
         }
     }
 
-
-    // Placeholder for backward compatibility; theme changes now require a page refresh
-    function setupThemeChangeListener() {
-        window.addEventListener('storage', function (event) {
-            if (event.key === 'useDeepSeaTheme') {
-                window.location.reload();
-            }
-        });
-
     // Handle theme changes for chart and UI elements
     function handleThemeChange(useDeepSea) {
         if (useDeepSea) {
@@ -4116,7 +4120,6 @@ $(document).ready(function () {
         window.addEventListener('themePreferenceChanged', function (e) {
             handleThemeChange(e.detail);
         });
-
     }
 
     setupThemeChangeListener();
@@ -4217,6 +4220,19 @@ $(document).ready(function () {
     // Initialize payout tracking
     initPayoutTracking();
 
+    // Add this to the setupThemeChangeListener function or document.ready
+    $(document).on('themeChanged', function () {
+        // Refresh payout history display with new theme
+        if ($("#payout-history-container").is(":visible")) {
+            displayPayoutSummary();
+        }
+
+        // Refresh any visible payout comparison with new theme
+        if (lastPayoutTracking.payoutHistory.length > 0) {
+            const latest = lastPayoutTracking.payoutHistory[0];
+            displayPayoutComparison(latest);
+        }
+    });
 
     // Load timezone setting early
     (function loadTimezoneEarly() {
@@ -4341,6 +4357,13 @@ $(document).ready(function () {
         }
     }
 
+    // Update BitcoinProgressBar theme when theme changes
+    $(document).on('themeChanged', function () {
+        if (typeof BitcoinMinuteRefresh !== 'undefined' &&
+            typeof BitcoinMinuteRefresh.updateTheme === 'function') {
+            BitcoinMinuteRefresh.updateTheme();
+        }
+    });
 
     // Set up event source for SSE
     setupEventSource();

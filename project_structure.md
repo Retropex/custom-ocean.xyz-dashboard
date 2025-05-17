@@ -51,7 +51,7 @@ DeepSea-Dashboard/
 │       ├── BitcoinProgressBar.js # System monitor functionality
 │       └── theme.js           # Theme toggle functionality
 │
-├── deployment_steps.md         # Deployment guide
+├── docs/DEPLOYMENT.md          # Deployment guide
 ├── project_structure.md        # Additional structure documentation
 ├── LICENSE.md                  # License information
 └── logs/                       # Application logs (generated at runtime)

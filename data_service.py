@@ -192,6 +192,49 @@ class MiningDashboardService:
             logging.error(f"Unexpected error in fetch_metrics: {e}")
             return None
 
+    def get_ocean_api_data(self):
+        """Fetch mining data using the official Ocean.xyz API."""
+        api_base = "https://api.ocean.xyz/v1"
+        result = {}
+
+        # Fetch hashrate info
+        try:
+            url = f"{api_base}/user_hashrate/{self.wallet}"
+            resp = self.session.get(url, timeout=10)
+            if resp.ok:
+                hr_data = resp.json()
+                result["hashrate_60sec"] = hr_data.get("hashrate_60s")
+                result["hashrate_5min"] = hr_data.get("hashrate_300s")
+                result["hashrate_10min"] = hr_data.get("hashrate_600s")
+                result["hashrate_24hr"] = hr_data.get("hashrate_86400")
+                # Try several keys for a ~3hr interval
+                result["hashrate_3hr"] = hr_data.get("hashrate_10800") or hr_data.get("hashrate_7200") or hr_data.get("hashrate_3600")
+                result["hashrate_60sec_unit"] = "H/s"
+                result["hashrate_5min_unit"] = "H/s"
+                result["hashrate_10min_unit"] = "H/s"
+                result["hashrate_24hr_unit"] = "H/s"
+                result["hashrate_3hr_unit"] = "H/s"
+        except Exception as e:
+            logging.error(f"Error fetching user_hashrate API: {e}")
+
+        # Fetch latest statsnap data
+        try:
+            url = f"{api_base}/statsnap/{self.wallet}"
+            resp = self.session.get(url, timeout=10)
+            if resp.ok:
+                snap = resp.json()
+                result["unpaid_earnings"] = snap.get("unpaid")
+                result["estimated_earnings_next_block"] = snap.get("estimated_earn_next_block")
+                result["estimated_rewards_in_window"] = snap.get("shares_in_tides")
+                ts = snap.get("lastest_share_ts")
+                if ts:
+                    dt = datetime.fromtimestamp(ts, tz=ZoneInfo("UTC")).astimezone(ZoneInfo(get_timezone()))
+                    result["total_last_share"] = dt.strftime("%Y-%m-%d %I:%M %p")
+        except Exception as e:
+            logging.error(f"Error fetching statsnap API: {e}")
+
+        return result
+
     def get_ocean_data(self):
         """
         Get mining data from Ocean.xyz.
@@ -209,7 +252,13 @@ class MiningDashboardService:
         
         # Create an empty data object to populate
         data = OceanData()
-        
+
+        # First attempt to populate using the official API
+        api_data = self.get_ocean_api_data()
+        for key, value in api_data.items():
+            if hasattr(data, key) and value is not None:
+                setattr(data, key, value)
+
         try:
             response = self.session.get(stats_url, headers=headers, timeout=10)
             if not response.ok:

@@ -30,11 +30,11 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Official Ocean API**: Supplement scraping with data from the official Ocean.xyz API for greater accuracy
 
 ### Multi-Currency Support
-- **Flexible Currency Configuration: Set your preferred fiat currency for displaying Bitcoin value and earnings
-- **Wide Currency Selection: Choose from USD, EUR, GBP, JPY, CAD, AUD, CNY, KRW, BRL, CHF and more
-- **Real-Time Exchange Rates: Automatically fetches up-to-date exchange rates from public APIs
-- **Persistent Configuration: Currency preferences saved and restored between sessions
-- **Adaptive Notifications: Financial notifications display in your selected currency
+- **Flexible Currency Configuration**: Set your preferred fiat currency for displaying Bitcoin value and earnings
+- **Wide Currency Selection**: Choose from USD, EUR, GBP, JPY, CAD, AUD, CNY, KRW, BRL, CHF and more
+- **Real-Time Exchange Rates**: Automatically fetches up-to-date exchange rates from public APIs
+- **Persistent Configuration**: Currency preferences saved and restored between sessions
+- **Adaptive Notifications**: Financial notifications display in your selected currency
 
 ### Worker Management
 - **Fleet Overview**: Comprehensive view of all mining devices in one interface

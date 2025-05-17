@@ -528,17 +528,21 @@ class MiningDashboardService:
             dict: Exchange rates for supported currencies or empty dict if using USD
         """
         # Get the configured currency
-        from config import get_currency
+        from config import get_currency, get_exchange_rate_api_key
         selected_currency = get_currency()
+        api_key = get_exchange_rate_api_key()
     
         # Only fetch exchange rates if not using USD
         if selected_currency == "USD":
             logging.info("Using USD currency, skipping exchange rate fetch")
             return {}
+
+        if not api_key:
+            logging.error("Exchange rate API key not configured")
+            return {}
         
         try:
-            # Use the provided API key with the v6 exchangerate-api endpoint
-            api_key = "179cbeb07c900f20dde92d3b"
+            # Use the configured API key with the v6 exchangerate-api endpoint
             url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{base_currency}"
             response = self.session.get(url, timeout=5)
         

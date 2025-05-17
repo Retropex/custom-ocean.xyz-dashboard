@@ -327,6 +327,7 @@ let initialLoad = true;
 let trendData = [];
 let trendLabels = [];
 let trendChart = null;
+let blockAnnotations = [];
 let connectionRetryCount = 0;
 let maxRetryCount = 10;
 let reconnectionDelay = 1000; // Start with 1 second
@@ -350,6 +351,62 @@ let serverStartTime = null;
 // Register Chart.js annotation plugin if available
 if (window['chartjs-plugin-annotation']) {
     Chart.register(window['chartjs-plugin-annotation']);
+}
+
+function loadBlockAnnotations() {
+    try {
+        const stored = localStorage.getItem('blockAnnotations');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+                blockAnnotations = parsed;
+            }
+        }
+    } catch (e) {
+        console.error('Error loading block annotations', e);
+        blockAnnotations = [];
+    }
+}
+
+function saveBlockAnnotations() {
+    try {
+        localStorage.setItem('blockAnnotations', JSON.stringify(blockAnnotations));
+    } catch (e) {
+        console.error('Error saving block annotations', e);
+    }
+}
+
+function updateBlockAnnotations(chart) {
+    if (!chart || !chart.options) return;
+    if (!chart.options.plugins) chart.options.plugins = {};
+    if (!chart.options.plugins.annotation) chart.options.plugins.annotation = { annotations: {} };
+
+    const anns = chart.options.plugins.annotation.annotations || {};
+    // remove old block annotations
+    Object.keys(anns).forEach(key => {
+        if (key.startsWith('blockEvent')) delete anns[key];
+    });
+
+    const theme = getCurrentTheme();
+    blockAnnotations.forEach((label, idx) => {
+        anns['blockEvent' + idx] = {
+            type: 'line',
+            xMin: label,
+            xMax: label,
+            borderColor: theme.CHART.BLOCK_EVENT,
+            borderWidth: 2,
+            borderDash: [4, 2],
+            label: {
+                enabled: true,
+                content: label,
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                color: theme.CHART.BLOCK_EVENT,
+                rotation: -90,
+                position: 'start'
+            }
+        };
+    });
+    chart.options.plugins.annotation.annotations = anns;
 }
 
 // Hashrate Normalization Utilities
@@ -1986,6 +2043,12 @@ function checkForBlockUpdates(data) {
     if (previousMetrics.last_block_height !== undefined &&
         data.last_block_height !== previousMetrics.last_block_height) {
         showCongrats("Congrats! New Block Found: " + data.last_block_height);
+        if (trendChart && trendChart.data && trendChart.data.labels.length > 0) {
+            const label = trendChart.data.labels[trendChart.data.labels.length - 1];
+            blockAnnotations.push(label);
+            saveBlockAnnotations();
+            updateBlockAnnotations(trendChart);
+        }
     }
 
     if (previousMetrics.blocks_found !== undefined &&
@@ -2722,6 +2785,7 @@ function updateChartWithNormalizedData(chart, data) {
             console.warn("Chart annotation plugin not properly configured");
         }
 
+        updateBlockAnnotations(chart);
         // Finally update the chart with a safe non-animating update
         chart.update('none');
     } catch (chartError) {
@@ -3735,6 +3799,7 @@ $(document).ready(function () {
         }
         // Setup theme change listener
         setupThemeChangeListener();
+        loadBlockAnnotations();
     } catch (e) {
         console.error("Error handling theme:", e);
     }
@@ -3773,7 +3838,7 @@ $(document).ready(function () {
             // Check if Chart.js plugin is available
             const hasAnnotationPlugin = window['chartjs-plugin-annotation'] !== undefined;
 
-            return new Chart(ctx, {
+            const chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: [],
@@ -3953,6 +4018,8 @@ $(document).ready(function () {
                     }
                 }
             });
+            updateBlockAnnotations(chart);
+            return chart;
         } catch (error) {
             console.error("Error initializing chart:", error);
             return null;
@@ -4038,6 +4105,7 @@ $(document).ready(function () {
 
                     // Update with data and force an immediate chart update
                     updateChartWithNormalizedData(trendChart, latestMetrics);
+                    updateBlockAnnotations(trendChart);
                     trendChart.update('none');
                 }
 

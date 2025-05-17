@@ -864,7 +864,7 @@ def update_config():
             if currency_changed:
                 try:
                     logging.info(f"Currency changed from {current_config.get('currency', 'USD')} to {new_config['currency']}")
-                    updated_count = notification_service.update_notification_currency()
+                    updated_count = notification_service.update_notification_currency(new_config["currency"])
                     logging.info(f"Updated {updated_count} notifications to use {new_config['currency']} currency")
                 except Exception as e:
                     logging.error(f"Error updating notification currency: {e}")

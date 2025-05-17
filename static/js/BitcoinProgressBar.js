@@ -122,14 +122,12 @@ const BitcoinMinuteRefresh = (function () {
         // Don't try to update DOM elements if they don't exist yet
         if (!terminalElement) return;
 
-        // Create theme config
+        // Create theme config (no textShadow)
         const themeConfig = {
             color: currentThemeColor,
             borderColor: currentThemeColor,
             boxShadow: `0 0 5px rgba(${currentThemeRGB}, 0.3)`,
-            textShadow: `0 0 5px rgba(${currentThemeRGB}, 0.8)`,
-            borderColorRGBA: `rgba(${currentThemeRGB}, 0.5)`,
-            textShadowStrong: `0 0 8px rgba(${currentThemeRGB}, 0.8)`
+            borderColorRGBA: `rgba(${currentThemeRGB}, 0.5)`
         };
 
         // Apply styles to terminal
@@ -145,12 +143,12 @@ const BitcoinMinuteRefresh = (function () {
             headerElement.style.borderColor = themeConfig.color;
         }
 
-        // Update terminal title
+        // Update terminal title (remove textShadow)
         const titleElement = terminalElement.querySelector(SELECTORS.TITLE);
         if (titleElement) {
             applyStyles(titleElement, {
                 color: themeConfig.color,
-                textShadow: themeConfig.textShadow
+                textShadow: 'none'
             });
         }
 
@@ -160,16 +158,16 @@ const BitcoinMinuteRefresh = (function () {
             uptimeTimer.style.borderColor = themeConfig.borderColorRGBA;
         }
 
-        // Update uptime separators
+        // Update uptime separators (remove textShadow)
         const separators = terminalElement.querySelectorAll(SELECTORS.SEPARATORS);
         separators.forEach(sep => {
-            sep.style.textShadow = themeConfig.textShadowStrong;
+            sep.style.textShadow = 'none';
         });
 
-        // Update uptime title
+        // Update uptime title (remove textShadow)
         const uptimeTitle = terminalElement.querySelector(SELECTORS.UPTIME_TITLE);
         if (uptimeTitle) {
-            uptimeTitle.style.textShadow = themeConfig.textShadow;
+            uptimeTitle.style.textShadow = 'none';
         }
 
         // Update minimized view

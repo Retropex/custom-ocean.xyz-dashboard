@@ -69,6 +69,7 @@ class EarningsConversionTest(unittest.TestCase):
         self.assertAlmostEqual(data['monthly_summaries'][0]['total_fiat'], 500)
         self.assertEqual(data['btc_price'], 5000)
         self.assertEqual(data['currency'], 'EUR')
+        self.assertIsNone(data['avg_days_between_payouts'])
 
 if __name__ == '__main__':
     unittest.main()

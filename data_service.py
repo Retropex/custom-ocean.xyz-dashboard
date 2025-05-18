@@ -834,6 +834,21 @@ class MiningDashboardService:
             # Calculate additional statistics
             avg_payment = total_paid / len(payments) if payments else 0
             avg_payment_sats = int(round(avg_payment * self.sats_per_btc)) if avg_payment else 0
+
+            # Calculate average days between payouts using date_iso fields
+            avg_days_between_payouts = None
+            payout_dates = [
+                datetime.fromisoformat(p["date_iso"]) for p in payments
+                if p.get("date_iso")
+            ]
+            payout_dates.sort(reverse=True)
+            if len(payout_dates) >= 2:
+                deltas = [
+                    (payout_dates[i] - payout_dates[i + 1]).total_seconds() / 86400
+                    for i in range(len(payout_dates) - 1)
+                ]
+                if deltas:
+                    avg_days_between_payouts = round(sum(deltas) / len(deltas), 2)
     
             # Get unpaid earnings from Ocean data
             unpaid_earnings = ocean_data.unpaid_earnings if ocean_data else None
@@ -853,6 +868,7 @@ class MiningDashboardService:
                 "unpaid_earnings": unpaid_earnings,
                 "unpaid_earnings_sats": unpaid_earnings_sats,
                 "est_time_to_payout": ocean_data.est_time_to_payout if ocean_data else None,
+                "avg_days_between_payouts": avg_days_between_payouts,
                 "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
             }
             if payments:
@@ -889,6 +905,7 @@ class MiningDashboardService:
             return {
                 "payments": [],
                 "total_payments": 0,
+                "avg_days_between_payouts": None,
                 "error": str(e),
                 "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
             }

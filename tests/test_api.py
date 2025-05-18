@@ -1,6 +1,18 @@
 import importlib
 from types import SimpleNamespace
-import pytest
+import sys
+import types
+
+if 'pytest' not in sys.modules:
+    pytest = types.ModuleType('pytest')
+    def fixture(func=None, **kwargs):
+        if func is None:
+            return lambda f: f
+        return func
+    pytest.fixture = fixture
+    sys.modules['pytest'] = pytest
+else:
+    import pytest
 
 @pytest.fixture
 def client(monkeypatch):

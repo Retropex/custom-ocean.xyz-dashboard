@@ -940,6 +940,25 @@
             }, 120000);
         });
 
+        // Configuration form event listeners
+        document.getElementById('save-config').addEventListener('click', function () {
+            const messageElement = document.getElementById('form-message');
+            messageElement.style.display = 'block';
+
+            saveConfig()
+                .then(data => {
+                    console.log("Configuration saved:", data);
+                    messageElement.textContent = "Configuration saved successfully!";
+                    messageElement.className = "message-success";
+                    setTimeout(redirectToDashboard, 1000);
+                })
+                .catch(error => {
+                    console.error("Error saving configuration:", error);
+                    messageElement.textContent = "Error saving configuration. Please try again.";
+                    messageElement.className = "message-error";
+                });
+        });
+
         // Update Use Defaults button handler
         document.getElementById('use-defaults').addEventListener('click', function () {
             // Set default values including network fee

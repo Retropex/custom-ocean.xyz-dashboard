@@ -73,3 +73,10 @@ def test_payout_history_endpoint(client):
     resp = client.get("/api/payout-history")
     assert resp.get_json()["payout_history"] == []
 
+
+def test_block_events_endpoint(client):
+    resp = client.get("/api/block-events")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert "events" in data
+

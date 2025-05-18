@@ -641,6 +641,11 @@ class MiningDashboardService:
                     payment["fiat_value"] = amount_btc * btc_price
 
                 payments.append(payment)
+        except Exception as e:
+            logging.error(f"Error fetching payment history from API: {e}")
+            return None
+
+        return payments
     
     def get_payment_history(self, max_pages=5, timeout=30, max_retries=3, btc_price=None):
         """

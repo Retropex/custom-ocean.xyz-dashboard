@@ -9,27 +9,41 @@ import logging
 # Default configuration file path
 CONFIG_FILE = "config.json"
 
+# Cached configuration and its modification time
+_cached_config = None
+_config_mtime = None
+
 def load_config():
-    """
-    Load configuration from file or return defaults if file doesn't exist.
-    """
+    """Load configuration with caching and modification time checks."""
+    global _cached_config, _config_mtime
+
     default_config = {
         "power_cost": 0.0,
         "power_usage": 0.0,
         "wallet": "yourwallethere",
         "timezone": "America/Los_Angeles",
-        "network_fee": 0.0,  # Add default network fee
-        "currency": "USD",  # Default currency
-        "EXCHANGE_RATE_API_KEY": "179cbeb07c900f20dde92d3b" # Default API key
+        "network_fee": 0.0,
+        "currency": "USD",
+        "EXCHANGE_RATE_API_KEY": "179cbeb07c900f20dde92d3b",
     }
-    
-    if os.path.exists(CONFIG_FILE):
+
+    file_exists = os.path.exists(CONFIG_FILE)
+
+    if file_exists:
+        try:
+            mtime = os.path.getmtime(CONFIG_FILE)
+        except Exception as e:
+            logging.error(f"Error checking config mtime: {e}")
+            mtime = None
+
+        if _cached_config is not None and _config_mtime == mtime:
+            return _cached_config
+
         try:
             with open(CONFIG_FILE, "r") as f:
                 config = json.load(f)
             logging.info(f"Configuration loaded from {CONFIG_FILE}")
-            
-            # Ensure network_fee is present even in existing config files
+
             if "network_fee" not in config:
                 config["network_fee"] = default_config["network_fee"]
                 logging.info("Added missing network_fee to config with default value")
@@ -37,13 +51,21 @@ def load_config():
             if "EXCHANGE_RATE_API_KEY" not in config:
                 config["EXCHANGE_RATE_API_KEY"] = default_config["EXCHANGE_RATE_API_KEY"]
                 logging.info("Added missing EXCHANGE_RATE_API_KEY to config with default value")
-                
+
+            _cached_config = config
+            _config_mtime = mtime
             return config
         except Exception as e:
             logging.error(f"Error loading config: {e}")
-    else:
+
+    if _cached_config is not None:
+        return _cached_config
+
+    if not file_exists:
         logging.warning(f"Config file {CONFIG_FILE} not found, using defaults")
-        
+
+    _cached_config = default_config
+    _config_mtime = os.path.getmtime(CONFIG_FILE) if file_exists else None
     return default_config
 
 def get_timezone():

@@ -524,23 +524,17 @@ class MiningDashboardService:
     def fetch_exchange_rates(self, base_currency="USD"):
         """
         Fetch currency exchange rates from ExchangeRate API using API key.
-        Only fetches when currency is not USD to avoid unnecessary API calls.
     
         Args:
             base_currency (str): Base currency for rates (default: USD)
     
         Returns:
-            dict: Exchange rates for supported currencies or empty dict if using USD
+            dict: Exchange rates for supported currencies
         """
-        # Get the configured currency
+        # Get the configured currency and API key
         from config import get_currency, get_exchange_rate_api_key
         selected_currency = get_currency()
         api_key = get_exchange_rate_api_key()
-    
-        # Only fetch exchange rates if not using USD
-        if selected_currency == "USD":
-            logging.info("Using USD currency, skipping exchange rate fetch")
-            return {}
 
         if not api_key:
             logging.error("Exchange rate API key not configured")

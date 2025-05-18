@@ -1,5 +1,19 @@
 import json
 import gzip
+import sys
+import types
+
+if 'redis' not in sys.modules:
+    redis_mod = types.ModuleType('redis')
+    class DummyRedisModule:
+        @classmethod
+        def from_url(cls, url):
+            return cls()
+        def ping(self):
+            pass
+    redis_mod.Redis = DummyRedisModule
+    sys.modules['redis'] = redis_mod
+
 from state_manager import StateManager
 
 class DummyRedis:

@@ -35,6 +35,10 @@ class MiningDashboardService:
         self.sats_per_btc = 100_000_000
         self.previous_values = {}
         self.session = requests.Session()
+        # Cache for storing fetched currency exchange rates
+        self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
+        # Time-to-live (TTL) for exchange rate cache in seconds (~2 hours)
+        self.exchange_rate_ttl = 7200
 
     def fetch_metrics(self):
         """
@@ -531,6 +535,14 @@ class MiningDashboardService:
         Returns:
             dict: Exchange rates for supported currencies
         """
+        now = time.time()
+        # Return cached rates if they are still fresh
+        if (
+            self.exchange_rates_cache["rates"]
+            and now - self.exchange_rates_cache["timestamp"] < self.exchange_rate_ttl
+        ):
+            return self.exchange_rates_cache["rates"]
+
         # Get the configured currency and API key
         from config import get_currency, get_exchange_rate_api_key
         selected_currency = get_currency()
@@ -547,18 +559,31 @@ class MiningDashboardService:
         
             if response.ok:
                 data = response.json()
-                # Check if the API response has the expected structure
                 if data.get("result") == "success":
-                    logging.info(f"Successfully fetched exchange rates for {selected_currency}")
-                    return data.get("conversion_rates", {})
+                    logging.info(
+                        f"Successfully fetched exchange rates for {selected_currency}"
+                    )
+                    rates = data.get("conversion_rates", {})
+                    # Update cache on success
+                    self.exchange_rates_cache = {"rates": rates, "timestamp": now}
+                    return rates
                 else:
-                    logging.error(f"Exchange rate API returned unsuccessful result: {data.get('error_type', 'Unknown error')}")
+                    logging.error(
+                        f"Exchange rate API returned unsuccessful result: {data.get('error_type', 'Unknown error')}"
+                    )
+                    # Clear cache on failure
+                    self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
                     return {}
             else:
-                logging.error(f"Failed to fetch exchange rates: {response.status_code}")
+                logging.error(
+                    f"Failed to fetch exchange rates: {response.status_code}"
+                )
+                # Clear cache on failure
+                self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
                 return {}
         except Exception as e:
             logging.error(f"Error fetching exchange rates: {e}")
+            self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
             return {}
     
     def get_payment_history(self, max_pages=5, timeout=30, max_retries=3, btc_price=None):

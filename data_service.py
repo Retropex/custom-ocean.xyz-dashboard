@@ -586,9 +586,83 @@ class MiningDashboardService:
             self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
             return {}
     
+    def get_payment_history_api(self, btc_price=None):
+        """Attempt to fetch payment history using the official Ocean.xyz API.
+
+        Args:
+            btc_price (float, optional): Bitcoin price used to calculate fiat value.
+
+        Returns:
+            list | None: List of payment records or ``None`` if the API call failed.
+        """
+        api_base = "https://api.ocean.xyz/v1"
+        url = f"{api_base}/user_payments/{self.wallet}"
+        try:
+            resp = self.session.get(url, timeout=10)
+            if not resp.ok:
+                logging.warning(f"Payment history API returned {resp.status_code}")
+                return None
+
+            data = resp.json()
+            payments_data = data.get("payments", data)
+            if not isinstance(payments_data, list):
+                logging.error("Unexpected API response format for payment history")
+                return None
+
+            payments = []
+            for item in payments_data:
+                payment = {
+                    "date": "",
+                    "txid": item.get("txid") or item.get("transaction_id", ""),
+                    "amount_btc": 0.0,
+                    "amount_sats": 0,
+                    "status": item.get("status", "confirmed"),
+                }
+
+                # Parse amount
+                amount = (
+                    item.get("amount")
+                    or item.get("amount_btc")
+                    or item.get("payout")
+                )
+                if amount is not None:
+                    try:
+                        payment["amount_btc"] = float(amount)
+                        payment["amount_sats"] = int(round(payment["amount_btc"] * self.sats_per_btc))
+                        if btc_price is not None:
+                            payment["rate"] = btc_price
+                            payment["fiat_value"] = payment["amount_btc"] * btc_price
+                    except Exception as e:
+                        logging.warning(f"Could not parse payout amount '{amount}': {e}")
+
+                # Parse timestamp
+                ts = item.get("timestamp") or item.get("time") or item.get("paid_at") or item.get("date")
+                if ts:
+                    try:
+                        if isinstance(ts, str) and ts.isdigit():
+                            ts = int(ts)
+                        if isinstance(ts, (int, float)):
+                            dt = datetime.fromtimestamp(ts, tz=ZoneInfo("UTC"))
+                        else:
+                            dt = datetime.fromisoformat(str(ts))
+                        dt_local = dt.astimezone(ZoneInfo(get_timezone()))
+                        payment["date"] = dt_local.strftime("%Y-%m-%d %H:%M")
+                        payment["date_iso"] = dt_local.isoformat()
+                    except Exception as e:
+                        logging.warning(f"Could not parse payout timestamp '{ts}': {e}")
+
+                payments.append(payment)
+
+            logging.info(f"Retrieved {len(payments)} payments from Ocean API")
+            return payments
+        except Exception as e:
+            logging.error(f"Error fetching payment history from API: {e}")
+            return None
+
     def get_payment_history(self, max_pages=5, timeout=30, max_retries=3, btc_price=None):
         """
-        Get payment history data from Ocean.xyz with retry logic.
+        Get payment history data from Ocean.xyz with retry logic. Falls back to
+        scraping if the official API is unavailable.
 
         Args:
             max_pages (int): Maximum number of pages to fetch
@@ -599,6 +673,11 @@ class MiningDashboardService:
             list: List of payment history records
         """
         logging.info(f"Fetching payment history data for wallet: {self.wallet}")
+
+        # First attempt to fetch using the official API
+        api_payments = self.get_payment_history_api(btc_price=btc_price)
+        if api_payments:
+            return api_payments
 
         base_url = "https://ocean.xyz"
         stats_url = f"{base_url}/stats/{self.wallet}"

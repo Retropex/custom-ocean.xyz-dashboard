@@ -1,5 +1,9 @@
-"""
-State manager module for handling persistent state and history.
+"""State manager module for handling persistent state and history.
+
+The manager maintains short lived history for metrics such as hashrate and
+profitability. Each collection is limited to ``MAX_HISTORY_ENTRIES`` (180 by
+default) which corresponds to roughly three hours of data at one entry per
+minute. Older entries are pruned on every save to keep memory usage predictable.
 """
 import logging
 import json
@@ -9,10 +13,8 @@ import threading
 import redis
 from config import get_timezone
 
-# Global variables for arrow history, legacy hashrate history, and a log of full metrics snapshots.
-arrow_history = {}    # stored per second
-hashrate_history = []
-metrics_log = []
+# Historical data structures are now managed by the StateManager instance
+# rather than as module level globals.
 
 # Limits for data collections to prevent memory growth
 MAX_HISTORY_ENTRIES = 180  # 3 hours worth at 1 min intervals
@@ -33,7 +35,12 @@ class StateManager:
         self.redis_client = self._connect_to_redis(redis_url) if redis_url else None
         self.STATE_KEY = "graph_state"
         self.last_save_time = 0
-        
+
+        # Initialize in-memory structures for historical data
+        self.arrow_history = {}    # Stored per second
+        self.hashrate_history = []
+        self.metrics_log = []
+
         # Load state if available
         self.load_graph_state()
         
@@ -71,7 +78,6 @@ class StateManager:
     
     def load_graph_state(self):
         """Load graph state from Redis with support for the optimized format."""
-        global arrow_history, hashrate_history, metrics_log
         
         if not self.redis_client:
             logging.info("Redis not available, using in-memory state.")
@@ -93,7 +99,7 @@ class StateManager:
                     # Restore arrow_history
                     compact_arrow_history = state.get("arrow_history", {})
                     for key, values in compact_arrow_history.items():
-                        arrow_history[key] = [
+                        self.arrow_history[key] = [
                             {
                                 "time": entry.get("t", ""),
                                 "value": entry.get("v", 0),
@@ -102,22 +108,22 @@ class StateManager:
                             }
                             for entry in values
                         ]
-                    
+
                     # Restore hashrate_history
-                    hashrate_history = state.get("hashrate_history", [])
-                    
+                    self.hashrate_history = state.get("hashrate_history", [])
+
                     # Restore metrics_log
                     compact_metrics_log = state.get("metrics_log", [])
-                    metrics_log = []
+                    self.metrics_log = []
                     for entry in compact_metrics_log:
-                        metrics_log.append({
+                        self.metrics_log.append({
                             "timestamp": entry.get("ts", ""),
                             "metrics": entry.get("m", {})
                         })
                 else:  # Original format
-                    arrow_history = state.get("arrow_history", {})
-                    hashrate_history = state.get("hashrate_history", [])
-                    metrics_log = state.get("metrics_log", [])
+                    self.arrow_history = state.get("arrow_history", {})
+                    self.hashrate_history = state.get("hashrate_history", [])
+                    self.metrics_log = state.get("metrics_log", [])
                 
                 logging.info(f"Loaded graph state from Redis (format version {version}).")
             else:
@@ -142,7 +148,7 @@ class StateManager:
         try:
             # Compact arrow_history with unit preservation
             compact_arrow_history = {}
-            for key, values in arrow_history.items():
+            for key, values in self.arrow_history.items():
                 if isinstance(values, list) and values:
                     recent_values = values[-180:] if len(values) > 180 else values
                     compact_arrow_history[key] = [
@@ -151,12 +157,12 @@ class StateManager:
                     ]
 
             # Compact hashrate_history
-            compact_hashrate_history = hashrate_history[-60:] if len(hashrate_history) > 60 else hashrate_history
+            compact_hashrate_history = self.hashrate_history[-60:] if len(self.hashrate_history) > 60 else self.hashrate_history
 
             # Compact metrics_log with unit preservation
             compact_metrics_log = []
-            if metrics_log:
-                recent_logs = metrics_log[-30:]
+            if self.metrics_log:
+                recent_logs = self.metrics_log[-30:]
                 for entry in recent_logs:
                     metrics_copy = {}
                     original_metrics = entry["metrics"]
@@ -199,42 +205,40 @@ class StateManager:
         Args:
             aggressive (bool): If True, be more aggressive with pruning
         """
-        global arrow_history, metrics_log
-    
         with state_lock:
             # Set thresholds based on aggressiveness
             max_history = MAX_HISTORY_ENTRIES // 2 if aggressive else MAX_HISTORY_ENTRIES
-        
+
             # Prune arrow_history with more sophisticated approach
-            for key in arrow_history:
-                if isinstance(arrow_history[key], list):
-                    if len(arrow_history[key]) > max_history:
+            for key in self.arrow_history:
+                if isinstance(self.arrow_history[key], list):
+                    if len(self.arrow_history[key]) > max_history:
                         # For most recent data (last hour) - keep every point
-                        recent_data = arrow_history[key][-60:]
-                    
+                        recent_data = self.arrow_history[key][-60:]
+
                         # For older data, reduce resolution by keeping fewer points when aggressive
-                        older_data = arrow_history[key][:-60]
+                        older_data = self.arrow_history[key][:-60]
                         if len(older_data) > 0:
                             step = 3 if aggressive else 2
                             sparse_older_data = [older_data[i] for i in range(0, len(older_data), step)]
-                            arrow_history[key] = sparse_older_data + recent_data
+                            self.arrow_history[key] = sparse_older_data + recent_data
                         else:
-                            arrow_history[key] = recent_data
-                        
-                        logging.info(f"Pruned {key} history from original state to {len(arrow_history[key])} entries")
-                    
+                            self.arrow_history[key] = recent_data
+
+                        logging.info(f"Pruned {key} history from original state to {len(self.arrow_history[key])} entries")
+
             # Prune metrics_log more aggressively
-            if len(metrics_log) > max_history:
+            if len(self.metrics_log) > max_history:
                 # Keep most recent entries at full resolution
-                recent_logs = metrics_log[-60:]
-            
+                recent_logs = self.metrics_log[-60:]
+
                 # Reduce resolution of older entries
-                older_logs = metrics_log[:-60]
+                older_logs = self.metrics_log[:-60]
                 if len(older_logs) > 0:
                     step = 4 if aggressive else 3  # More aggressive step
                     sparse_older_logs = [older_logs[i] for i in range(0, len(older_logs), step)]
-                    metrics_log = sparse_older_logs + recent_logs
-                    logging.info(f"Pruned metrics log to {len(metrics_log)} entries")
+                    self.metrics_log = sparse_older_logs + recent_logs
+                    logging.info(f"Pruned metrics log to {len(self.metrics_log)} entries")
         
             # Free memory more aggressively
             gc.collect()
@@ -300,8 +304,6 @@ class StateManager:
         Args:
             metrics (dict): New metrics data
         """
-        global arrow_history, hashrate_history, metrics_log
-        
         # Skip if metrics is None
         if not metrics:
             return
@@ -331,11 +333,11 @@ class StateManager:
                     unit_key = f"{key}_unit"
                     current_unit = metrics.get(unit_key, "")
                     
-                    if key in arrow_history and arrow_history[key]:
+                    if key in self.arrow_history and self.arrow_history[key]:
                         try:
-                            previous_val = arrow_history[key][-1]["value"]
-                            previous_unit = arrow_history[key][-1].get("unit", "")
-                            previous_arrow = arrow_history[key][-1].get("arrow", "")  # Get previous arrow
+                            previous_val = self.arrow_history[key][-1]["value"]
+                            previous_unit = self.arrow_history[key][-1].get("unit", "")
+                            previous_arrow = self.arrow_history[key][-1].get("arrow", "")  # Get previous arrow
                             
                             # Use the convert_to_ths function to normalize both values before comparison
                             if key.startswith("hashrate") and current_unit:
@@ -373,13 +375,13 @@ class StateManager:
                         except Exception as e:
                             logging.error(f"Error calculating arrow for {key}: {e}")
                             # Keep previous arrow on error instead of empty string
-                            if arrow_history[key] and arrow_history[key][-1].get("arrow"):
-                                arrow = arrow_history[key][-1]["arrow"]
-                            
-                    if key not in arrow_history:
-                        arrow_history[key] = []
-                        
-                    if not arrow_history[key] or arrow_history[key][-1]["time"] != current_second:
+                            if self.arrow_history[key] and self.arrow_history[key][-1].get("arrow"):
+                                arrow = self.arrow_history[key][-1]["arrow"]
+
+                    if key not in self.arrow_history:
+                        self.arrow_history[key] = []
+
+                    if not self.arrow_history[key] or self.arrow_history[key][-1]["time"] != current_second:
                         # Create new entry
                         entry = {
                             "time": current_second,
@@ -390,24 +392,24 @@ class StateManager:
                         if current_unit:
                             entry["unit"] = current_unit
                             
-                        arrow_history[key].append(entry)
+                        self.arrow_history[key].append(entry)
                     else:
                         # Update existing entry
-                        arrow_history[key][-1]["value"] = current_val
+                        self.arrow_history[key][-1]["value"] = current_val
                         # Only update arrow if it's not empty - this preserves arrows between changes
                         if arrow:
-                            arrow_history[key][-1]["arrow"] = arrow
+                            self.arrow_history[key][-1]["arrow"] = arrow
                         # Update unit if available
                         if current_unit:
-                            arrow_history[key][-1]["unit"] = current_unit
-                            
+                            self.arrow_history[key][-1]["unit"] = current_unit
+
                     # Cap history to three hours worth (180 entries)
-                    if len(arrow_history[key]) > MAX_HISTORY_ENTRIES:
-                        arrow_history[key] = arrow_history[key][-MAX_HISTORY_ENTRIES:]
+                    if len(self.arrow_history[key]) > MAX_HISTORY_ENTRIES:
+                        self.arrow_history[key] = self.arrow_history[key][-MAX_HISTORY_ENTRIES:]
 
             # --- Aggregate arrow_history by minute for the graph ---
             aggregated_history = {}
-            for key, entries in arrow_history.items():
+            for key, entries in self.arrow_history.items():
                 minute_groups = {}
                 for entry in entries:
                     minute = entry["time"][:5]  # extract HH:MM
@@ -421,13 +423,13 @@ class StateManager:
                 aggregated_history[key] = aggregated_history[key][-MAX_HISTORY_ENTRIES:] if len(aggregated_history[key]) > MAX_HISTORY_ENTRIES else aggregated_history[key]
             
             metrics["arrow_history"] = aggregated_history
-            metrics["history"] = hashrate_history
+            metrics["history"] = self.hashrate_history
 
             entry = {"timestamp": datetime.now().isoformat(), "metrics": metrics}
-            metrics_log.append(entry)
+            self.metrics_log.append(entry)
             # Cap the metrics log to three hours worth (180 entries)
-            if len(metrics_log) > MAX_HISTORY_ENTRIES:
-                metrics_log = metrics_log[-MAX_HISTORY_ENTRIES:]
+            if len(self.metrics_log) > MAX_HISTORY_ENTRIES:
+                self.metrics_log = self.metrics_log[-MAX_HISTORY_ENTRIES:]
 
     def save_notifications(self, notifications):
         """Save notifications to persistent storage."""
@@ -452,9 +454,34 @@ class StateManager:
                 notifications_json = self.redis_client.get("dashboard_notifications")
                 if notifications_json:
                     return json.loads(notifications_json)
-        
+
             # Return empty list if not found or no Redis
             return []
         except Exception as e:
             logging.error(f"Error retrieving notifications: {e}")
             return []
+
+    # ------------------------------------------------------------------
+    # Accessors for historical data structures
+    # ------------------------------------------------------------------
+    def get_history(self):
+        """Return the in-memory arrow history."""
+        return self.arrow_history
+
+    def get_metrics_log(self):
+        """Return the metrics log list."""
+        return self.metrics_log
+
+    def get_hashrate_history(self):
+        """Return the legacy hashrate history list."""
+        return self.hashrate_history
+
+    def clear_arrow_history(self, keys=None):
+        """Clear arrow history for specified keys or all."""
+        with state_lock:
+            if keys is None:
+                self.arrow_history.clear()
+            else:
+                for key in keys:
+                    if key in self.arrow_history:
+                        self.arrow_history[key] = []

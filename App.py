@@ -21,7 +21,7 @@ from notification_service import NotificationService, NotificationLevel, Notific
 from config import load_config, save_config
 from data_service import MiningDashboardService
 from worker_service import WorkerService
-from state_manager import StateManager, arrow_history, metrics_log
+from state_manager import StateManager
 from config import get_timezone
 
 # Memory management configuration
@@ -96,8 +96,10 @@ def log_memory_usage():
         logging.info(f"Memory usage: {mem_info.rss / 1024 / 1024:.2f} MB (RSS)")
         
         # Log the size of key data structures
-        logging.info(f"Arrow history entries: {sum(len(v) for v in arrow_history.values() if isinstance(v, list))}")
-        logging.info(f"Metrics log entries: {len(metrics_log)}")
+        logging.info(
+            f"Arrow history entries: {sum(len(v) for v in state_manager.get_history().values() if isinstance(v, list))}"
+        )
+        logging.info(f"Metrics log entries: {len(state_manager.get_metrics_log())}")
         logging.info(f"Active SSE connections: {active_sse_connections}")
     except Exception as e:
         logging.error(f"Error logging memory usage: {e}")
@@ -222,8 +224,10 @@ def record_memory_metrics():
             "rss_mb": memory_info.rss / 1024 / 1024,
             "vms_mb": memory_info.vms / 1024 / 1024,
             "percent": process.memory_percent(),
-            "arrow_history_entries": sum(len(v) for v in arrow_history.values() if isinstance(v, list)),
-            "metrics_log_entries": len(metrics_log),
+            "arrow_history_entries": sum(
+                len(v) for v in state_manager.get_history().values() if isinstance(v, list)
+            ),
+            "metrics_log_entries": len(state_manager.get_metrics_log()),
             "sse_connections": active_sse_connections
         }
         
@@ -1045,11 +1049,13 @@ def memory_profile():
                 "percent": process.memory_percent(),
                 "data_structures": {
                     "arrow_history": {
-                        "entries": sum(len(v) for v in arrow_history.values() if isinstance(v, list)),
-                        "keys": list(arrow_history.keys())
+                        "entries": sum(
+                            len(v) for v in state_manager.get_history().values() if isinstance(v, list)
+                        ),
+                        "keys": list(state_manager.get_history().keys())
                     },
                     "metrics_log": {
-                        "entries": len(metrics_log)
+                        "entries": len(state_manager.get_metrics_log())
                     },
                     "memory_usage_history": {
                         "entries": len(memory_usage_history)
@@ -1235,13 +1241,8 @@ class RobustMiddleware:
 def reset_chart_data():
     """API endpoint to reset chart data history."""
     try:
-        global arrow_history, state_manager
-        
-        # Clear hashrate data from in-memory dictionary
         hashrate_keys = ["hashrate_60sec", "hashrate_3hr", "hashrate_10min", "hashrate_24hr"]
-        for key in hashrate_keys:
-            if key in arrow_history:
-                arrow_history[key] = []
+        state_manager.clear_arrow_history(hashrate_keys)
         
         # Force an immediate save to Redis if available
         if state_manager and hasattr(state_manager, 'redis_client') and state_manager.redis_client:

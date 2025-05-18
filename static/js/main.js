@@ -366,6 +366,39 @@ function loadBlockAnnotations() {
         console.error('Error loading block annotations', e);
         blockAnnotations = [];
     }
+
+    // Fetch past block events from the server and merge with stored annotations
+    // Limit events to the last 180 minutes
+    fetch('/api/block-events?minutes=180')
+        .then(resp => resp.json())
+        .then(data => {
+            if (data && Array.isArray(data.events)) {
+                const tz = window.dashboardTimezone || DEFAULT_TIMEZONE;
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tz,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                data.events.forEach(ev => {
+                    try {
+                        const d = new Date(ev.timestamp);
+                        const label = formatter.format(d).replace(/\s[AP]M$/i, '');
+                        if (!blockAnnotations.includes(label)) {
+                            blockAnnotations.push(label);
+                        }
+                    } catch (err) {
+                        console.error('Error processing block event', err);
+                    }
+                });
+                saveBlockAnnotations();
+                if (trendChart) {
+                    updateBlockAnnotations(trendChart);
+                    trendChart.update('none');
+                }
+            }
+        })
+        .catch(err => console.error('Error fetching block events', err));
 }
 
 function saveBlockAnnotations() {

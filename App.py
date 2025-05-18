@@ -11,7 +11,7 @@ import sys
 import threading
 import json
 from flask import Flask, render_template, jsonify, Response, request
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -1289,6 +1289,39 @@ def payout_history():
         return jsonify({"status": "success"})
     except Exception as e:
         logging.error(f"Error handling payout history: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# New endpoint to fetch recent block events for chart annotations
+@app.route("/api/block-events")
+def block_events():
+    """Return recent block notifications for chart annotations."""
+    try:
+        limit = request.args.get("limit", 20, type=int)
+        minutes = request.args.get("minutes", 180, type=int)
+
+        # Fetch a batch of recent block notifications
+        notifications = notification_service.get_notifications(
+            limit=limit * 5,
+            category=NotificationCategory.BLOCK.value,
+        )
+
+        cutoff = notification_service._get_current_time() - timedelta(minutes=minutes)
+        events = []
+
+        for n in notifications:
+            ts = n.get("timestamp")
+            data = n.get("data") or {}
+            height = data.get("block_height")
+            if ts and height:
+                when = notification_service._parse_timestamp(ts)
+                if when >= cutoff:
+                    events.append({"timestamp": ts, "height": height})
+            if len(events) >= limit:
+                break
+
+        return jsonify({"events": events})
+    except Exception as e:
+        logging.error(f"Error fetching block events: {e}")
         return jsonify({"error": str(e)}), 500
 
 # First, register the template filter outside of any route function

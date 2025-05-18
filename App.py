@@ -11,7 +11,7 @@ import sys
 import threading
 import json
 from flask import Flask, render_template, jsonify, Response, request
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask_caching import Cache
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -1297,6 +1297,17 @@ def block_events():
     """Return recent block notifications for chart annotations."""
     try:
         limit = request.args.get("limit", 20, type=int)
+        minutes = request.args.get("minutes", 180, type=int)
+
+        # Fetch a batch of recent block notifications
+        notifications = notification_service.get_notifications(
+            limit=limit * 5,
+            category=NotificationCategory.BLOCK.value,
+        )
+
+        cutoff = notification_service._get_current_time() - timedelta(minutes=minutes)
+        events = []
+
         notifications = notification_service.get_notifications(
             limit=limit,
             category=NotificationCategory.BLOCK.value
@@ -1307,6 +1318,12 @@ def block_events():
             data = n.get("data") or {}
             height = data.get("block_height")
             if ts and height:
+                when = notification_service._parse_timestamp(ts)
+                if when >= cutoff:
+                    events.append({"timestamp": ts, "height": height})
+            if len(events) >= limit:
+                break
+
                 events.append({"timestamp": ts, "height": height})
         return jsonify({"events": events})
     except Exception as e:

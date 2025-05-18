@@ -20,7 +20,7 @@ def load_config():
         "timezone": "America/Los_Angeles",
         "network_fee": 0.0,  # Add default network fee
         "currency": "USD",  # Default currency
-        "EXCHANGE_RATE_API_KEY": "REPLACE_ME"
+        "EXCHANGE_RATE_API_KEY": "179cbeb07c900f20dde92d3b"
     }
     
     if os.path.exists(CONFIG_FILE):

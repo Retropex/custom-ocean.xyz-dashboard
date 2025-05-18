@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from worker_service import WorkerService
 from data_service import MiningDashboardService
 from notification_service import NotificationService
+import data_service
 
 
 def test_generate_default_workers_data(monkeypatch):
@@ -52,4 +53,39 @@ def test_notification_update_currency(monkeypatch):
     notif = svc.notifications[0]
     assert notif['data']['currency'] == 'EUR'
     assert abs(notif['data']['daily_profit'] - 5.0) < 1e-6
+
+
+def test_exchange_rate_caching(monkeypatch):
+    svc = MiningDashboardService(0, 0, 'w')
+
+    fake_time = [0]
+    monkeypatch.setattr(data_service.time, 'time', lambda: fake_time[0])
+
+    call_count = {'count': 0}
+
+    def fake_get(url, timeout=5):
+        call_count['count'] += 1
+        resp = MagicMock()
+        resp.ok = True
+        resp.json.return_value = {
+            'result': 'success',
+            'conversion_rates': {'EUR': 0.5, 'USD': 1}
+        }
+        return resp
+
+    monkeypatch.setattr(svc.session, 'get', fake_get)
+
+    rates1 = svc.fetch_exchange_rates()
+    assert rates1['EUR'] == 0.5
+    assert call_count['count'] == 1
+
+    fake_time[0] += 1000  # within TTL
+    rates2 = svc.fetch_exchange_rates()
+    assert rates2 == rates1
+    assert call_count['count'] == 1
+
+    fake_time[0] += svc.exchange_rate_ttl + 1  # expire cache
+    rates3 = svc.fetch_exchange_rates()
+    assert rates3 == rates1
+    assert call_count['count'] == 2
 

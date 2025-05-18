@@ -586,7 +586,7 @@ class MiningDashboardService:
             self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
             return {}
           
-    def get_payment_history_api(self, days=30, btc_price=None):
+    def get_payment_history_api(self, days=360, btc_price=None):
         """Fetch payout history using the Ocean.xyz API."""
         api_base = "https://api.ocean.xyz/v1"
         end_date = datetime.utcnow()

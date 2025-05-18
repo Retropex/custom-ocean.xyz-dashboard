@@ -848,7 +848,7 @@ class MiningDashboardService:
                 btc_price = 85000
 
             # Prefer the official API for payout history
-            payments = self.get_payment_history_api(days=30, btc_price=btc_price)
+            payments = self.get_payment_history_api(days=360, btc_price=btc_price)
             if payments is None:
                 payments = self.get_payment_history(max_pages=30, timeout=20, max_retries=3, btc_price=btc_price)
     

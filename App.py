@@ -1256,6 +1256,41 @@ def reset_chart_data():
         logging.error(f"Error resetting chart data: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route("/api/payout-history", methods=["GET", "POST", "DELETE"])
+def payout_history():
+    """API endpoint to manage payout history."""
+    try:
+        if request.method == "GET":
+            history = state_manager.get_payout_history()
+            return jsonify({"payout_history": history})
+
+        if request.method == "POST":
+            data = request.get_json() or {}
+            if "history" in data:
+                if not isinstance(data["history"], list):
+                    return jsonify({"error": "history must be a list"}), 400
+                state_manager.save_payout_history(data["history"])
+                return jsonify({"status": "success"})
+
+            if "record" in data:
+                if not isinstance(data["record"], dict):
+                    return jsonify({"error": "record must be an object"}), 400
+                history = state_manager.get_payout_history()
+                history.insert(0, data["record"])
+                if len(history) > 30:
+                    history = history[:30]
+                state_manager.save_payout_history(history)
+                return jsonify({"status": "success"})
+
+            return jsonify({"error": "invalid data"}), 400
+
+        # DELETE
+        state_manager.clear_payout_history()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        logging.error(f"Error handling payout history: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # First, register the template filter outside of any route function
 # Add this near the top of your file with other template filters
 @app.template_filter('format_datetime')

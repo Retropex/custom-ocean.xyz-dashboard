@@ -228,6 +228,7 @@ function resetWalletAddress() {
                     localStorage.removeItem('payoutHistory');
                     lastPayoutTracking.payoutHistory = [];
                     console.log("Payout history cleared for wallet change");
+                    fetch('/api/payout-history', { method: 'DELETE' });
 
                     // Remove any visible payout comparison elements
                     $("#payout-comparison").remove();
@@ -283,6 +284,7 @@ function resetWalletAddressOnly() {
         localStorage.removeItem('payoutHistory');
         lastPayoutTracking.payoutHistory = [];
         console.log("Payout history cleared for wallet change");
+        fetch('/api/payout-history', { method: 'DELETE' });
 
         // Remove any visible payout comparison elements
         $("#payout-comparison").remove();

@@ -40,3 +40,24 @@ def test_update_config_endpoint(client):
     assert resp.status_code == 200
     assert data["status"] == "success"
 
+
+def test_payout_history_endpoint(client):
+    resp = client.get("/api/payout-history")
+    assert resp.status_code == 200
+    assert resp.get_json()["payout_history"] == []
+
+    record = {"timestamp": "2023-01-01T00:00:00Z", "amountBTC": "0.1"}
+    resp = client.post("/api/payout-history", json={"record": record})
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] == "success"
+
+    resp = client.get("/api/payout-history")
+    data = resp.get_json()
+    assert len(data["payout_history"]) == 1
+    assert data["payout_history"][0]["amountBTC"] == "0.1"
+
+    resp = client.delete("/api/payout-history")
+    assert resp.status_code == 200
+    resp = client.get("/api/payout-history")
+    assert resp.get_json()["payout_history"] == []
+

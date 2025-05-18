@@ -1291,6 +1291,28 @@ def payout_history():
         logging.error(f"Error handling payout history: {e}")
         return jsonify({"error": str(e)}), 500
 
+# New endpoint to fetch recent block events for chart annotations
+@app.route("/api/block-events")
+def block_events():
+    """Return recent block notifications for chart annotations."""
+    try:
+        limit = request.args.get("limit", 20, type=int)
+        notifications = notification_service.get_notifications(
+            limit=limit,
+            category=NotificationCategory.BLOCK.value
+        )
+        events = []
+        for n in notifications:
+            ts = n.get("timestamp")
+            data = n.get("data") or {}
+            height = data.get("block_height")
+            if ts and height:
+                events.append({"timestamp": ts, "height": height})
+        return jsonify({"events": events})
+    except Exception as e:
+        logging.error(f"Error fetching block events: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # First, register the template filter outside of any route function
 # Add this near the top of your file with other template filters
 @app.template_filter('format_datetime')

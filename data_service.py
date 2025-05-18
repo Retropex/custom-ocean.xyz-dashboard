@@ -585,7 +585,7 @@ class MiningDashboardService:
             logging.error(f"Error fetching exchange rates: {e}")
             self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
             return {}
-
+          
     def get_payment_history_api(self, days=30, btc_price=None):
         """Fetch payout history using the Ocean.xyz API."""
         api_base = "https://api.ocean.xyz/v1"
@@ -643,10 +643,14 @@ class MiningDashboardService:
                 payments.append(payment)
 
             return payments
+
         except Exception as e:
             logging.error(f"Error fetching payment history from API: {e}")
             return None
 
+
+        return payments
+    
     def get_payment_history(self, max_pages=5, timeout=30, max_retries=3, btc_price=None):
         """
         Get payment history data from Ocean.xyz with retry logic.
@@ -762,10 +766,7 @@ class MiningDashboardService:
                         if tx_link and tx_link.has_attr('href'):
                             tx_href = tx_link['href']
                             # Extract transaction ID from the href
-                            # The href may include additional path or query
-                            # parameters, so search for a 64 hex character
-                            # transaction ID anywhere in the URL
-                            txid_match = re.search(r'([a-fA-F0-9]{64})', tx_href)
+                            txid_match = re.search(r'/tx/([a-fA-F0-9]{64})', tx_href)
                             if txid_match:
                                 payment["txid"] = txid_match.group(1)
                             else:

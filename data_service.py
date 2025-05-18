@@ -701,7 +701,10 @@ class MiningDashboardService:
                         if tx_link and tx_link.has_attr('href'):
                             tx_href = tx_link['href']
                             # Extract transaction ID from the href
-                            txid_match = re.search(r'/tx/([a-fA-F0-9]{64})', tx_href)
+                            # The href may include additional path or query
+                            # parameters, so search for a 64 hex character
+                            # transaction ID anywhere in the URL
+                            txid_match = re.search(r'([a-fA-F0-9]{64})', tx_href)
                             if txid_match:
                                 payment["txid"] = txid_match.group(1)
                             else:

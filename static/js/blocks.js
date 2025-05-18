@@ -6,6 +6,8 @@ const TOAST_DISPLAY_TIME = 3000; // 3 seconds
 const DEFAULT_TIMEZONE = 'America/Los_Angeles';
 const SATOSHIS_PER_BTC = 100000000;
 const MAX_CACHE_SIZE = 20; // Number of block heights to cache
+const BLOCKS_PER_PAGE = 15;          // Blocks displayed in the grid
+const CHART_BLOCKS_COUNT = 25;       // Blocks used for miner distribution chart
 
 // POOL configuration
 const POOL_CONFIG = {
@@ -50,6 +52,47 @@ function addToCache(height, data) {
     if (cacheKeys.length > MAX_CACHE_SIZE) {
         const keysToRemove = cacheKeys.slice(0, cacheKeys.length - MAX_CACHE_SIZE);
         keysToRemove.forEach(key => delete blocksCache[key]);
+    }
+}
+
+// Recursively fetch additional blocks until the desired count is reached
+function fetchAdditionalBlocks(height, remaining) {
+    if (remaining <= 0) return Promise.resolve([]);
+    return $.ajax({
+        url: `${mempoolBaseUrl}/api/v1/blocks/${height}`,
+        method: "GET",
+        dataType: "json",
+        timeout: 10000
+    }).then(data => {
+        if (!Array.isArray(data) || data.length === 0) {
+            return [];
+        }
+        if (data.length >= remaining) {
+            return data.slice(0, remaining);
+        }
+        const nextHeight = data[data.length - 1].height - 1;
+        return fetchAdditionalBlocks(nextHeight, remaining - data.length)
+            .then(more => data.concat(more));
+    }).catch(() => []);
+}
+
+// Prepare data for the miner distribution chart using up to CHART_BLOCKS_COUNT blocks
+function prepareChartData(initialBlocks) {
+    if (!Array.isArray(initialBlocks) || initialBlocks.length === 0) {
+        updateMinerDistributionChart([]);
+        return;
+    }
+
+    if (initialBlocks.length >= CHART_BLOCKS_COUNT) {
+        updateMinerDistributionChart(initialBlocks.slice(0, CHART_BLOCKS_COUNT));
+    } else {
+        const lastHeight = initialBlocks[initialBlocks.length - 1].height - 1;
+        fetchAdditionalBlocks(lastHeight, CHART_BLOCKS_COUNT - initialBlocks.length)
+            .then(extra => {
+                const combined = initialBlocks.concat(extra).slice(0, CHART_BLOCKS_COUNT);
+                updateMinerDistributionChart(combined);
+            })
+            .catch(() => updateMinerDistributionChart(initialBlocks));
     }
 }
 
@@ -616,10 +659,11 @@ function loadBlocksFromHeight(height) {
 
     // Check if we already have this data in cache
     if (blocksCache[height]) {
-        displayBlocks(blocksCache[height]);
-        updateMinerDistributionChart(blocksCache[height]);
-        if (blocksCache[height].length > 0) {
-            updateLatestBlockStats(blocksCache[height][0]);
+        const cached = blocksCache[height];
+        displayBlocks(cached.slice(0, BLOCKS_PER_PAGE));
+        prepareChartData(cached);
+        if (cached.length > 0) {
+            updateLatestBlockStats(cached[0]);
         }
         isLoading = false;
         return;
@@ -639,10 +683,10 @@ function loadBlocksFromHeight(height) {
             addToCache(height, data);
 
             // Display the blocks
-            displayBlocks(data);
+            displayBlocks(data.slice(0, BLOCKS_PER_PAGE));
 
-            // Update miner distribution chart
-            updateMinerDistributionChart(data);
+            // Update miner distribution chart with up to CHART_BLOCKS_COUNT blocks
+            prepareChartData(data);
 
 
             // Update latest block stats
@@ -693,9 +737,9 @@ function loadLatestBlocks() {
             }
 
             // Display the blocks
-            displayBlocks(data);
+            displayBlocks(data.slice(0, BLOCKS_PER_PAGE));
             // Update miner distribution chart
-            updateMinerDistributionChart(data);
+            prepareChartData(data);
         },
         error: function (xhr, status, error) {
             console.error("Error fetching latest blocks:", error);

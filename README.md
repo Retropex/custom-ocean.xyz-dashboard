@@ -27,7 +27,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Network Statistics**: Track current Bitcoin price, difficulty, and network hashrate
 - **Payout Monitoring**: View unpaid balance and estimated time to next payout
 - **Pool Fee Analysis**: Monitor pool fee percentages with visual indicator when optimal rates (0.9-1.3%) are detected
-- **Official Ocean API**: Supplement scraping with data from the official Ocean.xyz API for greater accuracy
+- **Official Ocean API**: Supplement scraping with data from the official Ocean.xyz API for greater accuracy, including payment history when available
 
 ### Multi-Currency Support
 - **Flexible Currency Configuration**: Set your preferred fiat currency for displaying Bitcoin value and earnings

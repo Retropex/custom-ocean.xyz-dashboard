@@ -370,6 +370,7 @@ function loadBlockAnnotations() {
     // Fetch past block events from the server and merge with stored annotations
     // Limit events to the last 180 minutes
     fetch('/api/block-events?minutes=180')
+    fetch('/api/block-events')
         .then(resp => resp.json())
         .then(data => {
             if (data && Array.isArray(data.events)) {

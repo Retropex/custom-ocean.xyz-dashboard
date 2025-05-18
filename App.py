@@ -1308,6 +1308,11 @@ def block_events():
         cutoff = notification_service._get_current_time() - timedelta(minutes=minutes)
         events = []
 
+        notifications = notification_service.get_notifications(
+            limit=limit,
+            category=NotificationCategory.BLOCK.value
+        )
+        events = []
         for n in notifications:
             ts = n.get("timestamp")
             data = n.get("data") or {}
@@ -1319,6 +1324,7 @@ def block_events():
             if len(events) >= limit:
                 break
 
+                events.append({"timestamp": ts, "height": height})
         return jsonify({"events": events})
     except Exception as e:
         logging.error(f"Error fetching block events: {e}")

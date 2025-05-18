@@ -238,8 +238,9 @@
 
     <!-- External JavaScript libraries -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
+    <!-- Pin Chart.js version and load local annotation plugin for offline support -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="{{ url_for('static', filename='js/chartjs-plugin-annotation-lite.js') }}"></script>
 
     <!-- Theme toggle initialization -->
     <script>

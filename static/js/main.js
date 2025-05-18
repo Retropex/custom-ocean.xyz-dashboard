@@ -348,9 +348,9 @@ let lastPayoutTracking = {
 let serverTimeOffset = 0;
 let serverStartTime = null;
 
-// Register Chart.js annotation plugin if available
-if (window['chartjs-plugin-annotation']) {
-    Chart.register(window['chartjs-plugin-annotation']);
+// Register local annotation plugin if available
+if (window.simpleAnnotationPlugin) {
+    Chart.register(window.simpleAnnotationPlugin);
 }
 
 function loadBlockAnnotations() {
@@ -1812,8 +1812,8 @@ function initializeChart() {
         // Get the current theme colors
         const theme = getCurrentTheme();
 
-        // Check if Chart.js plugin is available
-        const hasAnnotationPlugin = window['chartjs-plugin-annotation'] !== undefined;
+        // Check if annotation plugin is available
+        const hasAnnotationPlugin = window.simpleAnnotationPlugin !== undefined;
 
         return new Chart(ctx, {
             type: 'line',
@@ -3866,8 +3866,8 @@ $(document).ready(function () {
             // Get the current theme colors
             const theme = getCurrentTheme();
 
-            // Check if Chart.js plugin is available
-            const hasAnnotationPlugin = window['chartjs-plugin-annotation'] !== undefined;
+            // Check if annotation plugin is available
+            const hasAnnotationPlugin = window.simpleAnnotationPlugin !== undefined;
 
             const chart = new Chart(ctx, {
                 type: 'line',

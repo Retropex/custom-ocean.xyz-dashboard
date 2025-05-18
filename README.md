@@ -46,6 +46,7 @@ This open-source dashboard provides real-time monitoring for Ocean.xyz pool mine
 - **Recent Blocks**: View the latest blocks added to the blockchain
 - **Block Details**: Examine transaction counts, fees, and mining pool information
 - **Visual Indicators**: Track network difficulty and block discovery times
+- **Pagination Controls**: Seamlessly move between older and newer blocks with a quick link back to the latest view
 
 ### Earnings Page
 - **Detailed Earnings Breakdown**: View earnings by time period (daily, weekly, monthly)

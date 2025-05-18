@@ -15,7 +15,8 @@ const POOL_CONFIG = {
 };
 
 // Global variables
-let currentStartHeight = null;
+let currentStartHeight = null;        // height currently displayed at the top of the grid
+let latestBlockHeight = null;         // most recent block height fetched
 const mempoolBaseUrl = "https://mempool.guide"; // Switched from mempool.space to mempool.guide - more aligned with Ocean.xyz ethos
 let blocksCache = {};
 let isLoading = false;
@@ -670,6 +671,7 @@ function loadLatestBlocks() {
             // Cache the data (use the first block's height as the key)
             if (data.length > 0) {
                 currentStartHeight = data[0].height;
+                latestBlockHeight = data[0].height;
                 addToCache(currentStartHeight, data);
 
                 // Update the block height input with the latest height
@@ -817,7 +819,7 @@ function addNavigationControls(blocks) {
     });
 
     // Newer blocks button (if not already at the latest blocks)
-    if (firstBlockHeight !== currentStartHeight) {
+    if (latestBlockHeight && firstBlockHeight < latestBlockHeight) {
         const newerButton = $("<button>", {
             class: "block-button",
             text: "Newer Blocks",
@@ -825,7 +827,8 @@ function addNavigationControls(blocks) {
         });
 
         newerButton.on("click", function () {
-            loadBlocksFromHeight(firstBlockHeight + 15);
+            const nextHeight = Math.min(firstBlockHeight + 15, latestBlockHeight);
+            loadBlocksFromHeight(nextHeight);
         });
 
         navControls.append(newerButton);
@@ -843,6 +846,21 @@ function addNavigationControls(blocks) {
     });
 
     navControls.append(olderButton);
+
+    // Quick link to jump back to the latest blocks
+    if (latestBlockHeight && firstBlockHeight < latestBlockHeight) {
+        const latestButton = $("<button>", {
+            class: "block-button",
+            text: "Latest",
+            "aria-label": "Load latest blocks"
+        });
+
+        latestButton.on("click", function () {
+            loadLatestBlocks();
+        });
+
+        navControls.append(latestButton);
+    }
 
     // Add the navigation controls to the blocks grid
     $("#blocks-grid").append(navControls);

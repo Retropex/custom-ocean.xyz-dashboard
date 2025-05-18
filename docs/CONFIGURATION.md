@@ -16,6 +16,7 @@ The default configuration file contains the following keys:
 | `timezone` | Local timezone identifier | `"America/Los_Angeles"` |
 | `network_fee` | Additional fees beyond pool fees | `0.0` |
 | `currency` | Preferred fiat currency for earnings display | `"USD"` |
+| `EXCHANGE_RATE_API_KEY` | API key for currency conversion | `"REPLACE_ME"` |
 
 ## Environment Variables
 
@@ -31,5 +32,11 @@ The default configuration file contains the following keys:
 | `FLASK_ENV` | Application environment | `development` |
 | `LOG_LEVEL` | Logging level | `INFO` |
 | `PORT` | Application port | `5000` |
+| `EXCHANGE_RATE_API_KEY` | API key for currency conversion | from `config.json` |
+
+The dashboard needs a valid ExchangeRate API key to perform currency conversions.
+You can supply this key in the `config.json` file under `EXCHANGE_RATE_API_KEY`
+or set an `EXCHANGE_RATE_API_KEY` environment variable. The environment variable
+will override the value in the configuration file if both are provided.
 
 Refer to [INSTALL.md](INSTALL.md) and [DEPLOYMENT.md](DEPLOYMENT.md) for instructions on how these variables are used during setup and deployment.

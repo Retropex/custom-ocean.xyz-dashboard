@@ -15,8 +15,9 @@ This guide covers the basic steps to get the dashboard running in a local develo
    ```
 3. **Run the setup script**
    ```bash
-   python setup.py
+   make setup
    ```
+   The provided `Makefile` also exposes helpers like `make minify` for asset compression.
 4. **Start the application**
    ```bash
    python App.py

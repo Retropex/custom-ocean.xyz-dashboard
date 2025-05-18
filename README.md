@@ -190,6 +190,7 @@ DeepSea-Dashboard/
 ├── notification_service.py     # Service for notifications
 ├── minify.py                   # Script for minifying assets
 ├── setup.py                    # Setup script for organizing files
+├── Makefile                    # Common development commands
 ├── requirements.txt            # Python dependencies
 ├── Dockerfile                  # Docker configuration
 ├── docker-compose.yml          # Docker Compose configuration

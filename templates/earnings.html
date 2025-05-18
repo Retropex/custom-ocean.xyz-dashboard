@@ -105,7 +105,7 @@
                         <th>Date</th>
                         <th>Amount (₿)</th>
                         <th>Amount (sats)</th>
-                        <th>Transaction ID</th>
+                        <!--<th>Transaction ID</th>-->
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -115,7 +115,7 @@
                         <td>{{ payment.date|format_datetime }}</td>
                         <td>{{ "%.8f"|format(payment.amount_btc|float) }}</td>
                         <td>{{ payment.amount_sats|int|commafy }}</td>
-                        <td>
+                        <!--<td>
                             {% if payment.txid %}
                             <a href="https://mempool.guide/tx/{{ payment.txid }}" target="_blank" class="tx-link">
                                 {{ payment.txid }}
@@ -123,7 +123,7 @@
                             {% else %}
                             N/A
                             {% endif %}
-                        </td>
+                        </td>-->
                         <td>
                             <span class="status-label status-{{ payment.status }}">{{ payment.status }}</span>
                         </td>

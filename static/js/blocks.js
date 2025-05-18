@@ -846,10 +846,47 @@ function updateMinerDistributionChart(blocks) {
         counts[poolName] = (counts[poolName] || 0) + 1;
     });
 
-    const labels = Object.keys(counts);
-    const data = labels.map(l => counts[l]);
-    const colors = labels.map(l => getPoolColor(l));
-    const theme = getCurrentTheme();
+    // Group smaller pools under "Other" to keep the chart readable
+    const grouped = {};
+    const THRESHOLD = 2;
+    let otherCount = 0;
+    Object.entries(counts).forEach(([name, count]) => {
+        if (count < THRESHOLD) {
+            otherCount += count;
+        } else {
+            grouped[name] = count;
+        }
+    });
+    if (otherCount > 0) {
+        grouped['Other'] = otherCount;
+    }
+
+    const labels = Object.keys(grouped);
+    const data   = labels.map(l => grouped[l]);
+    const colors = labels.map(l => l === 'Other' ? POOL_CONFIG.defaultUnknownColor : getPoolColor(l));
+    const total  = data.reduce((a, b) => a + b, 0);
+    const theme  = getCurrentTheme();
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 500 },
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { color: theme.PRIMARY }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const value = context.parsed;
+                        const percentage = total ? ((value / total) * 100).toFixed(1) : 0;
+                        return `${context.label}: ${value} blocks (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    };
 
     if (!minerChart) {
         const ctx = document.getElementById('minerChart').getContext('2d');
@@ -859,19 +896,13 @@ function updateMinerDistributionChart(blocks) {
                 labels: labels,
                 datasets: [{ data: data, backgroundColor: colors }]
             },
-            options: {
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: theme.PRIMARY }
-                    }
-                }
-            }
+            options: options
         });
     } else {
         minerChart.data.labels = labels;
         minerChart.data.datasets[0].data = data;
         minerChart.data.datasets[0].backgroundColor = colors;
+        minerChart.options = { ...minerChart.options, ...options };
         minerChart.update();
     }
 }

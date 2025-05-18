@@ -468,6 +468,7 @@ class NotificationService:
                     "unit": hashrate_unit,
                     "daily_sats": daily_mined_sats,
                     "daily_profit": daily_profit_usd,
+                    "daily_profit_usd": daily_profit_usd,
                     "currency": user_currency
                 }
             )
@@ -730,10 +731,10 @@ class NotificationService:
             for notif in self.notifications:
                 data = notif.get("data", {})
                 if isinstance(data, dict) and "daily_profit" in data:
-                    # Value is stored in the currency specified by data["currency"].
-                    # Convert it back to USD before converting to the new currency.
+                    # Prefer stored USD value if available
                     profit_value = data.get("daily_profit")
                     old_currency = data.get("currency", "USD")
+
                     if profit_value is None:
                         continue
 
@@ -742,11 +743,19 @@ class NotificationService:
                     except (ValueError, TypeError):
                         continue
 
-                    old_rate = exchange_rates.get(old_currency, 1.0)
-                    try:
-                        profit_usd = profit_value / old_rate
-                    except Exception:
-                        profit_usd = profit_value
+                    if "daily_profit_usd" in data:
+                        try:
+                            profit_usd = float(data.get("daily_profit_usd"))
+                        except (ValueError, TypeError):
+                            profit_usd = profit_value
+                    else:
+                        old_rate = exchange_rates.get(old_currency, 1.0)
+                        try:
+                            profit_usd = profit_value / old_rate
+                        except Exception:
+                            profit_usd = profit_value
+                        # Store USD value for future conversions
+                        data["daily_profit_usd"] = profit_usd
 
                     converted_value = profit_usd * exchange_rates.get(new_currency, 1.0)
                     data["daily_profit"] = converted_value

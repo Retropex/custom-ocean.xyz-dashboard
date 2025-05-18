@@ -267,6 +267,7 @@ html.deepsea-theme body {
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
+  opacity: 0.65;
 }
 
 .bubble {

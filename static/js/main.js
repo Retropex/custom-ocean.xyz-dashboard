@@ -892,6 +892,11 @@ function trackPayoutPerformance(data) {
                 try {
                     localStorage.setItem('payoutHistory', JSON.stringify(lastPayoutTracking.payoutHistory));
                     console.log("Saved payout history to localStorage:", lastPayoutTracking.payoutHistory);
+                    fetch('/api/payout-history', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ record: payoutComparison })
+                    });
                 } catch (e) {
                     console.error("Error saving payout history to localStorage:", e);
                 }
@@ -1067,6 +1072,23 @@ function displayPayoutComparison(comparison) {
 
 // Function to load payout history from localStorage
 function loadPayoutHistory() {
+    // Attempt to load from server first
+    fetch('/api/payout-history')
+        .then(res => res.json())
+        .then(data => {
+            if (data && Array.isArray(data.payout_history)) {
+                lastPayoutTracking.payoutHistory = data.payout_history;
+                localStorage.setItem('payoutHistory', JSON.stringify(lastPayoutTracking.payoutHistory));
+                return;
+            }
+            loadLocalHistory();
+        })
+        .catch(() => {
+            loadLocalHistory();
+        });
+}
+
+function loadLocalHistory() {
     try {
         const savedHistory = localStorage.getItem('payoutHistory');
         if (savedHistory) {
@@ -1519,6 +1541,11 @@ function verifyPayoutsAgainstOfficial() {
             // Save the updated history
             try {
                 localStorage.setItem('payoutHistory', JSON.stringify(lastPayoutTracking.payoutHistory));
+                fetch('/api/payout-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ history: lastPayoutTracking.payoutHistory })
+                });
             } catch (e) {
                 console.error("Error saving enriched payout history to localStorage:", e);
             }
@@ -3564,6 +3591,7 @@ function resetWalletAddress() {
                     localStorage.removeItem('payoutHistory');
                     lastPayoutTracking.payoutHistory = [];
                     console.log("Payout history cleared for wallet change");
+                    fetch('/api/payout-history', { method: 'DELETE' });
 
                     // Remove any visible payout comparison elements
                     $("#payout-comparison").remove();
@@ -3619,6 +3647,7 @@ function resetWalletAddressOnly() {
         localStorage.removeItem('payoutHistory');
         lastPayoutTracking.payoutHistory = [];
         console.log("Payout history cleared for wallet change");
+        fetch('/api/payout-history', { method: 'DELETE' });
 
         // Remove any visible payout comparison elements
         $("#payout-comparison").remove();

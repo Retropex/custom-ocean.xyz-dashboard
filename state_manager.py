@@ -41,9 +41,11 @@ class StateManager:
         self.arrow_history = {}    # Stored per second
         self.hashrate_history = []
         self.metrics_log = []
+        self.payout_history = []
 
         # Load state if available
         self.load_graph_state()
+        self.load_payout_history()
         
     def _connect_to_redis(self, redis_url):
         """
@@ -141,6 +143,19 @@ class StateManager:
                 logging.info("No previous graph state found in Redis.")
         except Exception as e:
             logging.error(f"Error loading graph state from Redis: {e}")
+
+    def load_payout_history(self):
+        """Load payout history list from Redis."""
+        if not self.redis_client:
+            return
+        try:
+            data = self.redis_client.get("payout_history")
+            if data:
+                if isinstance(data, bytes):
+                    data = data.decode("utf-8")
+                self.payout_history = json.loads(data)
+        except Exception as e:
+            logging.error(f"Error loading payout history from Redis: {e}")
     
     def save_graph_state(self):
         """Save graph state to Redis with optimized frequency, pruning, and data reduction."""
@@ -501,3 +516,30 @@ class StateManager:
                 for key in keys:
                     if key in self.arrow_history:
                         self.arrow_history[key] = []
+
+    # ------------------------------------------------------------------
+    # Payout history management
+    # ------------------------------------------------------------------
+    def get_payout_history(self):
+        """Return the payout history list."""
+        return self.payout_history
+
+    def save_payout_history(self, history):
+        """Save payout history to Redis and memory."""
+        try:
+            self.payout_history = history
+            if self.redis_client:
+                self.redis_client.set("payout_history", json.dumps(history))
+            return True
+        except Exception as e:
+            logging.error(f"Error saving payout history: {e}")
+            return False
+
+    def clear_payout_history(self):
+        """Clear payout history from memory and Redis."""
+        self.payout_history = []
+        try:
+            if self.redis_client:
+                self.redis_client.delete("payout_history")
+        except Exception as e:
+            logging.error(f"Error clearing payout history from Redis: {e}")

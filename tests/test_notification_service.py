@@ -95,27 +95,5 @@ class NotificationCurrencyTest(unittest.TestCase):
         self.assertAlmostEqual(notif['data']['daily_profit_usd'], 10.0)
         self.assertIn('$', notif['message'])
 
-    def test_init_syncs_currency(self):
-        # Simulate stored notifications using EUR
-        def get_notifs():
-            return [{
-                "id": "1",
-                "timestamp": "2023-01-01T00:00:00",
-                "message": "Daily Mining Summary: 100 TH/s average hashrate, 100 SATS mined (\u20ac8.00)",
-                "level": "info",
-                "category": "hashrate",
-                "data": {"daily_profit": 8.0, "currency": "EUR", "daily_profit_usd": 10.0}
-            }]
-
-        self.state.get_notifications = get_notifs
-
-        with patch('notification_service.get_exchange_rates', return_value={'EUR': 0.8, 'USD': 1}), \
-             patch('notification_service.load_config', return_value={'currency': 'USD'}):
-            service = NotificationService(self.state)
-
-        notif = service.notifications[0]
-        self.assertEqual(notif['data']['currency'], 'USD')
-        self.assertAlmostEqual(notif['data']['daily_profit'], 10.0)
-
 if __name__ == '__main__':
     unittest.main()

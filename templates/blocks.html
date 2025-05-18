@@ -15,6 +15,18 @@
 
 {% block content %}
 
+<!-- Miner diversity chart -->
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">MINER DISTRIBUTION (LAST 25 BLOCKS)</div>
+            <div class="card-body text-center">
+                <canvas id="minerChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Latest block stats -->
 <div class="row mb-2 equal-height">
     <div class="col-12">
@@ -51,18 +63,6 @@
                         <span id="latest-fee-rate" class="metric-value yellow" style="animation: pulse 1s infinite;">Loading...</span>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Miner diversity chart -->
-<div class="row mb-2">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">MINER DISTRIBUTION (LAST 25 BLOCKS)</div>
-            <div class="card-body text-center">
-                <canvas id="minerChart" height="120"></canvas>
             </div>
         </div>
     </div>

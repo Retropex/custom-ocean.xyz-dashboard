@@ -250,6 +250,38 @@ const BitcoinMinuteRefresh = (function () {
         let startLeft = 0;
         let startTop = 0;
 
+        // Candidate snap point tracked during drag
+        let snapCandidate = null;
+
+        // Duration for snap animations (ms)
+        const SNAP_ANIMATION_DURATION = 200;
+
+        // Smoothly animate terminal to a snap point
+        function animateSnap(x, y, name) {
+            terminal.classList.add('snapping');
+            terminal.classList.add('snapped');
+            terminal.setAttribute('data-snap-point', name);
+
+            const key = terminal.classList.contains('collapsed')
+                ? STORAGE_KEYS.COLLAPSED_SNAP_POINT
+                : STORAGE_KEYS.SNAP_POINT;
+            localStorage.setItem(key, name);
+
+            terminal.style.transition = `left ${SNAP_ANIMATION_DURATION}ms ease-out, top ${SNAP_ANIMATION_DURATION}ms ease-out`;
+            terminal.style.left = x + 'px';
+            terminal.style.top = y + 'px';
+            terminal.style.right = 'auto';
+            terminal.style.bottom = 'auto';
+            terminal.style.transform = 'none';
+
+            setTimeout(() => {
+                terminal.style.transition = '';
+                terminal.classList.remove('snapping');
+                localStorage.setItem(STORAGE_KEYS.POSITION_LEFT, x);
+                localStorage.setItem(STORAGE_KEYS.POSITION_TOP, y);
+            }, SNAP_ANIMATION_DURATION);
+        }
+
         // Function to handle mouse down (drag start)
         function handleMouseDown(e) {
             // Only enable dragging in desktop view
@@ -260,6 +292,9 @@ const BitcoinMinuteRefresh = (function () {
 
             isDragging = true;
             terminal.classList.add('dragging');
+
+            // Reset any snap candidate
+            snapCandidate = null;
 
             // Calculate start position
             startX = e.clientX;
@@ -306,17 +341,16 @@ const BitcoinMinuteRefresh = (function () {
             newTop = Math.max(0, Math.min(newTop, maxTop));
 
             // Check if we're near a snap point
-            const snapPoint = window.findClosestSnapPoint(newLeft, newTop);
+            const candidate = window.findClosestSnapPoint(newLeft, newTop);
 
-            if (snapPoint) {
+            if (candidate) {
                 // Visual feedback for snapping
                 terminal.classList.add('snapping');
-
-                // Snap to the point
-                newLeft = snapPoint.x;
-                newTop = snapPoint.y;
+                // Remember candidate but don't move yet
+                snapCandidate = candidate;
             } else {
                 terminal.classList.remove('snapping');
+                snapCandidate = null;
             }
 
             // Update position
@@ -333,34 +367,28 @@ const BitcoinMinuteRefresh = (function () {
                 isDragging = false;
                 terminal.classList.remove('dragging');
 
-                // If we're snapped, add a class to indicate it
+                // Determine final position
                 const style = window.getComputedStyle(terminal);
                 const left = parseInt(style.left) || 0;
                 const top = parseInt(style.top) || 0;
 
-                const snapPoint = window.findClosestSnapPoint(left, top);
-                if (snapPoint) {
-                    terminal.classList.add('snapped');
-                    terminal.setAttribute('data-snap-point', snapPoint.name);
+                const finalSnap = snapCandidate || window.findClosestSnapPoint(left, top);
 
-                    // Save snap point to localStorage
-                    localStorage.setItem(STORAGE_KEYS.SNAP_POINT, snapPoint.name);
-
-                    // Add a subtle animation to emphasize the snap
-                    terminal.style.transition = 'all 0.2s ease-out';
-                    setTimeout(() => {
-                        terminal.style.transition = '';
-                        terminal.classList.remove('snapping');
-                    }, 200);
+                if (finalSnap) {
+                    animateSnap(finalSnap.x, finalSnap.y, finalSnap.name);
                 } else {
                     terminal.classList.remove('snapped');
                     terminal.removeAttribute('data-snap-point');
-                    localStorage.removeItem(STORAGE_KEYS.SNAP_POINT);
-                }
+                    snapCandidate = null;
 
-                // Save position to localStorage for persistence
-                localStorage.setItem(STORAGE_KEYS.POSITION_LEFT, left);
-                localStorage.setItem(STORAGE_KEYS.POSITION_TOP, top);
+                    const key = terminal.classList.contains('collapsed')
+                        ? STORAGE_KEYS.COLLAPSED_SNAP_POINT
+                        : STORAGE_KEYS.SNAP_POINT;
+                    localStorage.removeItem(key);
+
+                    localStorage.setItem(STORAGE_KEYS.POSITION_LEFT, left);
+                    localStorage.setItem(STORAGE_KEYS.POSITION_TOP, top);
+                }
             }
         }
 
@@ -381,6 +409,9 @@ const BitcoinMinuteRefresh = (function () {
             const touch = e.touches[0];
             isDragging = true;
             terminal.classList.add('dragging');
+
+            // Reset any snap candidate
+            snapCandidate = null;
 
             startX = touch.clientX;
             startY = touch.clientY;
@@ -421,14 +452,14 @@ const BitcoinMinuteRefresh = (function () {
             newTop = Math.max(0, Math.min(newTop, maxTop));
 
             // Check for snap points
-            const snapPoint = window.findClosestSnapPoint(newLeft, newTop);
+            const candidate = window.findClosestSnapPoint(newLeft, newTop);
 
-            if (snapPoint) {
+            if (candidate) {
                 terminal.classList.add('snapping');
-                newLeft = snapPoint.x;
-                newTop = snapPoint.y;
+                snapCandidate = candidate;
             } else {
                 terminal.classList.remove('snapping');
+                snapCandidate = null;
             }
 
             terminal.style.left = newLeft + 'px';
@@ -445,33 +476,27 @@ const BitcoinMinuteRefresh = (function () {
                 isDragging = false;
                 terminal.classList.remove('dragging');
 
-                // Same snapping check as in mouseup
                 const style = window.getComputedStyle(terminal);
                 const left = parseInt(style.left) || 0;
                 const top = parseInt(style.top) || 0;
 
-                const snapPoint = window.findClosestSnapPoint(left, top);
-                if (snapPoint) {
-                    terminal.classList.add('snapped');
-                    terminal.setAttribute('data-snap-point', snapPoint.name);
+                const finalSnap = snapCandidate || window.findClosestSnapPoint(left, top);
 
-                    // Save snap point to localStorage
-                    localStorage.setItem(STORAGE_KEYS.SNAP_POINT, snapPoint.name);
-
-                    terminal.style.transition = 'all 0.2s ease-out';
-                    setTimeout(() => {
-                        terminal.style.transition = '';
-                        terminal.classList.remove('snapping');
-                    }, 200);
+                if (finalSnap) {
+                    animateSnap(finalSnap.x, finalSnap.y, finalSnap.name);
                 } else {
                     terminal.classList.remove('snapped');
                     terminal.removeAttribute('data-snap-point');
-                    localStorage.removeItem(STORAGE_KEYS.SNAP_POINT);
-                }
+                    snapCandidate = null;
 
-                // Save position to localStorage for persistence
-                localStorage.setItem(STORAGE_KEYS.POSITION_LEFT, left);
-                localStorage.setItem(STORAGE_KEYS.POSITION_TOP, top);
+                    const key = terminal.classList.contains('collapsed')
+                        ? STORAGE_KEYS.COLLAPSED_SNAP_POINT
+                        : STORAGE_KEYS.SNAP_POINT;
+                    localStorage.removeItem(key);
+
+                    localStorage.setItem(STORAGE_KEYS.POSITION_LEFT, left);
+                    localStorage.setItem(STORAGE_KEYS.POSITION_TOP, top);
+                }
             }
         }
 
@@ -622,7 +647,7 @@ const BitcoinMinuteRefresh = (function () {
         ];
 
         // Snap sensitivity - how close the terminal needs to be to snap (in pixels)
-        const snapThreshold = 60;
+        const snapThreshold = 80;
 
         // Add a method to find the closest snap point based on current state
         function findClosestSnapPoint(x, y) {

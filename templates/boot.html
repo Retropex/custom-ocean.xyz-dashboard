@@ -193,18 +193,21 @@
     <script>
         // Configuration for water droplets - add mobile detection
         document.addEventListener('DOMContentLoaded', function () {
-            // Check if DeepSea theme is active
-            if (localStorage.getItem('useDeepSeaTheme') === 'true') {
-                // Create underwater light rays
-                const rays = document.createElement('div');
-                rays.className = 'underwater-rays';
-                document.body.appendChild(rays);
-
-                // Create digital noise
-                const noise = document.createElement('div');
-                noise.className = 'digital-noise';
-                document.body.appendChild(noise);
+            const isDeepSeaTheme = localStorage.getItem('useDeepSeaTheme') === 'true';
+            if (!isDeepSeaTheme) {
+                // Skip droplet effects entirely when not using the DeepSea theme
+                return;
             }
+
+            // Create underwater light rays
+            const rays = document.createElement('div');
+            rays.className = 'underwater-rays';
+            document.body.appendChild(rays);
+
+            // Create digital noise
+            const noise = document.createElement('div');
+            noise.className = 'digital-noise';
+            document.body.appendChild(noise);
 
             // Add water beading and dripping effects
             // Create condensation effect
@@ -212,11 +215,7 @@
             condensation.className = 'screen-condensation';
             document.body.appendChild(condensation);
 
-            // Check if DeepSea theme is active to adjust water colors
-            const isDeepSeaTheme = localStorage.getItem('useDeepSeaTheme') === 'true';
-            if (isDeepSeaTheme) {
-                document.body.classList.add('deepsea-theme');
-            }
+            document.body.classList.add('deepsea-theme');
 
             // Check if we're on a mobile device
             const isMobile = window.innerWidth < 768;

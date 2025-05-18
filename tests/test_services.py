@@ -15,28 +15,19 @@ def test_generate_default_workers_data(monkeypatch):
     assert data['workers'] == []
 
 
-import pytest
-
-
-@pytest.mark.asyncio
-async def test_fetch_url_success(monkeypatch):
+def test_fetch_url_success(monkeypatch):
     svc = MiningDashboardService(0, 0, 'w')
     resp = MagicMock()
-    async def fake_get(url, timeout=5):
-        return resp
-    monkeypatch.setattr(svc.async_client, 'get', fake_get)
-    result = await svc.fetch_url('http://x')
-    assert result is resp
+    monkeypatch.setattr(svc.session, 'get', lambda url, timeout=5: resp)
+    assert svc.fetch_url('http://x') is resp
 
 
-@pytest.mark.asyncio
-async def test_fetch_url_error(monkeypatch):
+def test_fetch_url_error(monkeypatch):
     svc = MiningDashboardService(0, 0, 'w')
-    async def fail(url, timeout=5):
+    def fail(url, timeout=5):
         raise Exception('fail')
-    monkeypatch.setattr(svc.async_client, 'get', fail)
-    result = await svc.fetch_url('http://x')
-    assert result is None
+    monkeypatch.setattr(svc.session, 'get', fail)
+    assert svc.fetch_url('http://x') is None
 
 
 def test_notification_update_currency(monkeypatch):
@@ -64,8 +55,7 @@ def test_notification_update_currency(monkeypatch):
     assert abs(notif['data']['daily_profit'] - 5.0) < 1e-6
 
 
-@pytest.mark.asyncio
-async def test_exchange_rate_caching(monkeypatch):
+def test_exchange_rate_caching(monkeypatch):
     svc = MiningDashboardService(0, 0, 'w')
 
     fake_time = [0]
@@ -73,7 +63,7 @@ async def test_exchange_rate_caching(monkeypatch):
 
     call_count = {'count': 0}
 
-    async def fake_get(url, timeout=5):
+    def fake_get(url, timeout=5):
         call_count['count'] += 1
         resp = MagicMock()
         resp.ok = True
@@ -83,19 +73,19 @@ async def test_exchange_rate_caching(monkeypatch):
         }
         return resp
 
-    monkeypatch.setattr(svc.async_client, 'get', fake_get)
+    monkeypatch.setattr(svc.session, 'get', fake_get)
 
-    rates1 = await svc.fetch_exchange_rates()
+    rates1 = svc.fetch_exchange_rates()
     assert rates1['EUR'] == 0.5
     assert call_count['count'] == 1
 
     fake_time[0] += 1000  # within TTL
-    rates2 = await svc.fetch_exchange_rates()
+    rates2 = svc.fetch_exchange_rates()
     assert rates2 == rates1
     assert call_count['count'] == 1
 
     fake_time[0] += svc.exchange_rate_ttl + 1  # expire cache
-    rates3 = await svc.fetch_exchange_rates()
+    rates3 = svc.fetch_exchange_rates()
     assert rates3 == rates1
     assert call_count['count'] == 2
 

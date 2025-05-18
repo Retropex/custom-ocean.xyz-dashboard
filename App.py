@@ -5,7 +5,6 @@ import os
 import logging
 import time
 import gc
-import asyncio
 import psutil
 import signal
 import sys
@@ -373,7 +372,7 @@ def update_metrics_job(force=False):
         
         try:
             # Use the dashboard service to fetch metrics
-            metrics = asyncio.run(dashboard_service.fetch_metrics())
+            metrics = dashboard_service.fetch_metrics()
             if metrics:
                 logging.info("Fetched metrics successfully")
                 
@@ -996,7 +995,7 @@ def force_refresh():
     logging.warning("Emergency force-refresh requested")
     try:
         # Force fetch new metrics
-        metrics = asyncio.run(dashboard_service.fetch_metrics())
+        metrics = dashboard_service.fetch_metrics()
         if metrics:
             global cached_metrics, scheduler_last_successful_run
             cached_metrics = metrics

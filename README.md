@@ -152,6 +152,13 @@ Built with a modern stack for reliability and performance:
 - **Resilience**: Automatic recovery mechanisms and state persistence
 - **Configuration**: Environment variables and JSON-based settings
 
+## Historical Data Retention
+
+The dashboard stores a rolling window of historical metrics in memory. Each
+dataset (arrow history, metrics log and hashrate history) is capped at 180
+entries, equating to roughly three hours of data. Older points are pruned by the
+`StateManager` before saving to Redis, ensuring memory usage remains stable.
+
 ## API Endpoints
 - `/api/metrics`: Provides real-time mining metrics.
 - `/api/available_timezones`: Returns a list of supported timezones.

@@ -6,10 +6,8 @@ import pytest
 
 @pytest.fixture
 def client(monkeypatch):
-    # Provide a lightweight pytz substitute if the real package is unavailable
-    try:
-        import pytz  # noqa: F401
-    except ImportError:
+    # Provide a lightweight pytz substitute if needed
+    if "pytz" not in sys.modules:
         spec = importlib.util.spec_from_file_location(
             "pytz", Path(__file__).resolve().parents[1] / "pytz.py"
         )

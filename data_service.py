@@ -585,6 +585,62 @@ class MiningDashboardService:
             logging.error(f"Error fetching exchange rates: {e}")
             self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
             return {}
+          
+    def get_payment_history_api(self, days=30, btc_price=None):
+        """Fetch payout history using the Ocean.xyz API."""
+        api_base = "https://api.ocean.xyz/v1"
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+
+        start_str = start_date.strftime("%Y-%m-%d")
+        end_str = end_date.strftime("%Y-%m-%d")
+
+        url = f"{api_base}/earnpay/{self.wallet}/{start_str}/{end_str}"
+        payments = []
+
+        try:
+            resp = self.session.get(url, timeout=10)
+            if not resp.ok:
+                logging.error(f"API earnpay request failed: {resp.status_code}")
+                return None
+
+            data = resp.json()
+            payouts = data.get("payouts", [])
+
+            for item in payouts:
+                ts = item.get("ts")
+                txid = item.get("on_chain_txid", "")
+                sats = item.get("total_satoshis_net_paid", 0) or 0
+                amount_btc = sats / self.sats_per_btc
+
+                date_iso = None
+                date_str = ""
+                if ts is not None:
+                    try:
+                        if isinstance(ts, (int, float)):
+                            dt = datetime.fromtimestamp(ts, tz=ZoneInfo("UTC"))
+                        else:
+                            dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+                        local_dt = dt.astimezone(ZoneInfo(get_timezone()))
+                        date_iso = local_dt.isoformat()
+                        date_str = local_dt.strftime("%Y-%m-%d %H:%M")
+                    except Exception as e:
+                        logging.warning(f"Could not parse payout timestamp '{ts}': {e}")
+
+                payment = {
+                    "date": date_str,
+                    "txid": txid,
+                    "amount_btc": amount_btc,
+                    "amount_sats": int(sats),
+                    "status": "confirmed",
+                    "date_iso": date_iso,
+                }
+
+                if btc_price is not None:
+                    payment["rate"] = btc_price
+                    payment["fiat_value"] = amount_btc * btc_price
+
+                payments.append(payment)
     
     def get_payment_history_api(self, btc_price=None):
         """Attempt to fetch payment history using the official Ocean.xyz API.
@@ -854,8 +910,19 @@ class MiningDashboardService:
             dict: Earnings data including payment history and statistics
         """
         try:
-            # Get the payment history with longer timeout and retries
-            payments = self.get_payment_history(max_pages=30, timeout=20, max_retries=3)
+            # Fetch latest BTC price with fallback
+            try:
+                _, _, btc_price, _ = self.get_bitcoin_stats()
+                if not btc_price:
+                    btc_price = 85000
+            except Exception as e:
+                logging.error(f"Error getting BTC price: {e}")
+                btc_price = 85000
+
+            # Prefer the official API for payout history
+            payments = self.get_payment_history_api(days=30, btc_price=btc_price)
+            if payments is None:
+                payments = self.get_payment_history(max_pages=30, timeout=20, max_retries=3, btc_price=btc_price)
     
             # Get basic Ocean data for summary metrics (with timeout handling)
             try:
@@ -867,18 +934,6 @@ class MiningDashboardService:
             # Calculate summary statistics
             total_paid = sum(payment["amount_btc"] for payment in payments)
             total_paid_sats = sum(payment["amount_sats"] for payment in payments)
-    
-            # Get the latest BTC price with fallback
-            try:
-                _, _, btc_price, _ = self.get_bitcoin_stats()
-                if not btc_price:
-                    btc_price = 85000  # Default value if fetch fails
-            except Exception as e:
-                logging.error(f"Error getting BTC price: {e}")
-                btc_price = 85000  # Default value
-
-            # Get the payment history with longer timeout and retries, and pass btc_price
-            payments = self.get_payment_history(max_pages=30, timeout=20, max_retries=3, btc_price=btc_price)
     
             # Calculate USD value
             total_paid_usd = round(total_paid * btc_price, 2)

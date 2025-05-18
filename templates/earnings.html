@@ -120,8 +120,6 @@
                             <a href="https://mempool.guide/tx/{{ payment.txid }}" target="_blank" class="tx-link">
                                 {{ payment.txid }}
                             </a>
-                            {% elif payment.truncated_txid %}
-                            <span class="tx-link truncated" title="Incomplete transaction ID">{{ payment.truncated_txid }}</span>
                             {% else %}
                             N/A
                             {% endif %}

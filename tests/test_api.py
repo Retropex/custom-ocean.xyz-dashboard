@@ -1,9 +1,20 @@
 import importlib
+import sys
 from types import SimpleNamespace
+from pathlib import Path
 import pytest
 
 @pytest.fixture
 def client(monkeypatch):
+    # Provide a lightweight pytz substitute if needed
+    if "pytz" not in sys.modules:
+        spec = importlib.util.spec_from_file_location(
+            "pytz", Path(__file__).resolve().parents[1] / "pytz.py"
+        )
+        pytz_stub = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pytz_stub)
+        sys.modules["pytz"] = pytz_stub
+
     # Prevent scheduler from starting
     import apscheduler.schedulers.background as bg
     monkeypatch.setattr(bg.BackgroundScheduler, "start", lambda self: None)

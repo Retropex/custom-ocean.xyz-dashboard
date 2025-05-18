@@ -10,6 +10,7 @@ import json
 import time
 import gc
 import threading
+import gzip
 import redis
 from config import get_timezone
 
@@ -90,8 +91,18 @@ class StateManager:
             
             state_json = self.redis_client.get(self.STATE_KEY)
             if state_json:
-                if isinstance(state_json, bytes):
-                    state_json = state_json.decode("utf-8")
+                try:
+                    if isinstance(state_json, bytes):
+                        try:
+                            state_json = gzip.decompress(state_json).decode("utf-8")
+                        except OSError:
+                            state_json = state_json.decode("utf-8")
+                    else:
+                        state_json = gzip.decompress(state_json).decode("utf-8")
+                except Exception as e:
+                    logging.error(f"Error decompressing graph state: {e}")
+                    state_json = state_json.decode('utf-8') if isinstance(state_json, bytes) else str(state_json)
+
                 state = json.loads(state_json)
                 
                 # Handle different versions of the data format
@@ -189,12 +200,17 @@ class StateManager:
             }
 
             state_json = json.dumps(state)
-            data_size_kb = len(state_json) / 1024
-            logging.info(f"Saving graph state to Redis: {data_size_kb:.2f} KB (optimized format)")
+            compressed_state = gzip.compress(state_json.encode())
+            data_size_kb = len(compressed_state) / 1024
+            logging.info(
+                f"Saving graph state to Redis: {data_size_kb:.2f} KB (optimized format, gzipped)"
+            )
 
             self.redis_client.set(f"{self.STATE_KEY}_version", "2.0")
-            self.redis_client.set(self.STATE_KEY, state_json)
-            logging.info(f"Successfully saved graph state to Redis ({data_size_kb:.2f} KB)")
+            self.redis_client.set(self.STATE_KEY, compressed_state)
+            logging.info(
+                f"Successfully saved graph state to Redis ({data_size_kb:.2f} KB)"
+            )
         except Exception as e:
             logging.error(f"Error saving graph state to Redis: {e}")
     

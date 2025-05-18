@@ -5,10 +5,11 @@ import logging
 import re
 import time
 import json
+import asyncio
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from concurrent.futures import ThreadPoolExecutor
 import requests
+import httpx
 from bs4 import BeautifulSoup
 
 from models import OceanData, WorkerData, convert_to_ths
@@ -35,12 +36,13 @@ class MiningDashboardService:
         self.sats_per_btc = 100_000_000
         self.previous_values = {}
         self.session = requests.Session()
+        self.async_client = httpx.AsyncClient()
         # Cache for storing fetched currency exchange rates
         self.exchange_rates_cache = {"rates": {}, "timestamp": 0.0}
         # Time-to-live (TTL) for exchange rate cache in seconds (~2 hours)
         self.exchange_rate_ttl = 7200
 
-    def fetch_metrics(self):
+    async def fetch_metrics(self):
         """
         Fetch metrics from Ocean.xyz and other sources.
     
@@ -51,15 +53,10 @@ class MiningDashboardService:
         start_time = time.time()
     
         try:
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                future_ocean = executor.submit(self.get_ocean_data)
-                future_btc = executor.submit(self.get_bitcoin_stats)
-                try:
-                    ocean_data = future_ocean.result(timeout=15)
-                    btc_stats = future_btc.result(timeout=15)
-                except Exception as e:
-                    logging.error(f"Error fetching metrics concurrently: {e}")
-                    return None
+            ocean_data, btc_stats = await asyncio.gather(
+                self.get_ocean_data(),
+                self.get_bitcoin_stats(),
+            )
 
             if ocean_data is None:
                 logging.error("Failed to retrieve Ocean data")
@@ -176,7 +173,7 @@ class MiningDashboardService:
             metrics["currency"] = selected_currency
 
             if selected_currency != "USD":
-                exchange_rates = self.fetch_exchange_rates()
+                exchange_rates = await self.fetch_exchange_rates()
                 rate = exchange_rates.get(selected_currency, 1.0)
                 metrics["btc_price"] = round(metrics["btc_price"] * rate, 2)
                 metrics["daily_revenue"] = round(metrics["daily_revenue"] * rate, 2)
@@ -201,7 +198,7 @@ class MiningDashboardService:
             logging.error(f"Unexpected error in fetch_metrics: {e}")
             return None
 
-    def get_ocean_api_data(self):
+    async def get_ocean_api_data(self):
         """Fetch mining data using the official Ocean.xyz API."""
         api_base = "https://api.ocean.xyz/v1"
         result = {}
@@ -209,7 +206,7 @@ class MiningDashboardService:
         # Fetch hashrate info
         try:
             url = f"{api_base}/user_hashrate/{self.wallet}"
-            resp = self.session.get(url, timeout=10)
+            resp = await self.async_client.get(url, timeout=10)
             if resp.ok:
                 hr_data = resp.json()
                 result["hashrate_60sec"] = hr_data.get("hashrate_60s")
@@ -229,7 +226,7 @@ class MiningDashboardService:
         # Fetch latest statsnap data
         try:
             url = f"{api_base}/statsnap/{self.wallet}"
-            resp = self.session.get(url, timeout=10)
+            resp = await self.async_client.get(url, timeout=10)
             if resp.ok:
                 snap = resp.json()
                 result["unpaid_earnings"] = snap.get("unpaid")
@@ -244,7 +241,7 @@ class MiningDashboardService:
 
         return result
 
-    def get_ocean_data(self):
+    async def get_ocean_data(self):
         """
         Get mining data from Ocean.xyz.
         
@@ -263,13 +260,13 @@ class MiningDashboardService:
         data = OceanData()
 
         # First attempt to populate using the official API
-        api_data = self.get_ocean_api_data()
+        api_data = await self.get_ocean_api_data()
         for key, value in api_data.items():
             if hasattr(data, key) and value is not None:
                 setattr(data, key, value)
 
         try:
-            response = self.session.get(stats_url, headers=headers, timeout=10)
+            response = await self.async_client.get(stats_url, headers=headers, timeout=10)
             if not response.ok:
                 logging.error(f"Error fetching ocean data: status code {response.status_code}")
                 return None
@@ -507,7 +504,7 @@ class MiningDashboardService:
         except Exception as e:
             logging.error(f"Error dumping table structure: {e}")
 
-    def fetch_url(self, url: str, timeout: int = 5):
+    async def fetch_url(self, url: str, timeout: int = 5):
         """
         Fetch URL with error handling.
         
@@ -519,13 +516,13 @@ class MiningDashboardService:
             Response: Request response or None if failed
         """
         try:
-            return self.session.get(url, timeout=timeout)
+            return await self.async_client.get(url, timeout=timeout)
         except Exception as e:
             logging.error(f"Error fetching {url}: {e}")
             return None
 
     # Add the fetch_exchange_rates method after the fetch_url method
-    def fetch_exchange_rates(self, base_currency="USD"):
+    async def fetch_exchange_rates(self, base_currency="USD"):
         """
         Fetch currency exchange rates from ExchangeRate API using API key.
     
@@ -555,7 +552,7 @@ class MiningDashboardService:
         try:
             # Use the configured API key with the v6 exchangerate-api endpoint
             url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{base_currency}"
-            response = self.session.get(url, timeout=5)
+            response = await self.async_client.get(url, timeout=5)
         
             if response.ok:
                 data = response.json()
@@ -864,7 +861,7 @@ class MiningDashboardService:
             selected_currency = get_currency()
             result["currency"] = selected_currency
             if selected_currency != "USD":
-                exchange_rates = self.fetch_exchange_rates()
+                exchange_rates = asyncio.run(self.fetch_exchange_rates())
                 rate = exchange_rates.get(selected_currency, 1.0)
                 result["btc_price"] = round(result["btc_price"] * rate, 2)
                 result["total_paid_fiat"] = round(total_paid_usd * rate, 2)
@@ -893,7 +890,7 @@ class MiningDashboardService:
                 "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat()
             }
 
-    def get_bitcoin_stats(self):
+    async def get_bitcoin_stats(self):
         """
         Fetch Bitcoin network statistics with improved error handling and caching.
         Uses mempool.space APIs for more accurate network hashrate, block height, and multi-currency price data.
@@ -923,20 +920,13 @@ class MiningDashboardService:
         block_count = self.cache.get("block_count")
 
         try:
-            with ThreadPoolExecutor(max_workers=6) as executor:
-                # Add all API endpoints to futures
-                futures = {}
-        
-                # Add blockchain.info endpoints
-                for key, url in blockchain_info_urls.items():
-                    futures[key] = executor.submit(self.fetch_url, url)
-            
-                # Add mempool.space endpoints
-                for key, url in mempool_urls.items():
-                    futures[f"mempool_{key}"] = executor.submit(self.fetch_url, url)
-        
-                # Get all responses
-                responses = {key: futures[key].result(timeout=5) for key in futures}
+            tasks = {}
+            for key, url in blockchain_info_urls.items():
+                tasks[key] = asyncio.create_task(self.fetch_url(url))
+            for key, url in mempool_urls.items():
+                tasks[f"mempool_{key}"] = asyncio.create_task(self.fetch_url(url))
+
+            responses = {k: await t for k, t in tasks.items()}
         
         
                 # Process mempool.space price data (primary source)

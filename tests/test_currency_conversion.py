@@ -23,7 +23,8 @@ if "bs4" not in sys.modules:
     sys.modules["bs4"] = bs4_module
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
+import asyncio
 
 from data_service import MiningDashboardService
 from models import OceanData
@@ -32,13 +33,13 @@ class MetricsConversionTest(unittest.TestCase):
     @patch('config.get_currency', return_value='EUR')
     def test_fetch_metrics_converts_currency(self, mock_cur):
         svc = MiningDashboardService(0, 0, 'w')
-        with patch.object(svc, 'get_ocean_data') as go, \
-             patch.object(svc, 'get_bitcoin_stats') as gb, \
-             patch.object(svc, 'fetch_exchange_rates') as fer:
+        with patch.object(svc, 'get_ocean_data', new_callable=AsyncMock) as go, \
+             patch.object(svc, 'get_bitcoin_stats', new_callable=AsyncMock) as gb, \
+             patch.object(svc, 'fetch_exchange_rates', new_callable=AsyncMock) as fer:
             go.return_value = OceanData(hashrate_3hr=100, hashrate_3hr_unit='TH/s', pool_fees_percentage=0.0)
             gb.return_value = (0, 100e18, 10000, 0)
             fer.return_value = {'EUR': 0.5}
-            metrics = svc.fetch_metrics()
+            metrics = asyncio.run(svc.fetch_metrics())
         self.assertAlmostEqual(metrics['btc_price'], 5000)
         self.assertAlmostEqual(metrics['daily_revenue'], 2.25)
         self.assertAlmostEqual(metrics['daily_profit_usd'], 2.25)
@@ -49,9 +50,9 @@ class EarningsConversionTest(unittest.TestCase):
     def test_get_earnings_data_converts_currency(self, mock_cur):
         svc = MiningDashboardService(0,0,'w')
         with patch.object(svc, 'get_payment_history') as gph, \
-             patch.object(svc, 'get_ocean_data') as go, \
-             patch.object(svc, 'get_bitcoin_stats') as gb, \
-             patch.object(svc, 'fetch_exchange_rates') as fer:
+             patch.object(svc, 'get_ocean_data', new_callable=AsyncMock) as go, \
+             patch.object(svc, 'get_bitcoin_stats', new_callable=AsyncMock) as gb, \
+             patch.object(svc, 'fetch_exchange_rates', new_callable=AsyncMock) as fer:
             gph.return_value = [{
                 'date': '2023-01-01 00:00',
                 'amount_btc': 0.1,

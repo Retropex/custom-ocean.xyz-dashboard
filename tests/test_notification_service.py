@@ -71,7 +71,29 @@ class NotificationCurrencyTest(unittest.TestCase):
         notif = self.service.notifications[0]
         self.assertEqual(notif['data']['currency'], 'EUR')
         self.assertAlmostEqual(notif['data']['daily_profit'], 5.0)
+        self.assertAlmostEqual(notif['data']['daily_profit_usd'], 10.0)
         self.assertIn('€', notif['message'])
+
+    def test_convert_back_to_usd(self):
+        # First convert to JPY
+        with patch('notification_service.get_exchange_rates', return_value={'JPY': 150, 'USD': 1}):
+            self.service.update_notification_currency('JPY')
+
+        notif = self.service.notifications[0]
+        self.assertEqual(notif['data']['currency'], 'JPY')
+        self.assertAlmostEqual(notif['data']['daily_profit'], 1500.0)
+        self.assertAlmostEqual(notif['data']['daily_profit_usd'], 10.0)
+
+        # Now convert back to USD
+        with patch('notification_service.get_exchange_rates', return_value={'JPY': 150, 'USD': 1}):
+            updated = self.service.update_notification_currency('USD')
+
+        self.assertEqual(updated, 1)
+        notif = self.service.notifications[0]
+        self.assertEqual(notif['data']['currency'], 'USD')
+        self.assertAlmostEqual(notif['data']['daily_profit'], 10.0)
+        self.assertAlmostEqual(notif['data']['daily_profit_usd'], 10.0)
+        self.assertIn('$', notif['message'])
 
 if __name__ == '__main__':
     unittest.main()

@@ -49,18 +49,10 @@ class EarningsConversionTest(unittest.TestCase):
     def test_get_earnings_data_converts_currency(self, mock_cur):
         svc = MiningDashboardService(0,0,'w')
         with patch.object(svc, 'get_payment_history_api') as gpha, \
-             patch.object(svc, 'get_payment_history') as gph, \
              patch.object(svc, 'get_ocean_data') as go, \
              patch.object(svc, 'get_bitcoin_stats') as gb, \
              patch.object(svc, 'fetch_exchange_rates') as fer:
             gpha.return_value = [{
-                'date': '2023-01-01 00:00',
-                'amount_btc': 0.1,
-                'amount_sats': 10000000,
-                'date_iso': '2023-01-01T00:00:00',
-                'fiat_value': 1000
-            }]
-            gph.return_value = [{
                 'date': '2023-01-01 00:00',
                 'amount_btc': 0.1,
                 'amount_sats': 10000000,

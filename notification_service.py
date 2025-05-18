@@ -94,7 +94,13 @@ class NotificationService:
         
         # Load existing notifications from state
         self._load_notifications()
-        
+
+        # Ensure stored notifications use the current currency
+        try:
+            self.update_notification_currency()
+        except Exception as e:
+            logging.error(f"[NotificationService] Failed to sync notification currency on init: {e}")
+
         # Load last block height from state
         self._load_last_block_height()
 

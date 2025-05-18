@@ -605,7 +605,8 @@ class MiningDashboardService:
                 return None
 
             data = resp.json()
-            payouts = data.get("payouts", [])
+            result_obj = data.get("result", {})
+            payouts = result_obj.get("payouts", [])
 
             for item in payouts:
                 ts = item.get("ts")

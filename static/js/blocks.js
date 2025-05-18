@@ -20,6 +20,7 @@ let latestBlockHeight = null;         // most recent block height fetched
 const mempoolBaseUrl = "https://mempool.guide"; // Switched from mempool.space to mempool.guide - more aligned with Ocean.xyz ethos
 let blocksCache = {};
 let isLoading = false;
+let minerChart = null;
 
 // Helper function for debouncing
 function debounce(func, wait) {
@@ -616,6 +617,10 @@ function loadBlocksFromHeight(height) {
     // Check if we already have this data in cache
     if (blocksCache[height]) {
         displayBlocks(blocksCache[height]);
+        updateMinerDistributionChart(blocksCache[height]);
+        if (blocksCache[height].length > 0) {
+            updateLatestBlockStats(blocksCache[height][0]);
+        }
         isLoading = false;
         return;
     }
@@ -635,6 +640,10 @@ function loadBlocksFromHeight(height) {
 
             // Display the blocks
             displayBlocks(data);
+
+            // Update miner distribution chart
+            updateMinerDistributionChart(data);
+
 
             // Update latest block stats
             if (data.length > 0) {
@@ -685,6 +694,8 @@ function loadLatestBlocks() {
 
             // Display the blocks
             displayBlocks(data);
+            // Update miner distribution chart
+            updateMinerDistributionChart(data);
         },
         error: function (xhr, status, error) {
             console.error("Error fetching latest blocks:", error);
@@ -778,6 +789,46 @@ function updateLatestBlockStats(block) {
         $("#latest-fee-rate").text(block.extras.avgFeeRate + " sat/vB");
     } else {
         $("#latest-fee-rate").text("N/A");
+    }
+}
+
+// Update the miner distribution chart based on the provided blocks
+function updateMinerDistributionChart(blocks) {
+    if (!window.Chart || !Array.isArray(blocks)) return;
+
+    const counts = {};
+    blocks.forEach(block => {
+        const poolName = block.extras && block.extras.pool ? block.extras.pool.name : 'Unknown';
+        counts[poolName] = (counts[poolName] || 0) + 1;
+    });
+
+    const labels = Object.keys(counts);
+    const data = labels.map(l => counts[l]);
+    const colors = labels.map(l => getPoolColor(l));
+    const theme = getCurrentTheme();
+
+    if (!minerChart) {
+        const ctx = document.getElementById('minerChart').getContext('2d');
+        minerChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{ data: data, backgroundColor: colors }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: theme.PRIMARY }
+                    }
+                }
+            }
+        });
+    } else {
+        minerChart.data.labels = labels;
+        minerChart.data.datasets[0].data = data;
+        minerChart.data.datasets[0].backgroundColor = colors;
+        minerChart.update();
     }
 }
 

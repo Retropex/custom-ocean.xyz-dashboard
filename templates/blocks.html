@@ -23,34 +23,46 @@
             <div class="card-body">
                 <div class="latest-block-stats">
                     <div class="stat-item">
-                        <strong>BLOCK HEIGHT:</strong>
+                        <strong><i class="fa-solid fa-layer-group"></i> BLOCK HEIGHT:</strong>
                         <span id="latest-height" class="metric-value white">Loading...</span>
                     </div>
                     <div class="stat-item">
-                        <strong>TIME:</strong>
+                        <strong><i class="fa-regular fa-clock"></i> TIME:</strong>
                         <span id="latest-time" class="metric-value blue">Loading...</span>
                     </div>
                     <div class="stat-item">
-                        <strong>TRANSACTIONS:</strong>
+                        <strong><i class="fa-solid fa-receipt"></i> TRANSACTIONS:</strong>
                         <span id="latest-tx-count" class="metric-value white">Loading...</span>
                     </div>
                     <div class="stat-item">
-                        <strong>SIZE:</strong>
+                        <strong><i class="fa-solid fa-database"></i> SIZE:</strong>
                         <span id="latest-size" class="metric-value white">Loading...</span>
                     </div>
                     <div class="stat-item">
-                        <strong>DIFFICULTY:</strong>
+                        <strong><i class="fa-solid fa-gauge-high"></i> DIFFICULTY:</strong>
                         <span id="latest-difficulty" class="metric-value yellow">Loading...</span>
                     </div>
                     <div class="stat-item">
-                        <strong>POOL:</strong>
+                        <strong><i class="fa-solid fa-people-group"></i> POOL:</strong>
                         <span id="latest-pool" class="metric-value green">Loading...</span>
                     </div>
                     <div class="stat-item">
-                        <strong>AVG FEE RATE:</strong>
+                        <strong><i class="fa-solid fa-coins"></i> AVG FEE RATE:</strong>
                         <span id="latest-fee-rate" class="metric-value yellow" style="animation: pulse 1s infinite;">Loading...</span>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Miner diversity chart -->
+<div class="row mb-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">MINER DISTRIBUTION (LAST 25 BLOCKS)</div>
+            <div class="card-body text-center">
+                <canvas id="minerChart" height="120"></canvas>
             </div>
         </div>
     </div>

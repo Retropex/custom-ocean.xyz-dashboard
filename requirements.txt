@@ -20,3 +20,4 @@ idna==3.4
 certifi==2023.7.22
 six==1.16.0
 jsmin==3.0.1
+cssmin==0.2.0

@@ -260,6 +260,13 @@ For optimal performance:
 9. Alt + W on Dashboard resets wallet configuration and redirects to Boot sequence
 10. If block event lines persist across sessions, use `window.clearBlockAnnotations()` in the browser console to clear them. Older annotations are automatically pruned.
 
+## Debug Logging
+
+Client-side logging can be noisy in production. All `console.log` calls are now
+wrapped with a simple debug flag. Set `localStorage.setItem('debugLogging', 'true')`
+in your browser to enable verbose logging. Remove the item or set it to `false`
+to silence debug output.
+
 ## License
 
 Available under the MIT License. This is an independent project not affiliated with Ocean.xyz.

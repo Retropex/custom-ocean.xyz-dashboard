@@ -943,45 +943,49 @@ class MiningDashboardService:
 
     def get_all_worker_rows(self):
         """
-        Iterate through wpage parameter values to collect all worker table rows.
-        Limited to 10 pages to balance between showing enough workers and maintaining performance.
+        Fetch worker information using the Ocean.xyz ``userinfo_full`` API.
 
         Returns:
-            list: A list of BeautifulSoup row elements containing worker data.
+            list: A list of dictionaries containing worker metrics.
         """
-        all_rows = []
-        page_num = 0
-        max_pages = 10  # Limit to 10 pages of worker data
-    
-        while page_num < max_pages:  # Only fetch up to max_pages
-            url = f"https://ocean.xyz/stats/{self.wallet}?wpage={page_num}#workers-fulltable"
-            logging.info(f"Fetching worker data from: {url} (page {page_num+1} of max {max_pages})")
-            response = self.session.get(url, timeout=15)
-            if not response.ok:
-                logging.error(f"Error fetching page {page_num}: status code {response.status_code}")
-                break
+        api_base = "https://api.ocean.xyz/v1"
+        url = f"{api_base}/userinfo_full/{self.wallet}"
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            workers_table = soup.find('tbody', id='workers-tablerows')
-            if not workers_table:
-                logging.debug(f"No workers table found on page {page_num}")
-                break
+        try:
+            resp = self.session.get(url, timeout=10)
+            if not resp.ok:
+                logging.error(f"userinfo_full API request failed: {resp.status_code}")
+                return []
 
-            rows = workers_table.find_all("tr", class_="table-row")
-            if not rows:
-                logging.debug(f"No worker rows found on page {page_num}, stopping pagination")
-                break
+            data = resp.json()
+            workers = data.get("result", {}).get("workers", [])
 
-            logging.info(f"Found {len(rows)} worker rows on page {page_num}")
-            all_rows.extend(rows)
-            page_num += 1
+            worker_list = []
+            for entry in workers:
+                if not isinstance(entry, dict) or len(entry) != 1:
+                    continue
+                name, metrics = next(iter(entry.items()))
+                if not isinstance(metrics, dict):
+                    continue
+                worker = {"name": name}
+                try:
+                    worker["hashrate_60s"] = float(metrics.get("hashrate_60s", 0))
+                    worker["hashrate_300s"] = float(metrics.get("hashrate_300s", 0))
+                    worker["shares_60s"] = int(metrics.get("shares_60s", 0))
+                    worker["shares_300s"] = int(metrics.get("shares_300s", 0))
+                    worker["shares_in_tides"] = int(metrics.get("shares_in_tides", 0))
+                    worker["lastest_share_ts"] = int(metrics.get("lastest_share_ts", 0))
+                    worker["estimated_total_earn_next_block"] = float(metrics.get("estimated_total_earn_next_block", 0))
+                except (ValueError, TypeError):
+                    logging.debug(f"Skipping worker with unparsable metrics: {name}")
+                    continue
+                worker_list.append(worker)
 
-        if page_num >= max_pages:
-            logging.info(f"Reached maximum page limit ({max_pages}). Collected {len(all_rows)} worker rows total.")
-        else:
-            logging.info(f"Completed fetching all available worker data. Collected {len(all_rows)} worker rows from {page_num} pages.")
+            return worker_list
 
-        return all_rows
+        except Exception as e:
+            logging.error(f"Error fetching userinfo_full API: {e}")
+            return []
 
     def get_worker_data(self):
         """
@@ -1282,17 +1286,17 @@ class MiningDashboardService:
     def get_worker_data_alternative(self):
         """
         Alternative implementation to get worker data from Ocean.xyz.
-        This version consolidates worker rows from all pages using the wpage parameter.
+        This version uses the ``userinfo_full`` API to retrieve all workers.
 
         Returns:
             dict: Worker data dictionary with stats and list of workers.
         """
         try:
-            logging.info("Fetching worker data across multiple pages (alternative method)")
-            # Get all worker rows from every page
-            rows = self.get_all_worker_rows()
-            if not rows:
-                logging.error("No worker rows found across any pages")
+            logging.info("Fetching worker data via userinfo_full API")
+
+            workers_raw = self.get_all_worker_rows()
+            if not workers_raw:
+                logging.error("No worker data returned from API")
                 return None
 
             workers = []
@@ -1300,122 +1304,58 @@ class MiningDashboardService:
             total_earnings = 0
             workers_online = 0
             workers_offline = 0
-            invalid_names = ['online', 'offline', 'status', 'worker', 'total']
 
-            # Process each row from all pages
-            for row_idx, row in enumerate(rows):
-                cells = row.find_all(['td', 'th'])
-                if not cells or len(cells) < 3:
-                    continue
-
-                first_cell_text = cells[0].get_text(strip=True)
-                if first_cell_text.lower() in invalid_names:
-                    continue
-
+            for entry in workers_raw:
                 try:
-                    worker_name = first_cell_text or f"Worker_{row_idx+1}"
+                    name = entry.get("name", "worker")
+                    h60 = float(entry.get("hashrate_60s", 0))
+                    h300 = float(entry.get("hashrate_300s", 0))
+                    share_ts = int(entry.get("lastest_share_ts", 0))
+                    earnings = float(entry.get("estimated_total_earn_next_block", 0))
+
                     worker = {
-                        "name": worker_name,
-                        "status": "online",  # Default assumption
+                        "name": name,
+                        "status": "online" if (h60 > 0 or h300 > 0) else "offline",
                         "type": "ASIC",
                         "model": "Unknown",
-                        "hashrate_60sec": 0,
+                        "hashrate_60sec": convert_to_ths(h60, "h/s"),
                         "hashrate_60sec_unit": "TH/s",
-                        "hashrate_3hr": 0,
+                        "hashrate_3hr": convert_to_ths(h300, "h/s"),
                         "hashrate_3hr_unit": "TH/s",
                         "efficiency": 90.0,
-                        "last_share": "N/A",
-                        "earnings": 0,
+                        "last_share": datetime.fromtimestamp(share_ts, tz=ZoneInfo("UTC")).astimezone(ZoneInfo(get_timezone())).strftime("%Y-%m-%d %H:%M") if share_ts else "N/A",
+                        "earnings": earnings,
                         "power_consumption": 0,
-                        "temperature": 0
+                        "temperature": 0,
                     }
-                
-                    # Extract status from second cell if available
-                    if len(cells) > 1:
-                        status_text = cells[1].get_text(strip=True).lower()
-                        worker["status"] = "online" if "online" in status_text else "offline"
-                        if worker["status"] == "online":
-                            workers_online += 1
-                        else:
-                            workers_offline += 1
 
-                    # Parse last share from third cell if available
-                    if len(cells) > 2:
-                        worker["last_share"] = cells[2].get_text(strip=True)
+                    if worker["status"] == "online":
+                        workers_online += 1
+                    else:
+                        workers_offline += 1
 
-                    # Parse 60sec hashrate from fourth cell if available
-                    if len(cells) > 3:
-                        hashrate_60s_text = cells[3].get_text(strip=True)
-                        try:
-                            parts = hashrate_60s_text.split()
-                            if parts:
-                                worker["hashrate_60sec"] = float(parts[0])
-                                if len(parts) > 1:
-                                    worker["hashrate_60sec_unit"] = parts[1]
-                        except ValueError:
-                            logging.warning(f"Could not parse 60-sec hashrate: {hashrate_60s_text}")
+                    total_hashrate += worker["hashrate_3hr"]
+                    total_earnings += worker["earnings"]
 
-                    # Parse 3hr hashrate from fifth cell if available
-                    if len(cells) > 4:
-                        hashrate_3hr_text = cells[4].get_text(strip=True)
-                        try:
-                            parts = hashrate_3hr_text.split()
-                            if parts:
-                                worker["hashrate_3hr"] = float(parts[0])
-                                if len(parts) > 1:
-                                    worker["hashrate_3hr_unit"] = parts[1]
-                                # Normalize and add to total hashrate (using your convert_to_ths helper)
-                                total_hashrate += convert_to_ths(worker["hashrate_3hr"], worker["hashrate_3hr_unit"])
-                        except ValueError:
-                            logging.warning(f"Could not parse 3hr hashrate: {hashrate_3hr_text}")
-
-                    # Look for earnings in any cell containing 'btc'
-                    for cell in cells:
-                        cell_text = cell.get_text(strip=True)
-                        if "btc" in cell_text.lower():
-                            try:
-                                earnings_match = re.search(r'([\d\.]+)', cell_text)
-                                if earnings_match:
-                                    worker["earnings"] = float(earnings_match.group(1))
-                                    total_earnings += worker["earnings"]
-                            except Exception:
-                                pass
-
-                    # Set worker type based on name
-                    lower_name = worker["name"].lower()
-                    if 'antminer' in lower_name:
-                        worker["type"] = 'ASIC'
-                        worker["model"] = 'Bitmain Antminer'
-                    elif 'whatsminer' in lower_name:
-                        worker["type"] = 'ASIC'
-                        worker["model"] = 'MicroBT Whatsminer'
-                    elif 'bitaxe' in lower_name or 'nerdqaxe' in lower_name:
-                        worker["type"] = 'Bitaxe'
-                        worker["model"] = 'BitAxe Gamma 601'
-
-                    if worker["name"].lower() not in invalid_names:
-                        workers.append(worker)
+                    workers.append(worker)
 
                 except Exception as e:
-                    logging.error(f"Error parsing worker row: {e}")
-                    continue
+                    logging.error(f"Error processing worker entry {entry}: {e}")
 
             if not workers:
-                logging.error("No valid worker data parsed")
+                logging.error("No valid worker data parsed from API response")
                 return None
 
-            result = {
-                'workers': workers,
-                'total_hashrate': total_hashrate,
-                'hashrate_unit': 'TH/s',
-                'workers_total': len(workers),
-                'workers_online': workers_online,
-                'workers_offline': workers_offline,
-                'total_earnings': total_earnings,
-                'timestamp': datetime.now(ZoneInfo(get_timezone())).isoformat()
+            return {
+                "workers": workers,
+                "total_hashrate": total_hashrate,
+                "hashrate_unit": "TH/s",
+                "workers_total": len(workers),
+                "workers_online": workers_online,
+                "workers_offline": workers_offline,
+                "total_earnings": total_earnings,
+                "timestamp": datetime.now(ZoneInfo(get_timezone())).isoformat(),
             }
-            logging.info(f"Successfully retrieved {len(workers)} workers across multiple pages")
-            return result
 
         except Exception as e:
             logging.error(f"Error in alternative worker data fetch: {e}")

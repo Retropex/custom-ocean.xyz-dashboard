@@ -258,6 +258,7 @@ For optimal performance:
 7. Check the currency settings if financial calculations appear incorrect
 8. Verify timezone settings for accurate time displays
 9. Alt + W on Dashboard resets wallet configuration and redirects to Boot sequence
+10. If block event lines persist across sessions, use `window.clearBlockAnnotations()` in the browser console to clear them. Older annotations are automatically pruned.
 
 ## License
 

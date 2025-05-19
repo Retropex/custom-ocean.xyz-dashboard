@@ -353,7 +353,53 @@ if (window.simpleAnnotationPlugin) {
     Chart.register(window.simpleAnnotationPlugin);
 }
 
-function loadBlockAnnotations(minutes = 180) {
+function pruneBlockAnnotations(minutes = 180, maxEntries = 100) {
+    const tz = window.dashboardTimezone || DEFAULT_TIMEZONE;
+    const now = Date.now();
+    const cutoff = now - minutes * 60 * 1000;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const offset = new Date(new Date().toLocaleString('en-US', { timeZone: tz })).getTime() - now;
+
+    try {
+        blockAnnotations = blockAnnotations.filter(label => {
+            const parts = label.split(':');
+            if (parts.length < 2) return false;
+            const hour = parseInt(parts[0], 10);
+            const minute = parseInt(parts[1], 10);
+            if (isNaN(hour) || isNaN(minute)) return false;
+            const base = new Date();
+            base.setHours(hour, minute, 0, 0);
+            let ts = base.getTime() - offset;
+            const diff = ts - now;
+            if (diff > 12 * 60 * 60 * 1000) ts -= dayMs;
+            else if (diff < -12 * 60 * 60 * 1000) ts += dayMs;
+            return ts >= cutoff;
+        });
+        if (maxEntries && blockAnnotations.length > maxEntries) {
+            blockAnnotations.splice(0, blockAnnotations.length - maxEntries);
+        }
+    } catch (e) {
+        console.error('Error pruning block annotations', e);
+        blockAnnotations = [];
+    }
+}
+
+function clearBlockAnnotations() {
+    blockAnnotations = [];
+    try {
+        localStorage.removeItem('blockAnnotations');
+    } catch (e) {
+        console.error('Error clearing block annotations', e);
+    }
+    if (trendChart) {
+        updateBlockAnnotations(trendChart);
+        trendChart.update('none');
+    }
+}
+
+window.clearBlockAnnotations = clearBlockAnnotations;
+
+function loadBlockAnnotations(minutes = 180, maxEntries = 100) {
     const tz = window.dashboardTimezone || DEFAULT_TIMEZONE;
     const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: tz,
@@ -378,29 +424,7 @@ function loadBlockAnnotations(minutes = 180) {
         blockAnnotations = [];
     }
 
-    // Parse existing labels back into dates and prune old ones
-    try {
-        const now = Date.now();
-        const dayMs = 24 * 60 * 60 * 1000;
-        const offset = new Date(new Date().toLocaleString('en-US', { timeZone: tz })).getTime() - now;
-        blockAnnotations = blockAnnotations.filter(label => {
-            const parts = label.split(':');
-            if (parts.length < 2) return false;
-            const hour = parseInt(parts[0], 10);
-            const minute = parseInt(parts[1], 10);
-            if (isNaN(hour) || isNaN(minute)) return false;
-            const base = new Date();
-            base.setHours(hour, minute, 0, 0);
-            let ts = base.getTime() - offset;
-            const diff = ts - now;
-            if (diff > 12 * 60 * 60 * 1000) ts -= dayMs;
-            else if (diff < -12 * 60 * 60 * 1000) ts += dayMs;
-            return ts >= cutoff;
-        });
-    } catch (e) {
-        console.error('Error pruning block annotations', e);
-        blockAnnotations = [];
-    }
+    pruneBlockAnnotations(minutes, maxEntries);
 
     // Fetch past block events from the server and merge with stored annotations
     fetch(`/api/block-events?minutes=${minutes}`)
@@ -429,7 +453,8 @@ function loadBlockAnnotations(minutes = 180) {
         .catch(err => console.error('Error fetching block events', err));
 }
 
-function saveBlockAnnotations() {
+function saveBlockAnnotations(minutes = 180, maxEntries = 100) {
+    pruneBlockAnnotations(minutes, maxEntries);
     try {
         localStorage.setItem('blockAnnotations', JSON.stringify(blockAnnotations));
     } catch (e) {

@@ -6,6 +6,7 @@ import logging
 import time
 import gc
 import psutil
+from collections import deque
 import signal
 import sys
 import threading
@@ -97,7 +98,7 @@ def log_memory_usage():
         
         # Log the size of key data structures
         logging.info(
-            f"Arrow history entries: {sum(len(v) for v in state_manager.get_history().values() if isinstance(v, list))}"
+            f"Arrow history entries: {sum(len(v) for v in state_manager.get_history().values() if isinstance(v, (list, deque)))}"
         )
         logging.info(f"Metrics log entries: {len(state_manager.get_metrics_log())}")
         logging.info(f"Active SSE connections: {active_sse_connections}")
@@ -225,7 +226,7 @@ def record_memory_metrics():
             "vms_mb": memory_info.vms / 1024 / 1024,
             "percent": process.memory_percent(),
             "arrow_history_entries": sum(
-                len(v) for v in state_manager.get_history().values() if isinstance(v, list)
+                len(v) for v in state_manager.get_history().values() if isinstance(v, (list, deque))
             ),
             "metrics_log_entries": len(state_manager.get_metrics_log()),
             "sse_connections": active_sse_connections
@@ -1051,7 +1052,7 @@ def memory_profile():
                 "data_structures": {
                     "arrow_history": {
                         "entries": sum(
-                            len(v) for v in state_manager.get_history().values() if isinstance(v, list)
+                            len(v) for v in state_manager.get_history().values() if isinstance(v, (list, deque))
                         ),
                         "keys": list(state_manager.get_history().keys())
                     },

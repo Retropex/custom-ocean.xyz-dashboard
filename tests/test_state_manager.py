@@ -14,6 +14,7 @@ if 'redis' not in sys.modules:
     redis_mod.Redis = DummyRedisModule
     sys.modules['redis'] = redis_mod
 
+from collections import deque
 from state_manager import StateManager
 
 class DummyRedis:
@@ -29,9 +30,9 @@ class DummyRedis:
 def test_save_and_load_graph_state_gzip():
     mgr = StateManager()
     mgr.redis_client = DummyRedis()
-    mgr.arrow_history = {"hashrate_60sec": [{"time": "00:00:01", "value": 1, "arrow": "", "unit": "th/s"}]}
+    mgr.arrow_history = {"hashrate_60sec": deque([{"time": "00:00:01", "value": 1, "arrow": "", "unit": "th/s"}], maxlen=180)}
     mgr.hashrate_history = [1]
-    mgr.metrics_log = [{"timestamp": "t", "metrics": {"hashrate_60sec": 1, "hashrate_60sec_unit": "th/s"}}]
+    mgr.metrics_log = deque([{"timestamp": "t", "metrics": {"hashrate_60sec": 1, "hashrate_60sec_unit": "th/s"}}], maxlen=180)
 
     mgr.save_graph_state()
     raw = mgr.redis_client.get(mgr.STATE_KEY)

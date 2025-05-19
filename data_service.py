@@ -656,10 +656,6 @@ class MiningDashboardService:
             logging.error(f"Error fetching payment history from API: {e}")
             return None
 
-
-        return payments
-    
-
     def get_earnings_data(self):
         """
         Get comprehensive earnings data from Ocean.xyz with improved error handling.

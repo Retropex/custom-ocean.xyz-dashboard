@@ -37,6 +37,7 @@ class StateManager:
         self.redis_client = self._connect_to_redis(redis_url) if redis_url else None
         self.STATE_KEY = "graph_state"
         self.last_save_time = 0
+        self.last_prune_time = 0
 
         # Initialize in-memory structures for historical data
         self.arrow_history = {}    # Stored per second
@@ -171,11 +172,15 @@ class StateManager:
             return
 
         current_time = time.time()
-        if hasattr(self, 'last_save_time') and current_time - self.last_save_time < 300:  # 5 minutes
-            logging.debug("Skipping Redis save - last save was less than 5 minutes ago")
+        if (
+            hasattr(self, 'last_save_time')
+            and current_time - self.last_save_time < 300
+        ):  # 5 minutes
+            logging.debug(
+                "Skipping Redis save - last save was less than 5 minutes ago"
+            )
             return
 
-        self.last_save_time = current_time
         self.prune_old_data()
 
         try:
@@ -234,16 +239,28 @@ class StateManager:
             logging.info(
                 f"Successfully saved graph state to Redis ({data_size_kb:.2f} KB)"
             )
+            # Update timestamp after successful save
+            self.last_save_time = current_time
         except Exception as e:
             logging.error(f"Error saving graph state to Redis: {e}")
     
     def prune_old_data(self, aggressive=False):
         """
         Remove old data to prevent memory growth with optimized strategy.
-    
+
         Args:
             aggressive (bool): If True, be more aggressive with pruning
         """
+        current_time = time.time()
+        if (
+            hasattr(self, "last_prune_time")
+            and current_time - self.last_prune_time < 300
+        ):
+            logging.debug(
+                "Skipping prune - last prune was less than 5 minutes ago"
+            )
+            return
+
         with state_lock:
             # Set thresholds based on aggressiveness
             max_history = MAX_HISTORY_ENTRIES // 2 if aggressive else MAX_HISTORY_ENTRIES
@@ -283,6 +300,9 @@ class StateManager:
         
             # Free memory more aggressively
             gc.collect()
+
+        # Update timestamp after a successful prune
+        self.last_prune_time = current_time
     
     def persist_critical_state(self, cached_metrics, scheduler_last_successful_run, last_metrics_update_time):
         """

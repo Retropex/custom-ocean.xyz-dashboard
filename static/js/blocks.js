@@ -24,6 +24,11 @@ let blocksCache = {};
 let isLoading = false;
 let minerChart = null;
 
+// Determine legend position based on screen size
+function getLegendPosition() {
+    return window.innerWidth <= 576 ? 'bottom' : 'left';
+}
+
 // Helper function for debouncing
 function debounce(func, wait) {
     let timeout;
@@ -194,6 +199,14 @@ $(document).ready(function () {
 
     // Setup keyboard navigation for modals
     setupModalKeyboardNavigation();
+
+    // Adjust chart legend on resize
+    $(window).on('resize', debounce(function () {
+        if (minerChart) {
+            minerChart.options.plugins.legend.position = getLegendPosition();
+            minerChart.update();
+        }
+    }, 200));
 
     // Cleanup before unload
     $(window).on('beforeunload', cleanupEventHandlers);
@@ -867,13 +880,14 @@ function updateMinerDistributionChart(blocks) {
     const total  = data.reduce((a, b) => a + b, 0);
     const theme  = getCurrentTheme();
 
+    const legendPosition = getLegendPosition();
     const options = {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 500 },
         plugins: {
             legend: {
-                position: 'left',
+                position: legendPosition,
                 labels: { color: theme.PRIMARY }
             },
             tooltip: {

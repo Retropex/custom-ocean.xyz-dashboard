@@ -38,6 +38,7 @@ MEMORY_CONFIG = {
 
 # Memory tracking global variables
 memory_usage_history = []
+memory_usage_lock = threading.Lock()
 last_leak_check_time = 0
 object_counts_history = {}
 
@@ -232,11 +233,12 @@ def record_memory_metrics():
             "sse_connections": active_sse_connections
         }
         
-        memory_usage_history.append(entry)
-        
-        # Prune old entries
-        if len(memory_usage_history) > MEMORY_CONFIG['MEMORY_HISTORY_MAX_ENTRIES']:
-            memory_usage_history = memory_usage_history[-MEMORY_CONFIG['MEMORY_HISTORY_MAX_ENTRIES']:]
+        with memory_usage_lock:
+            memory_usage_history.append(entry)
+
+            # Prune old entries
+            if len(memory_usage_history) > MEMORY_CONFIG['MEMORY_HISTORY_MAX_ENTRIES']:
+                memory_usage_history = memory_usage_history[-MEMORY_CONFIG['MEMORY_HISTORY_MAX_ENTRIES']:]
             
     except Exception as e:
         logging.error(f"Error recording memory metrics: {e}")
@@ -1085,8 +1087,10 @@ def memory_profile():
 @app.route("/api/memory-history")
 def memory_history():
     """API endpoint for memory usage history."""
+    with memory_usage_lock:
+        history_copy = list(memory_usage_history)
     return jsonify({
-        "history": memory_usage_history,
+        "history": history_copy,
         "current": {
             "rss_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024,
             "percent": psutil.Process(os.getpid()).memory_percent()

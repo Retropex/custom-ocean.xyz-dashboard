@@ -40,6 +40,13 @@ class MiningDashboardService:
         # Time-to-live (TTL) for exchange rate cache in seconds (~2 hours)
         self.exchange_rate_ttl = 7200
 
+    def close(self):
+        """Close any open network resources."""
+        try:
+            self.session.close()
+        except Exception as e:
+            logging.error(f"Error closing session: {e}")
+
     def fetch_metrics(self):
         """
         Fetch metrics from Ocean.xyz and other sources.

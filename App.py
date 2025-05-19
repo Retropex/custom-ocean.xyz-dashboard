@@ -862,6 +862,7 @@ def update_config():
 
             # Update worker service to use the new dashboard service (with the updated wallet)
             worker_service.set_dashboard_service(dashboard_service)
+            notification_service.dashboard_service = dashboard_service
             logging.info(f"Worker service updated with the new dashboard service")
             
             # If currency changed, update notifications to use the new currency
@@ -1535,6 +1536,7 @@ dashboard_service = MiningDashboardService(
 worker_service = WorkerService()
 # Connect the services
 worker_service.set_dashboard_service(dashboard_service)
+notification_service.dashboard_service = dashboard_service
 
 # Restore critical state if available
 last_run, last_update = state_manager.load_critical_state()
@@ -1561,6 +1563,13 @@ def graceful_shutdown(signum, frame):
             logging.info("Scheduler shutdown complete")
         except Exception as e:
             logging.error(f"Error shutting down scheduler: {e}")
+
+    # Close dashboard service session
+    if dashboard_service:
+        try:
+            dashboard_service.close()
+        except Exception as e:
+            logging.error(f"Error closing dashboard service: {e}")
     
     # Log connection info before exit
     logging.info(f"Active SSE connections at shutdown: {active_sse_connections}")

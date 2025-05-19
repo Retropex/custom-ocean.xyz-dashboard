@@ -67,23 +67,36 @@ def format_currency_value(value, currency, exchange_rates):
     else:
         return f"{symbol}{converted_value:.2f}"
 
-def get_exchange_rates():
-    """Get exchange rates with caching"""
+def get_exchange_rates(dashboard_service: MiningDashboardService = None):
+    """Get exchange rates with caching.
+
+    If no service is provided, a temporary one is created and closed after use.
+    """
+    temp_service = None
     try:
-        # Create a dashboard service instance for fetching exchange rates
-        dashboard_service = MiningDashboardService(0, 0, "", 0)
+        if dashboard_service is None:
+            temp_service = MiningDashboardService(0, 0, "", 0)
+            dashboard_service = temp_service
+
         exchange_rates = dashboard_service.fetch_exchange_rates()
         return exchange_rates
     except Exception as e:
         logging.error(f"Error fetching exchange rates for notifications: {e}")
         return {}  # Return empty dict if failed
+    finally:
+        if temp_service is not None:
+            try:
+                temp_service.close()
+            except Exception as e:
+                logging.error(f"Error closing temporary service: {e}")
 
 class NotificationService:
     """Service for managing mining dashboard notifications."""
-    
-    def __init__(self, state_manager):
+
+    def __init__(self, state_manager, dashboard_service=None):
         """Initialize with state manager for persistence."""
         self.state_manager = state_manager
+        self.dashboard_service = dashboard_service
         self.notifications = []
         self.daily_stats_time = "00:00:00"  # When to post daily stats (midnight)
         self.last_daily_stats = None
@@ -453,9 +466,9 @@ class NotificationService:
             # Get user's currency preference
             config = load_config()
             user_currency = config.get("currency", "USD")
-            
+
             # Get exchange rates
-            exchange_rates = get_exchange_rates()
+            exchange_rates = get_exchange_rates(getattr(self, "dashboard_service", None))
             
             # Format with the user's currency
             formatted_profit = format_currency_value(daily_profit_usd, user_currency, exchange_rates)
@@ -731,7 +744,7 @@ class NotificationService:
                 config = load_config()
                 new_currency = config.get("currency", "USD")
 
-            exchange_rates = get_exchange_rates()
+            exchange_rates = get_exchange_rates(getattr(self, "dashboard_service", None))
 
             updated = 0
             for notif in self.notifications:

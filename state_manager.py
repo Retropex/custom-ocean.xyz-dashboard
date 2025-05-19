@@ -12,6 +12,7 @@ import gc
 import threading
 import gzip
 import redis
+from collections import deque
 from config import get_timezone
 
 # Historical data structures are now managed by the StateManager instance
@@ -40,7 +41,7 @@ class StateManager:
         # Initialize in-memory structures for historical data
         self.arrow_history = {}    # Stored per second
         self.hashrate_history = []
-        self.metrics_log = []
+        self.metrics_log = deque(maxlen=MAX_HISTORY_ENTRIES)
         self.payout_history = []
 
         # Load state if available
@@ -112,7 +113,7 @@ class StateManager:
                     # Restore arrow_history
                     compact_arrow_history = state.get("arrow_history", {})
                     for key, values in compact_arrow_history.items():
-                        self.arrow_history[key] = [
+                        self.arrow_history[key] = deque([
                             {
                                 "time": entry.get("t", ""),
                                 "value": entry.get("v", 0),
@@ -120,23 +121,29 @@ class StateManager:
                                 "unit": entry.get("u", "th/s"),
                             }
                             for entry in values
-                        ]
+                        ], maxlen=MAX_HISTORY_ENTRIES)
 
                     # Restore hashrate_history
                     self.hashrate_history = state.get("hashrate_history", [])
 
                     # Restore metrics_log
                     compact_metrics_log = state.get("metrics_log", [])
-                    self.metrics_log = []
+                    self.metrics_log = deque(maxlen=MAX_HISTORY_ENTRIES)
                     for entry in compact_metrics_log:
                         self.metrics_log.append({
                             "timestamp": entry.get("ts", ""),
                             "metrics": entry.get("m", {})
                         })
                 else:  # Original format
-                    self.arrow_history = state.get("arrow_history", {})
+                    raw_history = state.get("arrow_history", {})
+                    self.arrow_history = {
+                        key: deque(values, maxlen=MAX_HISTORY_ENTRIES)
+                        for key, values in raw_history.items()
+                    }
                     self.hashrate_history = state.get("hashrate_history", [])
-                    self.metrics_log = state.get("metrics_log", [])
+                    self.metrics_log = deque(
+                        state.get("metrics_log", []), maxlen=MAX_HISTORY_ENTRIES
+                    )
                 
                 logging.info(f"Loaded graph state from Redis (format version {version}).")
             else:
@@ -175,8 +182,9 @@ class StateManager:
             # Compact arrow_history with unit preservation
             compact_arrow_history = {}
             for key, values in self.arrow_history.items():
-                if isinstance(values, list) and values:
-                    recent_values = values[-180:] if len(values) > 180 else values
+                values_list = list(values)
+                if values_list:
+                    recent_values = values_list[-180:] if len(values_list) > 180 else values_list
                     compact_arrow_history[key] = [
                         {"t": entry["time"], "v": entry["value"], "a": entry["arrow"], "u": entry.get("unit", "th/s")}
                         for entry in recent_values
@@ -188,7 +196,7 @@ class StateManager:
             # Compact metrics_log with unit preservation
             compact_metrics_log = []
             if self.metrics_log:
-                recent_logs = self.metrics_log[-30:]
+                recent_logs = list(self.metrics_log)[-30:]
                 for entry in recent_logs:
                     metrics_copy = {}
                     original_metrics = entry["metrics"]
@@ -242,33 +250,35 @@ class StateManager:
 
             # Prune arrow_history with more sophisticated approach
             for key in self.arrow_history:
-                if isinstance(self.arrow_history[key], list):
-                    if len(self.arrow_history[key]) > max_history:
-                        # For most recent data (last hour) - keep every point
-                        recent_data = self.arrow_history[key][-60:]
+                history_list = list(self.arrow_history[key])
+                if len(history_list) > max_history:
+                    # For most recent data (last hour) - keep every point
+                    recent_data = history_list[-60:]
 
-                        # For older data, reduce resolution by keeping fewer points when aggressive
-                        older_data = self.arrow_history[key][:-60]
-                        if len(older_data) > 0:
-                            step = 3 if aggressive else 2
-                            sparse_older_data = [older_data[i] for i in range(0, len(older_data), step)]
-                            self.arrow_history[key] = sparse_older_data + recent_data
-                        else:
-                            self.arrow_history[key] = recent_data
+                    # For older data, reduce resolution by keeping fewer points when aggressive
+                    older_data = history_list[:-60]
+                    if len(older_data) > 0:
+                        step = 3 if aggressive else 2
+                        sparse_older_data = [older_data[i] for i in range(0, len(older_data), step)]
+                        history_list = sparse_older_data + recent_data
+                    else:
+                        history_list = recent_data
 
-                        logging.info(f"Pruned {key} history from original state to {len(self.arrow_history[key])} entries")
+                    self.arrow_history[key] = deque(history_list, maxlen=MAX_HISTORY_ENTRIES)
+                    logging.info(f"Pruned {key} history from original state to {len(self.arrow_history[key])} entries")
 
             # Prune metrics_log more aggressively
             if len(self.metrics_log) > max_history:
                 # Keep most recent entries at full resolution
-                recent_logs = self.metrics_log[-60:]
+                recent_logs = list(self.metrics_log)[-60:]
 
                 # Reduce resolution of older entries
-                older_logs = self.metrics_log[:-60]
+                older_logs = list(self.metrics_log)[:-60]
                 if len(older_logs) > 0:
                     step = 4 if aggressive else 3  # More aggressive step
                     sparse_older_logs = [older_logs[i] for i in range(0, len(older_logs), step)]
-                    self.metrics_log = sparse_older_logs + recent_logs
+                    new_logs = sparse_older_logs + recent_logs
+                    self.metrics_log = deque(new_logs, maxlen=MAX_HISTORY_ENTRIES)
                     logging.info(f"Pruned metrics log to {len(self.metrics_log)} entries")
         
             # Free memory more aggressively
@@ -410,7 +420,7 @@ class StateManager:
                                 arrow = self.arrow_history[key][-1]["arrow"]
 
                     if key not in self.arrow_history:
-                        self.arrow_history[key] = []
+                        self.arrow_history[key] = deque(maxlen=MAX_HISTORY_ENTRIES)
 
                     if not self.arrow_history[key] or self.arrow_history[key][-1]["time"] != current_second:
                         # Create new entry
@@ -434,10 +444,6 @@ class StateManager:
                         if current_unit:
                             self.arrow_history[key][-1]["unit"] = current_unit
 
-                    # Cap history to three hours worth (180 entries)
-                    if len(self.arrow_history[key]) > MAX_HISTORY_ENTRIES:
-                        self.arrow_history[key] = self.arrow_history[key][-MAX_HISTORY_ENTRIES:]
-
             # --- Aggregate arrow_history by minute for the graph ---
             aggregated_history = {}
             for key, entries in self.arrow_history.items():
@@ -458,9 +464,6 @@ class StateManager:
 
             entry = {"timestamp": datetime.now().isoformat(), "metrics": metrics}
             self.metrics_log.append(entry)
-            # Cap the metrics log to three hours worth (180 entries)
-            if len(self.metrics_log) > MAX_HISTORY_ENTRIES:
-                self.metrics_log = self.metrics_log[-MAX_HISTORY_ENTRIES:]
 
     def save_notifications(self, notifications):
         """Save notifications to persistent storage."""
@@ -515,7 +518,7 @@ class StateManager:
             else:
                 for key in keys:
                     if key in self.arrow_history:
-                        self.arrow_history[key] = []
+                        self.arrow_history[key] = deque(maxlen=MAX_HISTORY_ENTRIES)
 
     # ------------------------------------------------------------------
     # Payout history management

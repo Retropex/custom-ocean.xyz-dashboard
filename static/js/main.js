@@ -353,7 +353,18 @@ if (window.simpleAnnotationPlugin) {
     Chart.register(window.simpleAnnotationPlugin);
 }
 
-function loadBlockAnnotations() {
+function loadBlockAnnotations(minutes = 180) {
+    const tz = window.dashboardTimezone || DEFAULT_TIMEZONE;
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    // Compute cutoff based on requested minutes
+    const cutoff = Date.now() - minutes * 60 * 1000;
+
     try {
         const stored = localStorage.getItem('blockAnnotations');
         if (stored) {
@@ -367,22 +378,39 @@ function loadBlockAnnotations() {
         blockAnnotations = [];
     }
 
+    // Parse existing labels back into dates and prune old ones
+    try {
+        const now = Date.now();
+        const dayMs = 24 * 60 * 60 * 1000;
+        const offset = new Date(new Date().toLocaleString('en-US', { timeZone: tz })).getTime() - now;
+        blockAnnotations = blockAnnotations.filter(label => {
+            const parts = label.split(':');
+            if (parts.length < 2) return false;
+            const hour = parseInt(parts[0], 10);
+            const minute = parseInt(parts[1], 10);
+            if (isNaN(hour) || isNaN(minute)) return false;
+            const base = new Date();
+            base.setHours(hour, minute, 0, 0);
+            let ts = base.getTime() - offset;
+            const diff = ts - now;
+            if (diff > 12 * 60 * 60 * 1000) ts -= dayMs;
+            else if (diff < -12 * 60 * 60 * 1000) ts += dayMs;
+            return ts >= cutoff;
+        });
+    } catch (e) {
+        console.error('Error pruning block annotations', e);
+        blockAnnotations = [];
+    }
+
     // Fetch past block events from the server and merge with stored annotations
-    // Limit events to the last 180 minutes
-    fetch('/api/block-events?minutes=180')
+    fetch(`/api/block-events?minutes=${minutes}`)
         .then(resp => resp.json())
         .then(data => {
             if (data && Array.isArray(data.events)) {
-                const tz = window.dashboardTimezone || DEFAULT_TIMEZONE;
-                const formatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: tz,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                });
                 data.events.forEach(ev => {
                     try {
                         const d = new Date(ev.timestamp);
+                        if (d.getTime() < cutoff) return;
                         const label = formatter.format(d).replace(/\s[AP]M$/i, '');
                         if (!blockAnnotations.includes(label)) {
                             blockAnnotations.push(label);

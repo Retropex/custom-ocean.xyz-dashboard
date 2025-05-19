@@ -873,7 +873,7 @@ function updateMinerDistributionChart(blocks) {
         animation: { duration: 500 },
         plugins: {
             legend: {
-                position: 'bottom',
+                position: 'left',
                 labels: { color: theme.PRIMARY }
             },
             tooltip: {

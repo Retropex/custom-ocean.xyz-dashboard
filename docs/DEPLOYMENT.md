@@ -219,7 +219,7 @@ For production deployments, it's recommended to use a reverse proxy like Nginx:
 
 ### Logs
 
-Logs are stored in the `logs` directory by default. Monitor these logs for errors and warnings:
+Logs are stored in the `logs` directory by default and rotate automatically when they reach 5MB (up to five backups). Monitor these logs for errors and warnings:
 
 ```bash
 tail -f logs/dashboard.log
@@ -361,7 +361,7 @@ To update the application:
 
 1. **Configuration**: Regularly backup your `config.json` file
 2. **Redis Data**: If using Redis, set up regular RDB snapshots
-3. **Logs**: Implement log rotation and archiving
+3. **Logs**: The application rotates `dashboard.log` automatically; archive rotated logs periodically if needed.
 
 ## Security Recommendations
 

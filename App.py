@@ -3,6 +3,7 @@ Main application module for the Bitcoin Mining Dashboard.
 """
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 import time
 import gc
 import psutil
@@ -70,8 +71,26 @@ scheduler = None
 # Global start time
 SERVER_START_TIME = datetime.now(ZoneInfo(get_timezone()))
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging with rotation
+log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, "dashboard.log")
+
+log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+logger = logging.getLogger()
+logger.setLevel(getattr(logging, log_level, logging.INFO))
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+file_handler = RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5)
+file_handler.setFormatter(formatter)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+
+logger.handlers.clear()
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 # Initialize state manager with Redis URL from environment
 redis_url = os.environ.get("REDIS_URL")

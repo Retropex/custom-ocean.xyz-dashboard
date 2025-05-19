@@ -12,7 +12,7 @@ import signal
 import sys
 import threading
 import json
-from flask import Flask, render_template, jsonify, Response, request
+from flask import Flask, render_template, jsonify, Response, request, stream_with_context
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask_caching import Cache
@@ -583,10 +583,20 @@ def commafy(value):
 @app.route('/stream')
 def stream():
     """SSE endpoint for real-time updates."""
-    # Important: Capture any request context information BEFORE the generator
-    # This ensures we're not trying to access request outside its context
-    
-    def event_stream():
+    # Capture request information that will be needed inside the generator.
+    try:
+        start_event_id = int(request.headers.get("Last-Event-ID", 0))
+    except ValueError:
+        start_event_id = 0
+
+    try:
+        num_points = int(request.args.get("points", 30))
+        if num_points not in [30, 60, 180]:
+            num_points = 180
+    except Exception:
+        num_points = 180
+
+    def event_stream(start_event_id, num_points):
         global active_sse_connections, cached_metrics
         client_id = None
         
@@ -605,7 +615,16 @@ def stream():
             # Set a maximum connection time - increased to 15 minutes for better user experience
             end_time = time.time() + MAX_SSE_CONNECTION_TIME
             last_timestamp = None
+
+            # Initialize connection event id
+            connection_event_id = start_event_id
             
+            # Determine starting event id from Last-Event-ID header
+            try:
+                connection_event_id = int(request.headers.get("Last-Event-ID", 0))
+            except ValueError:
+                connection_event_id = 0
+
             # Send initial data immediately to prevent delay in dashboard updates
             if cached_metrics:
                 yield f"data: {json.dumps(cached_metrics)}\n\n"
@@ -678,7 +697,8 @@ def stream():
     
     # Configure response with improved error handling
     try:
-        response = Response(event_stream(), mimetype="text/event-stream")
+        response = Response(stream_with_context(event_stream(start_event_id, num_points)),
+                            mimetype="text/event-stream")
         response.headers['Cache-Control'] = 'no-cache'
         response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
         response.headers['Access-Control-Allow-Origin'] = '*'  # Allow CORS

@@ -478,7 +478,12 @@ function updateBlockAnnotations(chart) {
     });
 
     const theme = getCurrentTheme();
-    blockAnnotations.forEach((label, idx) => {
+    const validLabels = chart.data && Array.isArray(chart.data.labels)
+        ? new Set(chart.data.labels)
+        : new Set();
+    let idx = 0;
+    blockAnnotations.forEach(label => {
+        if (!validLabels.has(label)) return;
         anns['blockEvent' + idx] = {
             type: 'line',
             xMin: label,
@@ -501,6 +506,7 @@ function updateBlockAnnotations(chart) {
                 position: 'start'
             }
         };
+        idx++;
     });
 }
 
@@ -669,6 +675,8 @@ function setChartPoints(points) {
     if (points === chartPoints) return;
     chartPoints = points;
     updateChartPointsButtons();
+    // Reload block annotations for the new time range
+    loadBlockAnnotations(chartPoints);
 
     updateChartWithNormalizedData(trendChart, latestMetrics);
 

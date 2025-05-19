@@ -466,7 +466,13 @@ function updateBlockAnnotations(chart) {
                 content: label,
                 backgroundColor: 'rgba(0,0,0,0.8)',
                 color: theme.CHART.BLOCK_EVENT,
-                rotation: -90,
+                font: {
+                    family: "'VT323', monospace",
+                    size: 16,
+                    weight: 'bold'
+                },
+                padding: { top: 4, bottom: 4, left: 8, right: 8 },
+                borderRadius: 0,
                 position: 'start'
             }
         };

@@ -58,6 +58,15 @@ MAX_SSE_CONNECTIONS = 50  # Maximum concurrent SSE connections
 MAX_SSE_CONNECTION_TIME = 900  # 15 minutes maximum SSE connection time
 active_sse_connections = 0
 sse_connections_lock = threading.Lock()
+metrics_update_event = threading.Event()
+
+def format_sse(data, event_id=None):
+    """Format a message for Server-Sent Events."""
+    msg_parts = []
+    if event_id is not None:
+        msg_parts.append(f"id: {event_id}")
+    msg_parts.append(f"data: {data}")
+    return "\n".join(msg_parts) + "\n\n"
 
 # Global variables for metrics and scheduling
 cached_metrics = None
@@ -408,6 +417,7 @@ def update_metrics_job(force=False):
     
                 # Then update cached metrics after comparison
                 cached_metrics = metrics
+                metrics_update_event.set()
                 
                 # Clear the config_reset flag after it's been used
                 if metrics.get("config_reset"):
@@ -589,44 +599,56 @@ def stream():
     def event_stream():
         global active_sse_connections, cached_metrics
         client_id = None
-        
+
         try:
             # Check if we're at the connection limit
             with sse_connections_lock:
                 if active_sse_connections >= MAX_SSE_CONNECTIONS:
-                    logging.warning(f"Connection limit reached ({MAX_SSE_CONNECTIONS}), refusing new SSE connection")
-                    yield f"data: {{\"error\": \"Too many connections, please try again later\", \"retry\": 5000}}\n\n"
+                    logging.warning(
+                        f"Connection limit reached ({MAX_SSE_CONNECTIONS}), refusing new SSE connection")
+                    yield format_sse(json.dumps({"error": "Too many connections, please try again later", "retry": 5000}))
                     return
-                
+
                 active_sse_connections += 1
                 client_id = f"client-{int(time.time() * 1000) % 10000}"
                 logging.info(f"SSE {client_id}: Connection established (total: {active_sse_connections})")
-            
+
             # Set a maximum connection time - increased to 15 minutes for better user experience
             end_time = time.time() + MAX_SSE_CONNECTION_TIME
             last_timestamp = None
-            
+
+            # Determine starting event id from Last-Event-ID header
+            try:
+                connection_event_id = int(request.headers.get("Last-Event-ID", 0))
+            except ValueError:
+                connection_event_id = 0
+
             # Send initial data immediately to prevent delay in dashboard updates
             if cached_metrics:
-                yield f"data: {json.dumps(cached_metrics)}\n\n"
+                connection_event_id += 1
+                yield format_sse(json.dumps(cached_metrics), connection_event_id)
                 last_timestamp = cached_metrics.get("server_timestamp")
             else:
                 # Send ping if no data available yet
-                yield f"data: {{\"type\": \"ping\", \"client_id\": \"{client_id}\"}}\n\n"
-            
+                connection_event_id += 1
+                yield format_sse(json.dumps({"type": "ping", "client_id": client_id}), connection_event_id)
+
+            next_ping_time = time.time() + 30
+
             # Main event loop with improved error handling
             while time.time() < end_time:
                 try:
+                    metrics_update_event.wait(timeout=1)
+                    metrics_update_event.clear()
+
                     # Send data only if it's changed
                     if cached_metrics and cached_metrics.get("server_timestamp") != last_timestamp:
                         # Create a slimmer version with essential fields for SSE updates
                         sse_metrics = {k: v for k, v in cached_metrics.items()}
-    
+
                         # Get the desired number of points from the query parameter
                         try:
-                            # Get points parameter, default to 30 if not specified
                             num_points = int(request.args.get('points', 30))
-                            # Only allow valid options: 30, 60, or 180
                             if num_points not in [30, 60, 180]:
                                 num_points = 180
                             logging.info(f"SSE {client_id}: Using {num_points} data points")
@@ -634,36 +656,42 @@ def stream():
                             num_points = 180
                             logging.info(f"SSE {client_id}: Using default 180 data points")
 
-                        # If arrow_history is very large, only send the requested number of points
                         if 'arrow_history' in sse_metrics:
                             for key, values in sse_metrics['arrow_history'].items():
                                 if len(values) > num_points:
                                     sse_metrics['arrow_history'][key] = values[-num_points:]
-    
-                        # Serialize data only once
+
                         data = json.dumps(sse_metrics)
                         last_timestamp = cached_metrics.get("server_timestamp")
-                        yield f"data: {data}\n\n"
-                    
-                    # Send regular pings about every 30 seconds to keep connection alive
-                    if int(time.time()) % 30 == 0:
-                        yield f"data: {{\"type\": \"ping\", \"time\": {int(time.time())}, \"connections\": {active_sse_connections}}}\n\n"
-                    
-                    # Sleep to reduce CPU usage
-                    time.sleep(1)
-                    
-                    # Warn client 60 seconds before timeout so client can prepare to reconnect
-                    remaining_time = end_time - time.time()
-                    if remaining_time < 60 and int(remaining_time) % 15 == 0:  # Every 15 sec in last minute
-                        yield f"data: {{\"type\": \"timeout_warning\", \"remaining\": {int(remaining_time)}}}\n\n"
-                    
+                        connection_event_id += 1
+                        yield format_sse(data, connection_event_id)
+
+                    current_time = time.time()
+                    if current_time >= next_ping_time:
+                        connection_event_id += 1
+                        yield format_sse(json.dumps({
+                            "type": "ping",
+                            "time": int(current_time),
+                            "connections": active_sse_connections
+                        }), connection_event_id)
+                        next_ping_time = current_time + 30
+
+                    remaining_time = end_time - current_time
+                    if remaining_time < 60 and int(remaining_time) % 15 == 0:
+                        connection_event_id += 1
+                        yield format_sse(json.dumps({"type": "timeout_warning", "remaining": int(remaining_time)}),
+                                         connection_event_id)
                 except Exception as e:
                     logging.error(f"SSE {client_id}: Error in stream: {e}")
                     time.sleep(2)  # Prevent tight error loops
-            
-            # Connection timeout reached - send a reconnect instruction to client
+
             logging.info(f"SSE {client_id}: Connection timeout reached ({MAX_SSE_CONNECTION_TIME}s)")
-            yield f"data: {{\"type\": \"timeout\", \"message\": \"Connection timeout reached\", \"reconnect\": true}}\n\n"
+            connection_event_id += 1
+            yield format_sse(json.dumps({
+                "type": "timeout",
+                "message": "Connection timeout reached",
+                "reconnect": True
+            }), connection_event_id)
             
         except GeneratorExit:
             # This is how we detect client disconnection
@@ -1022,6 +1050,7 @@ def force_refresh():
         if metrics:
             global cached_metrics, scheduler_last_successful_run
             cached_metrics = metrics
+            metrics_update_event.set()
             scheduler_last_successful_run = time.time()
             logging.info(f"Force refresh successful, new timestamp: {metrics['server_timestamp']}")
             return jsonify({"status": "success", "message": "Metrics refreshed", "timestamp": metrics['server_timestamp']})

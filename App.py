@@ -618,12 +618,22 @@ def stream():
 
             # Initialize connection event id
             connection_event_id = start_event_id
-            
+
             # Determine starting event id from Last-Event-ID header
             try:
                 connection_event_id = int(request.headers.get("Last-Event-ID", 0))
             except ValueError:
                 connection_event_id = 0
+
+            # Parse the number of points once per connection
+            try:
+                parsed_points = int(request.args.get('points', num_points))
+                if parsed_points not in [30, 60, 180]:
+                    parsed_points = 180
+            except Exception:
+                parsed_points = 180
+            num_points = parsed_points
+            logging.info(f"SSE {client_id}: Using {num_points} data points")
 
             # Send initial data immediately to prevent delay in dashboard updates
             if cached_metrics:
@@ -641,17 +651,7 @@ def stream():
                         # Create a slimmer version with essential fields for SSE updates
                         sse_metrics = {k: v for k, v in cached_metrics.items()}
     
-                        # Get the desired number of points from the query parameter
-                        try:
-                            # Get points parameter, default to 30 if not specified
-                            num_points = int(request.args.get('points', 30))
-                            # Only allow valid options: 30, 60, or 180
-                            if num_points not in [30, 60, 180]:
-                                num_points = 180
-                            logging.info(f"SSE {client_id}: Using {num_points} data points")
-                        except Exception:
-                            num_points = 180
-                            logging.info(f"SSE {client_id}: Using default 180 data points")
+                        # Use the parsed num_points value
 
                         # If arrow_history is very large, only send the requested number of points
                         if 'arrow_history' in sse_metrics:

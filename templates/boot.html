@@ -266,6 +266,11 @@
                 initiateRandomDrip(dropletConfig);
             }, isMobile ? 8000 : 6000);
 
+            // Periodically merge nearby droplets for more realistic behaviour
+            setInterval(() => {
+                checkDropletMerge(dropletConfig);
+            }, 4000);
+
             // Handle window resizing to adjust droplets when switching from desktop to mobile
             window.addEventListener('resize', function() {
                 const nowMobile = window.innerWidth < 768;
@@ -306,16 +311,26 @@
             });
 
             // Update this function to create more realistic droplet shapes
-            function createDroplet(config) {
+            // Optional 'options' parameter allows overriding position/size when
+            // creating droplets programmatically (e.g. when merging)
+            function createDroplet(config, options = {}) {
                 const droplet = document.createElement('div');
                 droplet.className = 'water-droplet';
 
                 // Random properties
-                const size = Math.floor(Math.random() * (config.maxSize - config.minSize) + config.minSize);
+                const size = options.size !== undefined
+                    ? options.size
+                    : Math.floor(Math.random() * (config.maxSize - config.minSize) + config.minSize);
                 // Make some droplets slightly oval for realism
-                const heightRatio = 1 + (Math.random() * 0.25);
-                const leftPosition = Math.random() * 90; // percentage of screen width
-                const topPosition = Math.random() * 90;  // percentage of screen height (avoid bottom more)
+                const heightRatio = options.heightRatio !== undefined
+                    ? options.heightRatio
+                    : 1 + (Math.random() * 0.25);
+                const leftPosition = options.leftPercent !== undefined
+                    ? options.leftPercent
+                    : Math.random() * 90; // percentage of screen width
+                const topPosition = options.topPercent !== undefined
+                    ? options.topPercent
+                    : Math.random() * 90;  // percentage of screen height
 
                 // Set droplet styles
                 droplet.style.width = `${size}px`;
@@ -552,6 +567,50 @@
                     }
                 `;
                 document.head.appendChild(styleEl);
+            }
+
+            // Detect collisions between droplets and merge them into a larger
+            // droplet positioned midway between the originals
+            function checkDropletMerge(config) {
+                const droplets = Array.from(document.querySelectorAll('.water-droplet:not(.dripping)'));
+                for (let i = 0; i < droplets.length; i++) {
+                    for (let j = i + 1; j < droplets.length; j++) {
+                        const rect1 = droplets[i].getBoundingClientRect();
+                        const rect2 = droplets[j].getBoundingClientRect();
+
+                        const c1x = rect1.left + rect1.width / 2;
+                        const c1y = rect1.top + rect1.height / 2;
+                        const c2x = rect2.left + rect2.width / 2;
+                        const c2y = rect2.top + rect2.height / 2;
+
+                        const dist = Math.hypot(c1x - c2x, c1y - c2y);
+                        const radius1 = Math.min(rect1.width, rect1.height) / 2;
+                        const radius2 = Math.min(rect2.width, rect2.height) / 2;
+
+                        if (dist < (radius1 + radius2) * 0.8) {
+                            if (droplets[i].parentNode) droplets[i].parentNode.removeChild(droplets[i]);
+                            if (droplets[j].parentNode) droplets[j].parentNode.removeChild(droplets[j]);
+
+                            const newArea = rect1.width * rect1.height + rect2.width * rect2.height;
+                            const newSize = Math.sqrt(newArea);
+                            const bodyRect = document.body.getBoundingClientRect();
+                            const newLeft = ((c1x + c2x) / 2 - newSize / 2 - bodyRect.left) / bodyRect.width * 100;
+                            const newTop = ((c1y + c2y) / 2 - newSize / 2 - bodyRect.top) / bodyRect.height * 100;
+
+                            const merged = createDroplet(config, {
+                                size: newSize,
+                                leftPercent: newLeft,
+                                topPercent: newTop,
+                                heightRatio: 1 + Math.random() * 0.1
+                            });
+
+                            if (Math.random() < config.dripProbability) {
+                                setTimeout(() => makeDropletDrip(merged, config), 1000);
+                            }
+                            return;
+                        }
+                    }
+                }
             }
         });
     </script>

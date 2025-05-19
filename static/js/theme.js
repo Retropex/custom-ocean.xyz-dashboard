@@ -14,7 +14,7 @@ const BITCOIN_THEME = {
         GRADIENT_START: '#f2a900',
         GRADIENT_END: 'rgba(242, 169, 0, 0.2)',
         ANNOTATION: '#ffd700',
-        BLOCK_EVENT: '#00ffff'
+        BLOCK_EVENT: '#00ff00'
     }
 };
 
@@ -31,7 +31,7 @@ const DEEPSEA_THEME = {
         GRADIENT_START: '#0088cc',
         GRADIENT_END: 'rgba(0, 136, 204, 0.2)',
         ANNOTATION: '#00b3ff',
-        BLOCK_EVENT: '#ff00ff'
+        BLOCK_EVENT: '#00ff00'
     }
 };
 

@@ -466,3 +466,10 @@ svg {
     font-size: 0.75rem;
   }
 }
+
+/* Extra small screens */
+@media (max-width: 576px) {
+  #minerChart {
+    max-width: 100%;
+  }
+}

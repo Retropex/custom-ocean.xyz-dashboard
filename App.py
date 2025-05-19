@@ -629,6 +629,12 @@ def stream():
 
             # Initialize connection event id
             connection_event_id = start_event_id
+            
+            # Determine starting event id from Last-Event-ID header
+            try:
+                connection_event_id = int(request.headers.get("Last-Event-ID", 0))
+            except ValueError:
+                connection_event_id = 0
 
             # Send initial data immediately to prevent delay in dashboard updates
             if cached_metrics:
@@ -652,6 +658,16 @@ def stream():
                     if cached_metrics and cached_metrics.get("server_timestamp") != last_timestamp:
                         # Create a slimmer version with essential fields for SSE updates
                         sse_metrics = {k: v for k, v in cached_metrics.items()}
+
+                        # Get the desired number of points from the query parameter
+                        try:
+                            num_points = int(request.args.get('points', 30))
+                            if num_points not in [30, 60, 180]:
+                                num_points = 180
+                            logging.info(f"SSE {client_id}: Using {num_points} data points")
+                        except Exception:
+                            num_points = 180
+                            logging.info(f"SSE {client_id}: Using default 180 data points")
 
                         if 'arrow_history' in sse_metrics:
                             for key, values in sse_metrics['arrow_history'].items():

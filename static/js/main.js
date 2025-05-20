@@ -1438,6 +1438,11 @@ function displayPayoutSummary() {
                         <strong>Fiat Value:</strong>
                         <span class="metric-value green">${fiatValueStr}</span>
                     </p>
+                    <p>
+                        <strong>Status:</strong>
+                        <span class="metric-value ${lastPayout.verified ? 'green' : 'yellow'}">${statusDisplay}</span>
+                        ${txLink}
+                    </p>
                 </div>
             </div>
             <div class="col-md-6">
@@ -1453,11 +1458,6 @@ function displayPayoutSummary() {
                     <p>
                         <strong>Prediction Accuracy:</strong>
                         <span class="metric-value ${accuracyNum >= 90 ? 'green' : (accuracyNum >= 70 ? 'white' : 'red')}">${lastPayout.historicalAccuracy || accuracyDisplay}</span>
-                    </p>
-                    <p>
-                        <strong>Status:</strong>
-                        <span class="metric-value ${lastPayout.verified ? 'green' : 'yellow'}">${statusDisplay}</span>
-                        ${txLink}
                     </p>
                 </div>
             </div>

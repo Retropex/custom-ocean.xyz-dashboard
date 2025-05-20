@@ -996,30 +996,6 @@ function loadLocalHistory() {
     }
 }
 
-// Calculate the average number of days between consecutive payouts
-function updateAvgDaysFromHistory() {
-    const history = lastPayoutTracking.payoutHistory;
-    if (!Array.isArray(history) || history.length < 2) {
-        lastPayoutTracking.avgDays = null;
-        return;
-    }
-
-    let totalDays = 0;
-    let intervals = 0;
-
-    for (let i = 0; i < history.length - 1; i++) {
-        const current = new Date(history[i].timestamp);
-        const next = new Date(history[i + 1].timestamp);
-        const diff = current - next;
-        if (!isNaN(diff) && diff >= 0) {
-            totalDays += diff / (24 * 60 * 60 * 1000);
-            intervals++;
-        }
-    }
-
-    lastPayoutTracking.avgDays = intervals > 0 ? totalDays / intervals : null;
-}
-
 // Update the init function to add the summary display
 function initPayoutTracking() {
     loadPayoutHistory();
@@ -1398,9 +1374,6 @@ function verifyPayoutsAgainstOfficial() {
             if (lastPayoutTracking.payoutHistory.length > 30) {
                 lastPayoutTracking.payoutHistory = lastPayoutTracking.payoutHistory.slice(0, 30);
             }
-
-            // Recalculate average payout interval
-            updateAvgDaysFromHistory();
 
             // Update the display with enriched data if it's visible
             if ($("#payout-history-container").is(":visible")) {

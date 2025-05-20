@@ -1080,7 +1080,7 @@ function displayPayoutSummary() {
     // Create a base container for the summary
     const summaryElement = $(`
         <div id="payout-summary" class="mb-3 p-2" style="background-color:rgba(0,0,0,0.2);">
-            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold; font-size: 18px;">Last Payout Summary</h6>
+            <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold; font-size: 18px; text-align: center;">Last Payout Summary</h6>
             <div id="summary-content"></div>
         </div>
     `);
@@ -1157,9 +1157,9 @@ function displayPayoutSummary() {
 
     // Update the inner content area of the summary with dashboard-consistent styling
     contentArea.html(`
-        <div class="row equal-height" style="font-size: 14px;">
-            <div class="col-12" style="display: flex; justify-content: center;">
-                <div class="d-flex flex-column" style="width: 100%; max-width: 500px;">
+        <div style="font-size: 14px;">
+            <div style="display: flex; justify-content: center;">
+                <div style="width: 100%; max-width: 200px;">
                     <p>
                         <strong>Date:</strong>
                         <span class="metric-value white">${payoutDate}</span>

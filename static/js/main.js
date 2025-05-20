@@ -1149,7 +1149,7 @@ function displayPayoutSummary() {
             <a href="https://mempool.guide/tx/${lastPayout.officialId}" 
                target="_blank" 
                class="btn btn-sm btn-secondary ms-2"
-               style="font-size: 12px;"
+               style="font-size: 12px; width: 90px;"
                title="View transaction on mempool.guide">
                 <i class="fa-solid fa-external-link-alt"></i> View TX
             </a>`;
@@ -1173,7 +1173,7 @@ function displayPayoutSummary() {
                         <span class="metric-value green">${fiatValueStr}</span>
                     </p>
                     <p>
-                        <strong>Average Interval:</strong>
+                        <strong>Average Payout Interval:</strong>
                         <span class="metric-value yellow">${lastPayoutTracking.avgDays ? lastPayoutTracking.avgDays.toFixed(2) + ' days' : 'N/A'}</span>
                     </p>
                     <p>

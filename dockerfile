@@ -55,7 +55,7 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
 # Use Gunicorn as the production WSGI server
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "App:app", \
      "--workers=1", \
-     "--threads=12", \
+     "--threads=16", \
      "--timeout=600", \
      "--keep-alive=5", \
      "--log-level=info", \

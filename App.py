@@ -1628,5 +1628,5 @@ signal.signal(signal.SIGINT, graceful_shutdown)
 update_metrics_job(force=True)
 
 if __name__ == "__main__":
-    # When deploying with Gunicorn in Docker, run with --workers=1 --threads=8 to ensure global state is shared.
+    # When deploying with Gunicorn in Docker, run with --workers=1 --threads=16 to ensure global state is shared.
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)

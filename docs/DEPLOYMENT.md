@@ -56,7 +56,7 @@ For better performance and reliability in production environments:
 
 3. Start with Gunicorn:
    ```bash
-   gunicorn -b 0.0.0.0:5000 App:app --workers=1 --threads=12 --timeout=600 --keep-alive=5
+   gunicorn -b 0.0.0.0:5000 App:app --workers=1 --threads=16 --timeout=600 --keep-alive=5
    ```
 
    > **Important**: Use only 1 worker to maintain shared state. Use threads for concurrency.
@@ -75,7 +75,7 @@ For better performance and reliability in production environments:
    [Service]
    User=your_username
    WorkingDirectory=/path/to/bitcoin-mining-dashboard
-   ExecStart=/path/to/venv/bin/gunicorn -b 0.0.0.0:5000 App:app --workers=1 --threads=12 --timeout=600 --keep-alive=5
+   ExecStart=/path/to/venv/bin/gunicorn -b 0.0.0.0:5000 App:app --workers=1 --threads=16 --timeout=600 --keep-alive=5
    Restart=always
    RestartSec=10
 

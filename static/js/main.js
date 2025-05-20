@@ -1158,8 +1158,8 @@ function displayPayoutSummary() {
     // Update the inner content area of the summary with dashboard-consistent styling
     contentArea.html(`
         <div class="row equal-height" style="font-size: 14px;">
-            <div class="col-md-6">
-                <div class="d-flex flex-column">
+            <div class="col-12" style="display: flex; justify-content: center;">
+                <div class="d-flex flex-column" style="width: 100%; max-width: 500px;">
                     <p>
                         <strong>Date:</strong>
                         <span class="metric-value white">${payoutDate}</span>
@@ -1173,17 +1173,13 @@ function displayPayoutSummary() {
                         <span class="metric-value green">${fiatValueStr}</span>
                     </p>
                     <p>
+                        <strong>Average Interval:</strong>
+                        <span class="metric-value yellow">${lastPayoutTracking.avgDays ? lastPayoutTracking.avgDays.toFixed(2) + ' days' : 'N/A'}</span>
+                    </p>
+                    <p>
                         <strong>Status:</strong>
                         <span class="metric-value ${lastPayout.verified ? 'green' : 'yellow'}">${statusDisplay}</span>
                         ${txLink}
-                    </p>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="d-flex flex-column">
-                    <p>
-                        <strong>Average Interval:</strong>
-                        <span class="metric-value yellow">${lastPayoutTracking.avgDays ? lastPayoutTracking.avgDays.toFixed(2) + ' days' : 'N/A'}</span>
                     </p>
                 </div>
             </div>

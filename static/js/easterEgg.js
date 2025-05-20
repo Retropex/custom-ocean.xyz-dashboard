@@ -93,7 +93,7 @@
     }
 
     document.body.appendChild(overlay);
-    setTimeout(() => overlay.remove(), 3000);
+    setTimeout(() => overlay.remove(), 15000);
   }
 
   window.addEventListener('keydown', handleKey);

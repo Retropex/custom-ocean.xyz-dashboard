@@ -1079,7 +1079,7 @@ function displayPayoutSummary() {
 
     // Create a base container for the summary
     const summaryElement = $(`
-        <div id="payout-summary" class="mb-3 p-2" style="background-color:rgba(0,0,0,0.2);">
+        <div id="payout-summary" class="mb-3 p-2">
             <h6 style="color:${theme.PRIMARY};margin-bottom:8px; font-weight: bold; font-size: 18px; text-align: center;">Last Payout Summary</h6>
             <div id="summary-content"></div>
         </div>

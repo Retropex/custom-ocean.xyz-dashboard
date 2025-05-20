@@ -27,11 +27,15 @@
     text.textContent = 'DeepSea Discovery!';
     overlay.appendChild(text);
 
-    for (let i = 0; i < 5; i++) {
+    const whaleCount = Math.max(20, Math.floor(window.innerHeight / 30));
+    for (let i = 0; i < whaleCount; i++) {
       const whale = document.createElement('div');
       whale.className = 'whale';
-      whale.style.top = Math.random() * 80 + 10 + '%';
-      whale.style.animationDelay = i * 2 + 's';
+      whale.style.top = Math.random() * 100 + '%';
+      whale.style.left = '-10%';
+      whale.style.animationDuration = 8 + Math.random() * 4 + 's';
+      whale.style.animationDelay = Math.random() * 6 + 's';
+      whale.style.fontSize = 2 + Math.random() * 2 + 'rem';
       whale.textContent = '🐳';
       overlay.appendChild(whale);
     }

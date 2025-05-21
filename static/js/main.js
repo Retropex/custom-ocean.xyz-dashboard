@@ -2745,6 +2745,7 @@ function updateUI() {
             font-size: 0.85em;
             font-weight: normal;
             margin-right: 0.5rem;
+            animation: pulse 2s infinite;
         }
         
         .metric-divider-note {

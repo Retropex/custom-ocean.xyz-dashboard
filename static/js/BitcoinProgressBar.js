@@ -1415,8 +1415,8 @@ const BitcoinMinuteRefresh = (function () {
           left: 50%;
           right: auto;
           transform: translateX(-50%);
-          width: 230px;
-          height: 150px;
+          width: 210px;
+          height: 190px;
           bottom: 10px;
         }
 

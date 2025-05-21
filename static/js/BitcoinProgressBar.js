@@ -1043,8 +1043,8 @@ const BitcoinMinuteRefresh = (function () {
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 230px;
-        height: 150px;
+        width: 210px;
+        height: 190px;
         background-color: #000000;
         border: 1px solid var(--primary-color, ${theme.color});
         color: var(--primary-color, ${theme.color});
@@ -1372,8 +1372,8 @@ const BitcoinMinuteRefresh = (function () {
       
       /* Collapsed state */
       .bitcoin-terminal.collapsed {
-        width: 230px;
-        height: 40px;
+        width: 175px;
+        height: 80px;
         padding: 5px;
       }
       
@@ -1421,8 +1421,8 @@ const BitcoinMinuteRefresh = (function () {
         }
 
         .bitcoin-terminal.collapsed {
-          width: 230px;
-          height: 40px;
+          width: 175px;
+          height: 80px;
           left: 50%;
           right: auto;
           transform: translateX(-50%);

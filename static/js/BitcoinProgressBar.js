@@ -1421,7 +1421,7 @@ const BitcoinMinuteRefresh = (function () {
         }
 
         .bitcoin-terminal.collapsed {
-          width: 175px;
+          width: 190px;
           height: 80px;
           left: 50%;
           right: auto;

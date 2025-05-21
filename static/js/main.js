@@ -1043,7 +1043,7 @@ function initPayoutTracking() {
     verifyPayoutsAgainstOfficial();
 
     // Schedule regular checks for new data
-    setInterval(verifyPayoutsAgainstOfficial, 5 * 60 * 1000); // Check every 5 minutes
+    setInterval(verifyPayoutsAgainstOfficial, 1 * 60 * 1000); // Check every 1 minutes
 }
 
 // Update toggle function to include only summary display

@@ -6,7 +6,7 @@
         const control = document.getElementById('audioControl');
         const icon = document.getElementById('audioIcon');
         if (!audio) { return; }
-        audio.volume = 0.05;
+        audio.volume = 1.00;
         const play = () => {
             const promise = audio.play();
             if (promise !== undefined) {

@@ -129,11 +129,11 @@ class NotificationService:
     def _parse_timestamp(self, timestamp_str: str) -> datetime:
         """Parse an ISO timestamp string into a timezone-aware datetime."""
         try:
-            # Handle ``Z`` suffix by converting to ``+00:00`` for ``fromisoformat``
+            # Support timestamps that end with 'Z' for UTC designator
             ts = timestamp_str.replace("Z", "+00:00")
             dt = datetime.fromisoformat(ts)
-
-            # If timestamp already has timezone info, return as-is
+            
+            # If it's already timezone-aware, return it
             if dt.tzinfo is not None:
                 return dt
 

@@ -3323,7 +3323,7 @@ function updateUI() {
                 existing.textContent = formatted;
                 existing.className = 'metric-value metric-divider-value ' + colorClass;
             } else {
-                const div = createDivider('block_timer', formatted, '[Block \u0394]', colorClass);
+                const div = createDivider('block_timer', formatted, '[Block Timer]', colorClass);
                 container.appendChild(div);
             }
         })();

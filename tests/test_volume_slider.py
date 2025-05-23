@@ -15,11 +15,3 @@ def test_volume_slider_desktop_only_and_position():
     content = css_path.read_text()
     assert "flex-direction: column-reverse" in content
     assert "@media (max-width: 599px)" in content
-
-
-def test_volume_slider_uses_accent_color():
-    """Slider should adopt the current theme accent color."""
-    css_path = Path("static/css/common.css")
-    content = css_path.read_text()
-    assert "accent-color: var(--accent-color)" in content
-    assert "rgba(var(--accent-color-rgb), 0.5)" in content

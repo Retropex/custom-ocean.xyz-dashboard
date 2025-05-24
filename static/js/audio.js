@@ -74,28 +74,6 @@
             }
         };
 
-        const startPlaybackAfterLoader = () => {
-            const start = () => {
-                loadAndResume();
-            };
-
-            const loader = document.getElementById('theme-loader');
-            if (!loader) {
-                start();
-                return;
-            }
-
-            const onEnd = (e) => {
-                if (e.propertyName === 'opacity') {
-                    loader.removeEventListener('transitionend', onEnd);
-                    start();
-                }
-            };
-
-            loader.addEventListener('transitionend', onEnd);
-            setTimeout(start, 1000); // Fallback
-        };
-
         const startCrossfade = () => {
             if (isCrossfading) { return; }
             isCrossfading = true;
@@ -174,7 +152,7 @@
         window.crossfadeToTheme = crossfadeToTheme;
         window.audioCrossfadeDuration = crossfadeDuration;
 
-        startPlaybackAfterLoader();
+        loadAndResume();
 
         audio.muted = storedMuted;
         if (icon) {
@@ -201,7 +179,7 @@
             loadTrack(audio, trackIndex);
             loadTrack(nextAudio, (trackIndex + 1) % playlist.length);
             storedTime = 0;
-            startPlaybackAfterLoader();
+            loadAndResume();
         };
 
         if (playlist.length > 1) {

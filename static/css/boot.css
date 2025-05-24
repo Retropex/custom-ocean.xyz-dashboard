@@ -153,7 +153,6 @@ body::before {
 #form-message {
   margin-top: 15px;
   padding: 10px;
-  border-radius: 3px;
   display: none;
 }
 
@@ -191,7 +190,6 @@ body::before {
   background-color: #000;
   color: var(--text-color);
   text-align: center;
-  border-radius: 3px;
   padding: 5px;
   position: absolute;
   z-index: 1;

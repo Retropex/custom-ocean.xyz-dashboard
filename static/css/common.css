@@ -1003,7 +1003,6 @@ html.deepsea-theme h1::after {
   font-size: 1.2rem;
   z-index: 9999;
   text-align: center;
-  border-radius: 3px;
   box-shadow: 0 0 20px rgba(var(--primary-color-rgb), 0.7);
   animation: congratsAppear 0.5s ease-out;
   cursor: pointer;
@@ -1018,7 +1017,6 @@ html.deepsea-theme h1::after {
   right: -2px;
   bottom: -2px;
   border: 1px solid var(--primary-color);
-  border-radius: 3px;
   animation: pulseBorder 1.5s infinite;
   z-index: -1;
 }

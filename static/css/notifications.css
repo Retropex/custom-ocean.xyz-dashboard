@@ -241,7 +241,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
 }
 
 .mark-read-button:hover {

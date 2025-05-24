@@ -1199,7 +1199,6 @@ const BitcoinMinuteRefresh = (function () {
         font-weight: bold;
         background-color: #000;
         padding: 2px 5px;
-        border-radius: 3px;
         min-width: 32px;
         display: inline-block;
         text-align: center;

@@ -2952,7 +2952,7 @@ function updateUI() {
         const needsData = varianceValue === null || varianceValue === undefined;
         if (needsData) {
             if (progress !== undefined && progress !== null) {
-                formatted = `Loading ${progress}%...`;
+                formatted = `Loading... ${progress}%`;
             } else {
                 formatted = 'Loading...';
             }

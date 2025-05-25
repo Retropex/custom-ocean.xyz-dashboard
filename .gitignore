@@ -21,3 +21,4 @@ tests/__pycache__/
 static/js/min/
 static/css/min/
 templates/min/
+/.vs

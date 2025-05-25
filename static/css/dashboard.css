@@ -49,7 +49,7 @@
 }
 
 .chart-controls-label {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: var(--primary-color);
   text-transform: uppercase;
   font-weight: bold;
@@ -87,7 +87,7 @@
   color: var(--primary-color);
   border: none;
   padding: 5px 12px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-family: var(--terminal-font);
   cursor: pointer;
   transition: all 0.2s ease;

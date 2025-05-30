@@ -253,6 +253,11 @@
   background-color: rgba(255, 85, 85, 0.1);
 }
 
+/* Hide delete button for block notifications */
+.notification-item[data-category="block"] .delete-button {
+    display: none;
+}
+
 /* ----- PAGINATION ----- */
 .pagination-controls {
   margin-top: 15px;

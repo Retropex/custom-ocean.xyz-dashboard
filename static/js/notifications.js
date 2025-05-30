@@ -309,7 +309,7 @@ function createNotificationElement(notification) {
 
     // Hide delete button for block notifications
     if (notification.category === 'block') {
-        element.find('.delete-button').remove();
+        element.find('.delete-button').hide();
     }
 
     // Hide mark as read button if already read

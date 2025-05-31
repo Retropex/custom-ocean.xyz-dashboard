@@ -2187,8 +2187,7 @@ function updateChartWithNormalizedData(chart, data) {
                 spikeCount: 0,
                 lowHashrateConfirmTime: 0,
                 modeSwitchTimeoutId: null,
-                lastModeChange: 0,
-                stableModePeriod: 600000
+                lastModeChange: 0
             };
 
             // If we have stored state, use it
@@ -2202,6 +2201,7 @@ function updateChartWithNormalizedData(chart, data) {
                         highHashrateSpikeTime: parsedState.highHashrateSpikeTime || 0,
                         modeSwitchTimeoutId: null
                     };
+                    delete chart.lowHashrateState.stableModePeriod;
                     console.log("Restored low hashrate mode from localStorage:", chart.lowHashrateState.isLowHashrateMode);
                 } catch (e) {
                     console.error("Error parsing stored low hashrate state:", e);
@@ -2334,8 +2334,7 @@ function updateChartWithNormalizedData(chart, data) {
                     highHashrateSpikeTime: state.highHashrateSpikeTime,
                     spikeCount: state.spikeCount,
                     lowHashrateConfirmTime: state.lowHashrateConfirmTime,
-                    lastModeChange: state.lastModeChange,
-                    stableModePeriod: state.stableModePeriod
+                    lastModeChange: state.lastModeChange
                 };
                 localStorage.setItem('lowHashrateState', JSON.stringify(stateToSave));
                 console.log("Saved low hashrate state:", state.isLowHashrateMode);

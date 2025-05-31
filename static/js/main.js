@@ -2187,7 +2187,9 @@ function updateChartWithNormalizedData(chart, data) {
                 spikeCount: 0,
                 lowHashrateConfirmTime: 0,
                 modeSwitchTimeoutId: null,
-                lastModeChange: 0
+                lastModeChange: 0,
+                stableModePeriod: 600000,
+                lastSpikeDecayTime: 0
             };
 
             // If we have stored state, use it
@@ -2199,7 +2201,8 @@ function updateChartWithNormalizedData(chart, data) {
                         ...parsedState,
                         // Reset any volatile state that shouldn't persist
                         highHashrateSpikeTime: parsedState.highHashrateSpikeTime || 0,
-                        modeSwitchTimeoutId: null
+                        modeSwitchTimeoutId: null,
+                        lastSpikeDecayTime: parsedState.lastSpikeDecayTime || 0
                     };
                     delete chart.lowHashrateState.stableModePeriod;
                     console.log("Restored low hashrate mode from localStorage:", chart.lowHashrateState.isLowHashrateMode);
@@ -2220,6 +2223,21 @@ function updateChartWithNormalizedData(chart, data) {
         const MODE_SWITCH_DELAY = 120000;     // Increase to 2 minutes for more stability
         const CONSECUTIVE_SPIKES_THRESHOLD = 3; // Increase to require more consistent high readings
         const MIN_MODE_STABILITY_TIME = 120000; // 2 minutes minimum between mode switches
+        const SPIKE_DECAY_INTERVAL = 30000; // interval before spike counter decreases
+
+        // Gradually decay spike count even across reloads
+        if (chart.lowHashrateState.spikeCount > 0) {
+            const elapsed = currentTime - chart.lowHashrateState.lastSpikeDecayTime;
+            if (elapsed >= SPIKE_DECAY_INTERVAL) {
+                const decaySteps = Math.floor(elapsed / SPIKE_DECAY_INTERVAL);
+                chart.lowHashrateState.spikeCount = Math.max(
+                    0,
+                    chart.lowHashrateState.spikeCount - decaySteps
+                );
+                chart.lowHashrateState.lastSpikeDecayTime += decaySteps * SPIKE_DECAY_INTERVAL;
+                saveLowHashrateState(chart.lowHashrateState);
+            }
+        }
 
         // Check if we changed modes recently - enforce a minimum stability period
         const timeSinceLastModeChange = currentTime - chart.lowHashrateState.lastModeChange;
@@ -2246,8 +2264,9 @@ function updateChartWithNormalizedData(chart, data) {
                     console.log("High hashrate spike detected in low hashrate mode");
                 }
 
-                // Increment spike counter
+                // Increment spike counter and reset decay timer
                 chart.lowHashrateState.spikeCount++;
+                chart.lowHashrateState.lastSpikeDecayTime = currentTime;
                 console.log(`Spike count: ${chart.lowHashrateState.spikeCount}/${CONSECUTIVE_SPIKES_THRESHOLD}`);
 
                 // Check if spikes have persisted long enough
@@ -2259,6 +2278,7 @@ function updateChartWithNormalizedData(chart, data) {
                     chart.lowHashrateState.isLowHashrateMode = false;
                     chart.lowHashrateState.highHashrateSpikeTime = 0;
                     chart.lowHashrateState.spikeCount = 0;
+                    chart.lowHashrateState.lastSpikeDecayTime = currentTime;
                     chart.lowHashrateState.lastModeChange = currentTime;
                     console.log("Exiting low hashrate mode after sustained high hashrate");
 
@@ -2268,11 +2288,12 @@ function updateChartWithNormalizedData(chart, data) {
                     console.log(`Remaining in low hashrate mode despite spike (waiting: ${Math.round(spikeElapsedTime / 1000)}/${MODE_SWITCH_DELAY / 1000}s, count: ${chart.lowHashrateState.spikeCount}/${CONSECUTIVE_SPIKES_THRESHOLD})`);
                 }
             } else {
-                // Don't reset counters immediately on every drop - make the counter more persistent
+                // Decrease spike counter after a set interval when hashrate drops
                 if (chart.lowHashrateState.spikeCount > 0 && normalizedHashrate60sec < HIGH_HASHRATE_THRESHOLD) {
-                    // Don't reset immediately, use a gradual decay approach
-                    if (Math.random() < 0.2) { // 20% chance to decrement counter each update
-                        chart.lowHashrateState.spikeCount--;
+                    const decayElapsed = currentTime - chart.lowHashrateState.lastSpikeDecayTime;
+                    if (decayElapsed >= SPIKE_DECAY_INTERVAL) {
+                        chart.lowHashrateState.spikeCount = Math.max(0, chart.lowHashrateState.spikeCount - 1);
+                        chart.lowHashrateState.lastSpikeDecayTime = currentTime;
                         console.log("Spike counter decayed to:", chart.lowHashrateState.spikeCount);
 
                         // Save state changes to localStorage
@@ -2334,7 +2355,9 @@ function updateChartWithNormalizedData(chart, data) {
                     highHashrateSpikeTime: state.highHashrateSpikeTime,
                     spikeCount: state.spikeCount,
                     lowHashrateConfirmTime: state.lowHashrateConfirmTime,
-                    lastModeChange: state.lastModeChange
+                    lastModeChange: state.lastModeChange,
+                    stableModePeriod: state.stableModePeriod,
+                    lastSpikeDecayTime: state.lastSpikeDecayTime
                 };
                 localStorage.setItem('lowHashrateState', JSON.stringify(stateToSave));
                 console.log("Saved low hashrate state:", state.isLowHashrateMode);

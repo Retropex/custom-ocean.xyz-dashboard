@@ -1776,11 +1776,12 @@ function manualRefresh() {
 // Modify the initializeChart function to use blue colors for the chart
 function initializeChart() {
     try {
-        const ctx = document.getElementById('trendGraph').getContext('2d');
-        if (!ctx) {
+        const canvas = document.getElementById('trendGraph');
+        if (!canvas) {
             console.error("Could not find trend graph canvas");
             return null;
         }
+        const ctx = canvas.getContext('2d');
 
         if (!window.Chart) {
             console.error("Chart.js not loaded");
@@ -2961,11 +2962,14 @@ function updateUI() {
 
     // Helper to attach a 3hr variance divider to a metric row
     function updateVarianceDivider(metricId, varianceId, varianceValue, formatFn, progress) {
-        const para = document.getElementById(metricId).parentNode;
+        const metricEl = document.getElementById(metricId);
+        if (!metricEl) {
+            return;
+        }
+        const para = metricEl.parentNode;
         ensureElementStyles();
 
         if (!para.querySelector('.main-metric')) {
-            const metricEl = document.getElementById(metricId);
             const indicatorEl = document.getElementById(`indicator_${metricId}`);
 
             const mainMetric = document.createElement('span');
@@ -3103,14 +3107,17 @@ function updateUI() {
             const poolLuckValue = poolLuck !== null ? formatLuckPercentage(poolLuck) : "N/A";
 
             // Get the pool_total_hashrate element's parent paragraph
-            const poolHashratePara = document.getElementById("pool_total_hashrate").parentNode;
+            const poolHashrate = document.getElementById("pool_total_hashrate");
+            if (!poolHashrate) {
+                return;
+            }
+            const poolHashratePara = poolHashrate.parentNode;
 
             // Ensure grid layout and structure
             ensureElementStyles();
 
             // Structure parent for proper grid layout (similar to the other metrics)
             if (!poolHashratePara.querySelector('.main-metric')) {
-                const poolHashrate = document.getElementById("pool_total_hashrate");
                 const indicatorPoolHashrate = document.getElementById("indicator_pool_total_hashrate");
 
                 // Create the main metric container
@@ -3247,11 +3254,14 @@ function updateUI() {
         }
 
         // Find the hashrate_24hr element's parent paragraph
-        const hashrate24hrPara = document.getElementById("hashrate_24hr").parentNode;
+        const hashrate24hr = document.getElementById("hashrate_24hr");
+        if (!hashrate24hr) {
+            return;
+        }
+        const hashrate24hrPara = hashrate24hr.parentNode;
 
         // Structure parent for proper grid layout
         if (!hashrate24hrPara.querySelector('.main-metric')) {
-            const hashrate24hr = document.getElementById("hashrate_24hr");
             const indicator24hr = document.getElementById("indicator_hashrate_24hr");
 
             // Create the main metric container
@@ -3320,11 +3330,14 @@ function updateUI() {
         updateElementText("hashrate_3hr", formatted3hrHashrate);
 
         // Same for 3hr data with blockOdds
-        const hashrate3hrPara = document.getElementById("hashrate_3hr").parentNode;
+        const hashrate3hr = document.getElementById("hashrate_3hr");
+        if (!hashrate3hr) {
+            return;
+        }
+        const hashrate3hrPara = hashrate3hr.parentNode;
 
         // Structure parent for proper grid layout
         if (!hashrate3hrPara.querySelector('.main-metric')) {
-            const hashrate3hr = document.getElementById("hashrate_3hr");
             const indicator3hr = document.getElementById("indicator_hashrate_3hr");
 
             // Create the main metric container
@@ -3416,11 +3429,15 @@ function updateUI() {
         }
 
         (function updateBlockTimerUI() {
-            const para = document.getElementById('block_number').parentNode;
+            const blockEl = document.getElementById('block_number');
+            if (!blockEl) {
+                return;
+            }
+            const para = blockEl.parentNode;
             ensureElementStyles();
 
             if (!para.querySelector('.main-metric')) {
-                const metricEl = document.getElementById('block_number');
+                const metricEl = blockEl;
                 const indicatorEl = document.getElementById('indicator_block_number');
                 const mainMetric = document.createElement('span');
                 mainMetric.className = 'main-metric';
@@ -3531,10 +3548,14 @@ function updateUI() {
             ? formatCurrencyValue(bePrice, currency) + '/kWh'
             : formatCurrencyValue(0, currency) + '/kWh';
 
-        const powerCostPara = document.getElementById('daily_power_cost').parentNode;
+        const metricElPower = document.getElementById('daily_power_cost');
+        if (!metricElPower) {
+            return;
+        }
+        const powerCostPara = metricElPower.parentNode;
         ensureElementStyles();
         if (!powerCostPara.querySelector('.main-metric')) {
-            const metricEl = document.getElementById('daily_power_cost');
+            const metricEl = metricElPower;
             const indicatorEl = document.getElementById('indicator_daily_power_cost');
             const mainMetric = document.createElement('span');
             mainMetric.className = 'main-metric';
@@ -4111,11 +4132,12 @@ $(document).ready(function () {
     // Modify the initializeChart function to use blue colors for the chart
     function initializeChart() {
         try {
-            const ctx = document.getElementById('trendGraph').getContext('2d');
-            if (!ctx) {
+            const canvas = document.getElementById('trendGraph');
+            if (!canvas) {
                 console.error("Could not find trend graph canvas");
                 return null;
             }
+            const ctx = canvas.getContext('2d');
 
             if (!window.Chart) {
                 console.error("Chart.js not loaded");

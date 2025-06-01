@@ -1393,7 +1393,7 @@ const BitcoinMinuteRefresh = (function () {
       
       /* Collapsed state */
       .bitcoin-terminal.collapsed {
-        width: 175px;
+        width: 185px;
         height: 80px;
         padding: 5px;
       }
@@ -1442,7 +1442,7 @@ const BitcoinMinuteRefresh = (function () {
         }
 
         .bitcoin-terminal.collapsed {
-          width: 190px;
+          width: 195px;
           height: 80px;
           left: 50%;
           right: auto;

@@ -97,3 +97,22 @@ def test_ttl_cache_thread_safety(monkeypatch):
 
     assert not errors
     assert call_count["count"] == 250
+
+def test_ttl_cache_maxsize(monkeypatch):
+    fake_time = [0]
+    monkeypatch.setattr(time, "time", lambda: fake_time[0])
+
+    @ttl_cache(ttl_seconds=10, maxsize=2)
+    def identity(x):
+        return x
+
+    identity(1)
+    identity(2)
+    assert identity.cache_size() == 2
+
+    identity(3)
+    assert identity.cache_size() == 2
+    fake_time[0] += 1
+    # Oldest entry (1) should have been removed
+    assert identity(1) == 1
+    assert identity.cache_size() == 2

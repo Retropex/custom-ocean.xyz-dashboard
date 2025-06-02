@@ -5,9 +5,14 @@ import time
 import threading
 from functools import wraps
 
+def ttl_cache(ttl_seconds=60, maxsize=None):
+    """Simple decorator providing a thread-safe time-based cache.
 
-def ttl_cache(ttl_seconds=60):
-    """Simple decorator providing a thread-safe time based cache."""
+    Args:
+        ttl_seconds (int): How long to store each cached item.
+        maxsize (int, optional): Maximum number of entries to keep in the cache.
+
+    """
 
     def decorator(func):
         cache = {}
@@ -52,6 +57,9 @@ def ttl_cache(ttl_seconds=60):
                 now = time.time()
                 _purge_expired(now)
                 with lock:
+                    if maxsize is not None and len(cache) >= maxsize:
+                        oldest_key = min(cache.items(), key=lambda item: item[1][1])[0]
+                        del cache[oldest_key]
                     cache[key] = (result, now)
             return result
 

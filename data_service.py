@@ -63,6 +63,8 @@ class MiningDashboardService:
         self.exchange_rate_ttl = 7200
         # Record the service start time to report consistent uptime
         self.server_start_time = datetime.now(ZoneInfo(get_timezone()))
+        # Track whether the service has been closed
+        self._closed = False
 
     def set_worker_service(self, worker_service):
         """Associate a WorkerService instance for power estimation."""
@@ -87,10 +89,47 @@ class MiningDashboardService:
 
     def close(self):
         """Close any open network resources."""
+        if getattr(self, "_closed", False):
+            logging.warning("Service already closed")
+            return
+
+        self._closed = True
         try:
-            self.session.close()
-            # Wait for any running executor tasks to finish so resources are released
-            self.executor.shutdown(wait=True)
+            # Clear any ttl_cache caches on the instance
+            for attr_name in dir(self):
+                attr = getattr(self, attr_name)
+                if hasattr(attr, "cache_clear"):
+                    try:
+                        attr.cache_clear()
+                    except Exception:
+                        pass
+
+            # Cancel any pending futures and shutdown executor
+            try:
+                from inspect import signature
+
+                shutdown_params = signature(self.executor.shutdown).parameters
+                if "cancel_futures" in shutdown_params:
+                    self.executor.shutdown(wait=True, cancel_futures=True)
+                else:
+                    self.executor.shutdown(wait=True)
+            except Exception:
+                # Fall back if we cannot introspect the signature
+                try:
+                    self.executor.shutdown(wait=True)
+                except Exception:
+                    pass
+
+            # Close session and underlying adapters
+            try:
+                self.session.close()
+            finally:
+                if hasattr(self.session, "adapters"):
+                    for adapter in self.session.adapters.values():
+                        try:
+                            adapter.close()
+                        except Exception:
+                            pass
         except Exception as e:
             logging.error(f"Error closing session: {e}")
 
@@ -105,6 +144,8 @@ class MiningDashboardService:
         Returns:
             dict: Mining metrics data
         """
+        if getattr(self, "_closed", False):
+            raise RuntimeError("Cannot use closed service")
         # Add execution time tracking
         start_time = time.time()
 

@@ -19,9 +19,9 @@ static/js/min/
 static/css/min/
 templates/min/
 /.vs
-/logs/dashboard.log
 /logs/dashboard.log.1
 /logs/dashboard.log.2
 /logs/dashboard.log.3
 /logs/dashboard.log.4
 /logs/dashboard.log.5
+/logs/dashboard.log

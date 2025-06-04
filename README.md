@@ -345,6 +345,6 @@ Available under the MIT License. This is an independent project not affiliated w
 ## Acknowledgments
 
 - Ocean.xyz mining pool for their service
-- mempool.guide
-- The open-source community for their contributions
-- Bitcoin protocol developers
+- @leo_haf (https://x.com/leo_haf)
+- Mempool.guide
+- Bitcoin Knots & Bitcoin Core protocol developers

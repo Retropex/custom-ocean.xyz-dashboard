@@ -10,13 +10,12 @@ informed with minimal fuss.
 ---
 ## Gallery:
 
-![DeepSea Boot](https://github.com/user-attachments/assets/77222f13-1e95-48ee-a418-afd0e6b7a920)
+![DeepSea Boot](https://github.com/user-attachments/assets/05f7d7cb-6077-4308-9a60-0261e75ebc7a)
 ![DeepSea Config](https://github.com/user-attachments/assets/e23859bd-76f3-4239-aa6b-060b5bf13f1b)
-![DeepSea Dashboard](https://github.com/user-attachments/assets/8a96fd5e-5ba2-4e0e-be83-965ecb046671)
-![DeepSea Workers](https://github.com/user-attachments/assets/075d3f25-bbfb-4e0d-a4d1-1e7f23b96715)
-![DeepSea Blocks](https://github.com/user-attachments/assets/078fc533-62c7-4375-bdb4-5f33e4a07925)
-![DeepSea Notifications](https://github.com/user-attachments/assets/881ffac0-e447-4455-8b6e-39e2aac1b94e)
-
+![DeepSea Dashboard](https://github.com/user-attachments/assets/3c2c9a26-a5ed-4e33-9b65-ff7bf2e5b51e)
+![DeepSea Workers](https://github.com/user-attachments/assets/e24b1718-922b-4588-95eb-eb0497f99217)
+![DeepSea Blocks](https://github.com/user-attachments/assets/d5d5ccbf-80fd-4764-acb9-dffdb616090e)
+![DeepSea Notifications](https://github.com/user-attachments/assets/511a596d-8fdc-45bc-b7a9-6dd16ab72576)
 
 ---
 

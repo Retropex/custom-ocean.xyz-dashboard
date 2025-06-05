@@ -29,6 +29,7 @@ jobs:
         node tests/js/formatCurrency.test.js
         node tests/js/formatDuration.test.js
         node tests/js/main_dom_safety.test.js
+        node tests/js/main_chart_load.test.js
         node tests/js/normalizeHashrate.test.js
         node tests/js/arrowIndicator.test.js
         node tests/js/audioCrossfadeTheme.test.js

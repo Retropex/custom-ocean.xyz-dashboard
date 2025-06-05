@@ -2060,9 +2060,8 @@ function initializeFlippableCards() {
     document.querySelectorAll('.flip-card').forEach(card => {
         const front = card.querySelector('.card-front');
         const back = card.querySelector('.card-back');
-        // Use scrollHeight to account for collapsed absolute elements
-        const frontHeight = front ? front.scrollHeight : 0;
-        const backHeight = back ? back.scrollHeight : 0;
+        const frontHeight = front ? front.offsetHeight : 0;
+        const backHeight = back ? back.offsetHeight : 0;
         const cardHeight = Math.max(frontHeight, backHeight);
         if (cardHeight) {
             card.style.height = `${cardHeight}px`;

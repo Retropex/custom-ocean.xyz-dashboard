@@ -15,7 +15,7 @@ informed with minimal fuss.
 ![DeepSea Dashboard](https://github.com/user-attachments/assets/3c2c9a26-a5ed-4e33-9b65-ff7bf2e5b51e)
 ![DeepSea Workers](https://github.com/user-attachments/assets/e24b1718-922b-4588-95eb-eb0497f99217)
 ![DeepSea Blocks](https://github.com/user-attachments/assets/d5d5ccbf-80fd-4764-acb9-dffdb616090e)
-![DeepSea Notifications](https://github.com/user-attachments/assets/511a596d-8fdc-45bc-b7a9-6dd16ab72576)
+![DeepSea Notifications](https://github.com/user-attachments/assets/8be60484-648d-4d2a-946c-0d4e38d9bdfe)
 
 ---
 

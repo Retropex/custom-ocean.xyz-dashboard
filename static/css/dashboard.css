@@ -800,7 +800,6 @@ html.bitcoin-theme #btc_price:hover {
 /* ----- Flippable Card Styles ----- */
 .flip-card {
   perspective: 1000px;
-  position: relative;
 }
 
 .flip-card-inner {

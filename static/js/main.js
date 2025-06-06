@@ -930,7 +930,7 @@ function formatTimeRemaining(seconds) {
 
     // Extremely large values (over 100 years) are not useful
     if (seconds > 3153600000) { // 100 years in seconds
-        return "Never";
+        return "Never (statistically)";
     }
 
     const minutes = seconds / 60;

@@ -1139,13 +1139,18 @@ function initPayoutTracking() {
         `
     });
 
-    $("#est_time_to_payout").parent().after(viewHistoryButton);
+    const viewHistoryWrapper = $("<p>", {
+        id: "last-payout-btn-wrapper",
+        class: "mt-2 mb-0"
+    }).append(viewHistoryButton);
+
+    $("#est_time_to_payout").parent().after(viewHistoryWrapper);
 
     // Create a container for the payout history (initially hidden)
     $("<div>", {
         id: "payout-history-container",
         style: "display: none; margin-top: 10px;"
-    }).insertAfter(viewHistoryButton);
+    }).insertAfter(viewHistoryWrapper);
 
     // Update theme-change listener for the button with fixed colors for each theme
     $(document).on('themeChanged', function () {

@@ -1413,7 +1413,7 @@ const BitcoinMinuteRefresh = (function () {
       }
       
       .bitcoin-terminal.collapsed .terminal-minimized {
-        display: flex;
+        display: grid;
       }
       
       .bitcoin-terminal.collapsed .terminal-header {

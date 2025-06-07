@@ -806,6 +806,6 @@ html.bitcoin-theme #btc_price:hover {
 
 @media (max-width: 576px) {
   .sparkline {
-    width: 45px;
+    width: 35px !important;
   }
 }

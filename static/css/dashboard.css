@@ -177,7 +177,7 @@ html.deepsea-theme .toggle-btn.active {
 .arrow {
   display: inline-block;
   font-weight: bold;
-  margin-left: 0.5rem;
+  margin-left: 0.25rem;
 }
 
 .chevron {
@@ -806,6 +806,6 @@ html.bitcoin-theme #btc_price:hover {
 
 @media (max-width: 576px) {
   .sparkline {
-    width: 35px !important;
+    width: 40px !important;
   }
 }

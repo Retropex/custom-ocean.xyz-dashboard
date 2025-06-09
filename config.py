@@ -29,7 +29,7 @@ DEFAULT_CONFIG = {
     "currency": "USD",
     "low_hashrate_threshold_ths": 3.0,
     "high_hashrate_threshold_ths": 20.0,
-    "EXCHANGE_RATE_API_KEY": "179cbeb07c900f20dde92d3b",
+    "EXCHANGE_RATE_API_KEY": "",
 }
 
 

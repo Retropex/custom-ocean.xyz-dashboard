@@ -513,7 +513,7 @@ html.matrix-theme #bitcoin-logo::after {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 100%;
+    font-size: 200%;
     font-weight: bold;
     line-height: 1.2;
     color: var(--matrix-color);

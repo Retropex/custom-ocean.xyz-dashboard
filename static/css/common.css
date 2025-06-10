@@ -857,7 +857,7 @@ html.deepsea-theme h1::after {
 /* ----- FOOTER ----- */
 .footer {
   padding: 10px 0;
-  color: grey;
+  color: var(--primary-color);
   font-size: 0.9rem;
   border-top: 1px solid rgba(128, 128, 128, 0.2);
 }

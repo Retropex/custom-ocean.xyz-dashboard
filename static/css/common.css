@@ -994,6 +994,7 @@ html.bitcoin-theme .footer a:hover {
     display: block;
     text-align: right;
     margin-bottom: 0.5rem;
+    z-index: 9999;
   }
 
   /* Navigation mobile optimization */

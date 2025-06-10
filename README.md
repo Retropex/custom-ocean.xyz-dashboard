@@ -1,4 +1,4 @@
-# DeepSea Dashboard
+o# DeepSea Dashboard
 
 ## A Retro Mining Monitoring Solution
 
@@ -351,4 +351,4 @@ Available under the MIT License. This is an independent project not affiliated w
 - Ocean.xyz mining pool for their service
 - @leo_haf (https://x.com/leo_haf)
 - Mempool.guide
-- Bitcoin Knots & Bitcoin Core protocol developers
+- Bitcoin Knots & Bitcoin Core developers

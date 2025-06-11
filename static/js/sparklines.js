@@ -111,16 +111,11 @@
             }
 
             if (!chart) {
-                const ctx = canvas.getContext('2d');
-                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-                gradient.addColorStop(0, theme.PRIMARY + '80'); // 50% opacity at start
-                gradient.addColorStop(1, theme.PRIMARY); // Full opacity at end
-
-                chart = new Chart(ctx, {
+                chart = new Chart(canvas.getContext('2d'), {
                     type: 'line',
                     data: { labels: labels, datasets: [{
                         data: values,
-                        borderColor: gradient,
+                        borderColor: theme.PRIMARY,
                         borderWidth: 1,
                         pointRadius: 0,
                         tension: 0.4,
@@ -133,64 +128,16 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: { enabled: false }
-                        },
-                        elements: {
-                            point: {
-                                radius: 0,
-                                hitRadius: 0,
-                                hoverRadius: 0
-                            }
                         }
                     }
                 });
-
-                // Add dot for latest data point
-                const lastPoint = {
-                    x: labels[labels.length - 1],
-                    y: values[values.length - 1]
-                };
-                
-                chart.data.datasets.push({
-                    data: [lastPoint],
-                    pointBackgroundColor: theme.PRIMARY,
-                    pointRadius: 2,
-                    pointHoverRadius: 2,
-                    showLine: false
-                });
-
                 chart._theme = theme;
                 charts[canvasId] = chart;
             } else {
                 chart.data.labels = labels;
                 chart.data.datasets[0].data = values;
-                
-                // Update gradient
-                const ctx = canvas.getContext('2d');
-                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-                gradient.addColorStop(0, theme.PRIMARY + '80');
-                gradient.addColorStop(1, theme.PRIMARY);
-                chart.data.datasets[0].borderColor = gradient;
-
-                // Update latest point
-                const lastPoint = {
-                    x: labels[labels.length - 1],
-                    y: values[values.length - 1]
-                };
-                
-                if (chart.data.datasets.length === 1) {
-                    chart.data.datasets.push({
-                        data: [lastPoint],
-                        pointBackgroundColor: theme.PRIMARY,
-                        pointRadius: 2,
-                        pointHoverRadius: 2,
-                        showLine: false
-                    });
-                } else {
-                    chart.data.datasets[1].data = [lastPoint];
-                    chart.data.datasets[1].pointBackgroundColor = theme.PRIMARY;
-                }
-
                 if (chart._theme !== theme) {
+                    chart.data.datasets[0].borderColor = theme.PRIMARY;
                     chart._theme = theme;
                 }
                 chart.update();

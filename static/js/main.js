@@ -1418,7 +1418,7 @@ function displayPayoutSummary() {
                         <span class="metric-value green">${fiatValueStr}</span>
                     </p>
                     <p>
-                        <strong>Average Payout Interval:</strong>
+                        <strong>Last Payout Interval:</strong>
                         <span class="metric-value yellow">${lastPayoutTracking.avgDays ? lastPayoutTracking.avgDays.toFixed(2) + ' days' : 'N/A'}</span>
                     </p>
                     <p>

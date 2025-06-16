@@ -983,7 +983,7 @@ const BitcoinMinuteRefresh = (function () {
               <div id="${DOM_IDS.DATA_AGE}" class="data-age"></div>
             </div>
             <div class="monitor-page" data-page="5" style="display:none">
-              <div class="page-title">AUDIO</div>
+              <div class="page-title">AUDIO CONTROLS</div>
               <div class="audio-widget">
                 <span id="${DOM_IDS.AUDIO_PREV}" class="audio-btn">&#9664;&#9664;</span>
                 <span id="${DOM_IDS.AUDIO_PLAY}" class="audio-btn">&#9654;</span>

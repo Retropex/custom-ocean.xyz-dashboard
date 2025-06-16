@@ -1136,9 +1136,35 @@ function loadLocalHistory() {
         const savedHistory = localStorage.getItem('payoutHistory');
         if (savedHistory) {
             lastPayoutTracking.payoutHistory = JSON.parse(savedHistory);
+            sanitizePayoutHistory();
         }
     } catch (e) {
         console.error("Error loading payout history from localStorage:", e);
+    }
+}
+
+function sanitizePayoutHistory() {
+    if (!Array.isArray(lastPayoutTracking.payoutHistory)) {
+        lastPayoutTracking.payoutHistory = [];
+        return;
+    }
+    let changed = false;
+    lastPayoutTracking.payoutHistory = lastPayoutTracking.payoutHistory.filter(entry => {
+        const date = new Date(entry.timestamp);
+        if (isNaN(date) || entry.amountBTC === undefined) {
+            changed = true;
+            return false;
+        }
+        entry.timestamp = date;
+        entry.amountBTC = parseFloat(entry.amountBTC);
+        return true;
+    });
+    if (changed) {
+        try {
+            localStorage.setItem('payoutHistory', JSON.stringify(lastPayoutTracking.payoutHistory));
+        } catch (e) {
+            console.error('Error saving sanitized payout history:', e);
+        }
     }
 }
 
@@ -1496,6 +1522,7 @@ function formatBTC(btcValue) {
 
 // Enhanced function to verify and enrich payout history with data from earnings
 function verifyPayoutsAgainstOfficial() {
+    sanitizePayoutHistory();
     // Fetch the official payment history from the earnings endpoint
     $.ajax({
         url: '/api/earnings',

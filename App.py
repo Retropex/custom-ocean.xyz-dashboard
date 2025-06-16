@@ -1058,7 +1058,6 @@ def update_config():
                 merged_config.get("wallet"),
                 network_fee=merged_config.get("network_fee", 0.0),
                 worker_service=worker_service,
-                state_manager=state_manager,
             )
             logging.info(
                 f"Dashboard service reinitialized with new wallet: {merged_config.get('wallet')}"
@@ -1068,8 +1067,6 @@ def update_config():
             worker_service.set_dashboard_service(dashboard_service)
             if hasattr(dashboard_service, "set_worker_service"):
                 dashboard_service.set_worker_service(worker_service)
-            if hasattr(dashboard_service, "set_state_manager"):
-                dashboard_service.set_state_manager(state_manager)
             notification_service.dashboard_service = dashboard_service
             logging.info("Worker service updated with the new dashboard service")
 
@@ -1836,14 +1833,11 @@ dashboard_service = MiningDashboardService(
     config.get("wallet"),
     network_fee=config.get("network_fee", 0.0),
     worker_service=None,
-    state_manager=state_manager,
 )
 worker_service = WorkerService()
 # Connect the services
 if hasattr(dashboard_service, "set_worker_service"):
     dashboard_service.set_worker_service(worker_service)
-if hasattr(dashboard_service, "set_state_manager"):
-    dashboard_service.set_state_manager(state_manager)
 worker_service.set_dashboard_service(dashboard_service)
 notification_service.dashboard_service = dashboard_service
 

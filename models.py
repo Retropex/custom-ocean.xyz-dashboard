@@ -9,7 +9,7 @@ import logging
 import re
 
 
-@dataclass
+@dataclass(slots=True)
 class OceanData:
     """Data structure for Ocean.xyz pool mining data."""
 
@@ -76,7 +76,7 @@ class OceanData:
         return cls(**filtered_data)
 
 
-@dataclass
+@dataclass(slots=True)
 class WorkerData:
     """Data structure for individual worker information."""
 

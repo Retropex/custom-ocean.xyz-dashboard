@@ -43,10 +43,10 @@ MEMORY_CONFIG = {
     "MAX_ARROW_HISTORY_ENTRIES": 180,  # Maximum arrow history entries per key
     "GC_INTERVAL_SECONDS": 3600,  # How often to force full GC (1 hour)
     # Trigger emergency cleanup when memory usage exceeds this percentage
-    "MEMORY_HIGH_WATERMARK": 2.0,
+    "MEMORY_HIGH_WATERMARK": 80.0,
     "ADAPTIVE_GC_ENABLED": True,  # Whether to use adaptive GC
-    "MEMORY_MONITORING_INTERVAL": 300,  # How often to log memory usage (5 minutes)
-    "MEMORY_HISTORY_MAX_ENTRIES": 72,  # Keep 6 hours of memory history at 5-min intervals
+    "MEMORY_MONITORING_INTERVAL": 600,  # How often to log memory usage (5 minutes)
+    "MEMORY_HISTORY_MAX_ENTRIES": 288,  # Keep 24 hours of memory history at 5-min intervals
 }
 
 # Memory tracking global variables

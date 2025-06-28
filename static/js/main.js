@@ -434,11 +434,16 @@ function pruneBlockAnnotations(minutes = 180, maxEntries = 100) {
         blockAnnotations = blockAnnotations
             .map(ts => {
                 if (typeof ts === 'string' && ts.match(/^\d{1,2}:\d{2}$/)) {
+                    if (minutes > 1440) {
+                        // Legacy entries without a date can't be mapped across days
+                        return null;
+                    }
                     return parseOldLabel(ts, tz);
                 }
                 return ts;
             })
             .filter(ts => {
+                if (!ts) return false;
                 const time = new Date(ts).getTime();
                 return !isNaN(time) && time >= cutoff;
             });

@@ -461,7 +461,7 @@ def perform_system_checks():
         logger.debug("psutil not available, skipping memory check")
 
     # Check write permissions
-    log_dir = "logs"
+    log_dir = "data"
     try:
         test_file = os.path.join(log_dir, "test_write.tmp")
         with open(test_file, "w") as f:

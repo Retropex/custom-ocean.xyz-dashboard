@@ -10,7 +10,7 @@ from notification_service import NotificationService
 
 def configure_logging():
     """Configure root logger and return it."""
-    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "dashboard.log")
     log_level = os.environ.get("LOG_LEVEL", "INFO").upper()

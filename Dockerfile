@@ -15,7 +15,7 @@ FROM python:3.12-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend \
-    DB_PATH=/data/deepsea.db
+    DB_PATH=/app/data/deepsea.db
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 \

@@ -11,7 +11,7 @@ from typing import Optional
 
 import aiosqlite
 
-DB_PATH = Path(os.environ.get("DB_PATH", "/data/deepsea.db"))
+DB_PATH = Path(os.environ.get("DB_PATH", "/root/deepsea.db"))
 MAX_NOTIFICATIONS = int(os.environ.get("MAX_NOTIFICATIONS", "1000"))
 
 

@@ -26,7 +26,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-CONFIG_PATH = Path(os.environ.get("CONFIG_PATH", "/config/config.json"))
+CONFIG_PATH = Path(os.environ.get("CONFIG_PATH", "data/config.json"))
 _DEFAULTS: dict[str, Any] = {
     "wallet": "",
     "power_cost": 0.12,
